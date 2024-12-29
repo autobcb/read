@@ -14,9 +14,9 @@
 ##参考项目
 *[reader](https://github.com/hectorqin/reader)
 
-![Image text](https://raw.githubusercontent.com/autobcb/read/blob/main/png/home.png)
-![Image text](https://raw.githubusercontent.com/autobcb/read/blob/main/png/book.png)
-![Image text](https://raw.githubusercontent.com/autobcb/read/blob/main/png/cookie.png)
-![Image text](https://raw.githubusercontent.com/autobcb/read/blob/main/png/login.png)
-![Image text](https://raw.githubusercontent.com/autobcb/read/blob/main/png/home2.png)
-![Image text](https://raw.githubusercontent.com/autobcb/read/blob/main/png/read.png)
+![Image text](https://github.com/autobcb/read/blob/main/png/home.png?raw=true)
+![Image text](https://github.com/autobcb/read/blob/main/png/book.png?raw=true)
+![Image text](https://github.com/autobcb/read/blob/main/png/cookie.png?raw=true)
+![Image text](https://github.com/autobcb/read/blob/main/png/login.png?raw=true)
+![Image text](https://github.com/autobcb/read/blob/main/png/home2.png?raw=true)
+![Image text](https://github.com/autobcb/read/blob/main/png/read.png?raw=true)
