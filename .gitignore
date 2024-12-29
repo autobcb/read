@@ -47,4 +47,5 @@ bin/
 ### Mac OS ###
 .DS_Store
 .idea
+.idea/
 spy.log

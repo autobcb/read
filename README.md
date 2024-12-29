@@ -13,3 +13,10 @@
 
 ##参考项目
 *[reader](https://github.com/hectorqin/reader)
+
+![Image text](https://raw.githubusercontent.com/autobcb/read/blob/main/png/home.png)
+![Image text](https://raw.githubusercontent.com/autobcb/read/blob/main/png/book.png)
+![Image text](https://raw.githubusercontent.com/autobcb/read/blob/main/png/cookie.png)
+![Image text](https://raw.githubusercontent.com/autobcb/read/blob/main/png/login.png)
+![Image text](https://raw.githubusercontent.com/autobcb/read/blob/main/png/home2.png)
+![Image text](https://raw.githubusercontent.com/autobcb/read/blob/main/png/read.png)
