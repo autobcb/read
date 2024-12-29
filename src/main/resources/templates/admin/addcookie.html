@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta char后台set="UTF-8">
+  <title>管理</title>
+</head>
+<link rel="stylesheet" href="/static/layui/css/layui.css">
+
+<body style="width: 100%;height: 100%;">
+<div style="margin-left: 8%;margin-right: 8%; margin-top: 40px">
+
+  <form class="layui-form" action="" lay-filter="formTest">
+    <div class="layui-form-item">
+      <label class="layui-form-label">域名</label>
+      <div class="layui-input-block">
+        <input type="text" name="host"   id="host" lay-verify="required" placeholder="请输入域名" autocomplete="off" class="layui-input">
+      </div>
+    </div>
+    <div class="layui-form-item" >
+      <label class="layui-form-label">内容</label>
+      <div class="layui-input-block">
+        <input type="text" name="value"  placeholder="请输入内容"  class="layui-input">
+      </div>
+    </div>
+    <div class="layui-form-item">
+      <div class="layui-input-block">
+        <button class="layui-btn" lay-submit lay-filter="ti">立即提交</button>
+        <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script src="/static/layui/layui.js"></script>
+<script src="/static/js/ajax.js"></script>
+<script>
+  var $
+  layui.use(['jquery','form'], function () {
+    var form =layui.form
+    $ = layui.$
+    const searchParams = new URLSearchParams(window.location.search);
+    var oid = searchParams.get('id')
+
+    if(oid == null || oid == "null"){
+      oid = ""
+    }
+    if ( oid != ""){
+
+    }else {
+
+    }
+
+    var index = parent.layer.getFrameIndex(window.name);
+    form.on('submit(ti)', function (data) {
+      ajax("POST","/admin/addcookie",data.field,function (data) {
+        if (data.isSuccess == true){
+          //console.log(data.data)
+          parent.layer.msg("更新成功");
+          parent.shua();
+          parent.layer.close(index);
+        }else{
+          layer.msg(data.errorMsg);
+        }
+      })
+      return false
+    });
+
+  })
+</script>
+</body>
+</html>

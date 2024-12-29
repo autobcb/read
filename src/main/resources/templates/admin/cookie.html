@@ -1,0 +1,139 @@
+
+
+<header th:replace="admin/header.html"></header>
+
+
+<div style="margin-left: 8%;margin-right: 8%; margin-top: 40px">
+  <div style="margin-left: 0px">
+    <form class="layui-form" action="">
+      <div class="layui-form-item">
+        <div class="layui-inline"  style="margin-left: 0px">
+          <div class="layui-input-block" style="width: 500px">
+            <input type="text" name="where" style="width: 100%" autocomplete="off" placeholder="搜索条件" class="layui-input">
+          </div>
+        </div>
+        <div class="layui-inline width30">
+          <div class="layui-input-block">
+            <button class="layui-btn" lay-submit="" lay-filter="InZDSeach" style="margin-left: 10px;">搜索</button>
+            <button class="layui-btn" type="button" id="add" style="margin-left: 10px;">添加</button>
+           <!-- <button class="layui-btn layui-btn-danger" type="button" id="del" style="margin-left: 10px;">删除</button>-->
+
+          </div>
+        </div>
+      </div>
+    </form>
+
+  </div>
+  <div>
+    <div>
+
+      <table lay-filter="InZDSeach" id="InZDSeach">
+        <thead>
+        <tr>
+          <th lay-data="{type: 'checkbox', fixed: 'left'}"></th>
+          <th lay-data="{title:'', width:50,templet: '#indexTpl'}"></th>
+          <th lay-data="{field:'host', title:'域名', width:200}"></th>
+          <th lay-data="{field:'value', title:'内容'}"></th>
+          <th lay-data="{field:'createtime', title:'添加时间'  , width:200}"></th>
+          <th lay-data="{title:'操作' ,templet: '#tool' , width:150}"></th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+
+<script type="text/html" id="indexTpl">
+  {{ d.LAY_INDEX+1}}
+</script>
+
+<script type="text/html" id="tool">
+  <div class="layui-clear-space">
+   <!-- <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>-->
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+  </div>
+</script>
+
+<script src="/static/layui/layui.js"></script>
+<script src="/static/js/ajax.js"></script>
+<script>
+  var $
+  layui.use(['jquery','table','form', 'dropdown'], function () {
+    var form =layui.form,
+            table = layui.table
+    var dropdown = layui.dropdown;
+    var where="",order = 'createtime DESC'
+    $ = layui.$
+
+    //$("#stateselect").val("0");
+
+    table.init('InZDSeach', {
+      page: true
+      , url:  '/admin/seachcookie'
+      , where: {where: where,order:order}
+      , loading :true
+    });
+
+    window.shua=function (){
+      table.reload('InZDSeach', {
+        page: {curr: 1}
+        , where: {where: where,order:order}
+      });
+    }
+
+    form.on('submit(InZDSeach)', function (data) {
+      where = data.field.where;
+      table.reload('InZDSeach', {
+        page: {curr: 1}
+        , where: {where: where,order:order}
+      });
+      return false
+    });
+
+    table.on('tool(InZDSeach)', function (obj) {
+      var data = obj.data;
+      if (obj.event === 'edit') {
+        layer.open({
+          type: 2,
+          title: false,
+          area: ['830px', '560px'],
+          content: ['/admin/adduser?id='+data.id,"no"] //这里content是一个URL，如果你不想让iframe出现滚动条，你还可以content: ['http://sentsin.com', 'no']
+        });
+      }else  if (obj.event === 'del') {
+        layer.confirm('真的删除 ['+ data.host +'] 么', function(index){
+          ajax("POST",'/admin/delcookie?host='+data.host,{},function (data) {
+            if (data.isSuccess == true){
+              obj.del(); // 删除对应行（tr）的DOM结构
+              layer.close(index);
+              layer.msg("删除成功");
+            }else{
+              layer.msg(data.errorMsg);
+              layer.close(index);
+            }
+          })
+        });
+      }
+
+
+    });
+
+
+    $("#add").click(function () {
+      layer.open({
+        type: 2,
+        title: false,
+        area: ['830px', '560px'],
+        content: ['/admin/addcookie',"no"] //这里content是一个URL，如果你不想让iframe出现滚动条，你还可以content: ['http://sentsin.com', 'no']
+      });
+
+    })
+
+
+  })
+</script>
+
+</body>
+</html>

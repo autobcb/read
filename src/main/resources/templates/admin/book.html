@@ -1,0 +1,293 @@
+
+
+<header th:replace="admin/header.html"></header>
+
+
+<div style="margin-left: 8%;margin-right: 8%; margin-top: 40px">
+    <div style="margin-left: 0px">
+        <form class="layui-form" action="">
+            <div class="layui-form-item">
+                <div class="layui-inline"  style="margin-left: 0px">
+                    <div class="layui-input-block" style="width: 800px">
+                        <input type="text" name="where" style="width: 100%" autocomplete="off" placeholder="搜索条件" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline width30">
+                    <div class="layui-input-block">
+                        <button class="layui-btn" lay-submit="" lay-filter="InZDSeach" style="margin-left: 10px;">搜索</button>
+                        <button type="button" id="upload" class="layui-btn" lay-options="{acceptMime: 'application/json'}">
+                            <i class="layui-icon layui-icon-upload"></i>
+                            上传书源
+                        </button>
+                        <button class="layui-btn" type="button" id="debug" style="margin-left: 10px;">调试</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+    </div>
+    <div>
+        <div>
+
+            <table lay-filter="InZDSeach" id="InZDSeach">
+                <thead>
+                <tr>
+                    <th lay-data="{type: 'checkbox', fixed: 'left'}"></th>
+                    <th lay-data="{title:'', width:50,templet: '#indexTpl'}"></th>
+                    <th lay-data="{field:'bookSourceName', title:'名称', width:200}"></th>
+                    <th lay-data="{field:'bookSourceUrl', title:'地址'}"></th>
+                    <th lay-data="{field:'bookSourceGroup', title:'分组'}"></th>
+                    <th lay-data="{field:'enabled', title:'状态',templet: '#enabled'}"></th>
+                    <th lay-data="{field:'enabledExplore', title:'发现',templet: '#enabledExplore'}"></th>
+                    <th lay-data="{field:'bookSourceComment', title:'备注'}"></th>
+                    <th lay-data="{title:'操作' ,templet: '#tool' , width:180}"></th>
+                </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script type="text/html" id="indexTpl">
+    {{ d.LAY_INDEX+1}}
+</script>
+
+<script type="text/html" id="enabledExplore">
+    {{#  if(d.enabledExplore){ }}
+    <span class="layui-badge layui-bg-blue">启用</span>
+    {{#  } else { }}
+    <span class="layui-badge layui-bg-orange">禁止</span>
+    {{#  } }}
+</script>
+
+
+<script type="text/html" id="enabled">
+    {{#  if(d.enabled){ }}
+    <span class="layui-badge layui-bg-blue">启用</span>
+    {{#  } else { }}
+    <span class="layui-badge layui-bg-orange">禁止</span>
+    {{#  } }}
+</script>
+
+
+<script type="text/html" id="toolbar">
+    <div class="layui-btn-container">
+        <button class="layui-btn layui-btn-sm" lay-event="alldel">批量删除</button>
+        <button class="layui-btn layui-btn-sm" lay-event="dao">批量导出</button>
+    </div>
+</script>
+
+<script type="text/html" id="tool">
+    <div class="layui-clear-space">
+        {{#  if(!d.enabledExplore){ }}
+        <a class="layui-btn layui-btn-xs" lay-event="startfa">启用发现</a>
+        {{#  } else { }}
+        <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="stopfa">禁止发现</a>
+        {{#  } }}
+        {{#  if(!d.enabled){ }}
+        <a class="layui-btn layui-btn-xs" lay-event="start">启用</a>
+        {{#  } else { }}
+        <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="stop">禁止</a>
+        {{#  } }}
+        <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+    </div>
+</script>
+
+<script src="/static/layui/layui.js"></script>
+<script src="/static/js/ajax.js"></script>
+<script>
+    var $
+    layui.use(['jquery','table','form', 'dropdown'], function () {
+        var form =layui.form,
+            table = layui.table
+        var dropdown = layui.dropdown;
+        var where="",order = 'last_update_time DESC'
+        $ = layui.$
+
+        var upload = layui.upload;
+        var layer = layui.layer;
+        // 渲染
+        upload.render({
+            elem: '#upload', // 绑定多个元素
+            url: '/admin/uploadSource', // 此处配置你自己的上传接口即可
+            accept: 'file', // 普通文件
+            done: function(res){
+                layer.msg(res.errorMsg);
+                console.log(res);
+                shua()
+            }
+        });
+        $('#debug').click(function(){
+            window.open("/bookSourceDebug/index.html", "_blank");
+
+        })
+        //$("#stateselect").val("0");
+
+        table.init('InZDSeach', {
+            page: true
+            , toolbar: '#toolbar'
+            , url:  '/admin/seachbookSource'
+            , where: {where: where,order:order}
+            , loading :true
+        });
+        table.on('toolbar(InZDSeach)', function(obj){
+            var id = obj.config.id;
+            var checkStatus = table.checkStatus(id);
+            var othis = lay(this);
+            switch(obj.event){
+                case 'alldel':
+                    var data = checkStatus.data;
+                    var  ids=[]
+                    data.forEach(d => {
+                        ids.push(d.bookSourceUrl)
+                    })
+                    console.log(ids)
+                    if(ids.length>0){
+                        layer.confirm('确认批量删除这些书源吗？', function(index){
+                            ajaxjson('/admin/delbookSources',ids,function (data) {
+                                if (data.isSuccess == true){
+                                    shua()
+                                    layer.close(index);
+                                    layer.msg("删除成功");
+                                }else{
+                                    layer.msg(data.errorMsg);
+                                    layer.close(index);
+                                }
+                            })
+                        });
+                    }else{
+                        layer.msg("请选择书源");
+                    }
+
+                    break;
+                case 'dao':
+                    var data = checkStatus.data;
+                    var  ids=[]
+                    data.forEach(d => {
+                        ids.push(JSON.parse(d.json))
+                    })
+                    console.log(ids)
+                    if(ids.length>0){
+                        const stringData = JSON.stringify(ids)
+                        // dada 表示要转换的字符串数据，type 表示要转换的数据格式
+                        const blob = new Blob([stringData], {
+                            type: 'application/json'
+                        })
+                        // 根据 blob生成 url链接
+                        const objectURL = URL.createObjectURL(blob)
+
+                        // 创建一个 a 标签Tag
+                        const aTag = document.createElement('a')
+                        // 设置文件的下载地址
+                        aTag.href = objectURL
+                        // 设置保存后的文件名称
+                        aTag.download = "read"+new Date().getTime()+".json"
+                        // 给 a 标签添加点击事件
+                        aTag.click()
+                        // 释放一个之前已经存在的、通过调用 URL.createObjectURL() 创建的 URL 对象。
+                        // 当你结束使用某个 URL 对象之后，应该通过调用这个方法来让浏览器知道不用在内存中继续保留对这个文件的引用了。
+                        URL.revokeObjectURL(objectURL)
+                    }else{
+                        layer.msg("请选择书源");
+                    }
+
+                    break;
+            };
+        });
+
+        window.shua=function (){
+            table.reload('InZDSeach', {
+                page: {curr: 1}
+                , where: {where: where,order:order}
+            });
+        }
+
+        form.on('submit(InZDSeach)', function (data) {
+            where = data.field.where;
+            table.reload('InZDSeach', {
+                page: {curr: 1}
+                , where: {where: where,order:order}
+            });
+            return false
+        });
+
+        table.on('tool(InZDSeach)', function (obj) {
+            var data = obj.data;
+            if (obj.event === 'stopfa') {
+                layer.confirm('真的停用 ['+ data.bookSourceName +'] 的发现么', function(index){
+                    ajax("POST",'/admin/stopbookSourceExplore?id='+data.bookSourceUrl+"&st=0",{},function (data) {
+                        if (data.isSuccess == true){
+                            layer.close(index);
+                            layer.msg("操作成功");
+                            shua()
+                        }else{
+                            layer.msg(data.errorMsg);
+                            layer.close(index);
+                        }
+                    })
+                });
+            }else   if (obj.event === 'startfa') {
+                layer.confirm('真的启用 ['+ data.bookSourceName +'] 的发现么', function(index){
+                    ajax("POST",'/admin/stopbookSourceExplore?id='+data.bookSourceUrl+"&st=1",{},function (data) {
+                        if (data.isSuccess == true){
+                            layer.close(index);
+                            layer.msg("操作成功");
+                            shua()
+                        }else{
+                            layer.msg(data.errorMsg);
+                            layer.close(index);
+                        }
+                    })
+                });
+            }else if (obj.event === 'stop') {
+                layer.confirm('真的停用 ['+ data.bookSourceName +'] 么', function(index){
+                    ajax("POST",'/admin/stopbookSource?id='+data.bookSourceUrl+"&st=0",{},function (data) {
+                        if (data.isSuccess == true){
+                            layer.close(index);
+                            layer.msg("操作成功");
+                            shua()
+                        }else{
+                            layer.msg(data.errorMsg);
+                            layer.close(index);
+                        }
+                    })
+                });
+            }else   if (obj.event === 'start') {
+                layer.confirm('真的启用 ['+ data.bookSourceName +'] 么', function(index){
+                    ajax("POST",'/admin/stopbookSource?id='+data.bookSourceUrl+"&st=1",{},function (data) {
+                        if (data.isSuccess == true){
+                            layer.close(index);
+                            layer.msg("操作成功");
+                            shua()
+                        }else{
+                            layer.msg(data.errorMsg);
+                            layer.close(index);
+                        }
+                    })
+                });
+            }else  if (obj.event === 'del') {
+                layer.confirm('真的删除 ['+ data.bookSourceName +'] 么', function(index){
+                    ajax("POST",'/admin/delbookSource?id='+data.bookSourceUrl,{},function (data) {
+                        if (data.isSuccess == true){
+                            obj.del(); // 删除对应行（tr）的DOM结构
+                            layer.close(index);
+                            layer.msg("删除成功");
+                        }else{
+                            layer.msg(data.errorMsg);
+                            layer.close(index);
+                        }
+                    })
+                });
+            }
+
+
+        });
+
+
+
+    })
+</script>
+
+</body>
+</html>

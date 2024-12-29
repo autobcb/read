@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta char后台set="UTF-8">
+  <title>管理</title>
+
+</head>
+<link rel="stylesheet" href="/static/layui/css/layui.css">
+
+<body style="width: 100%;height: 100%;">
+<style>
+  .layui-input-block {
+    margin-left: 0px;
+    min-height: 36px;
+  }
+</style>
+
+<header  >
+  <ul class="layui-nav">
+    <li th:class="'layui-nav-item ' + ${index?:''}"><a href="/admin/index">用户</a></li>
+    <li th:class="'layui-nav-item ' + ${book?:''}"><a href="/admin/book">书源</a></li>
+    <li th:class="'layui-nav-item ' + ${cookie?:''}"><a href="/admin/cookie">cookie</a></li>
+    <li class="layui-nav-item" style="float: right;"><a href="/admin/logout">退出</a></li>
+  </ul>
+</header>
