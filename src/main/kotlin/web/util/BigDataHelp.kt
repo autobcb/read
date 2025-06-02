@@ -4,9 +4,7 @@ import book.appCtx
 import book.model.Book
 import book.model.BookChapter
 import book.util.FileUtils
-import book.util.GSON
 import book.util.MD5Utils
-import book.util.fromJsonObject
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.io.File

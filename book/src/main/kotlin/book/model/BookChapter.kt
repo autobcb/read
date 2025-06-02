@@ -40,6 +40,7 @@ data class BookChapter(
 
 
     override fun putVariable(key: String, value: String?): Boolean {
+       // println("chapterput: $key: $value")
         if (super.putVariable(key, value)) {
             variable = GSON.toJson(variableMap)
         }

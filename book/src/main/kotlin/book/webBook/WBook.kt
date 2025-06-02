@@ -53,7 +53,7 @@ class WBook (val bookSource: BookSource, val debugLog: Boolean = true, var debug
 
 
     suspend fun searchBook(key: String, page: Int? = 1): List<SearchBook> {
-        val variableBook =  SearchBook.getSearchBook(userid?:"",sourceUrl)
+        val variableBook =  SearchBook()
         return bookSource.searchUrl?.let {searchUrl->
             val analyzeUrl = AnalyzeUrl(
                 mUrl = searchUrl,
@@ -91,6 +91,12 @@ class WBook (val bookSource: BookSource, val debugLog: Boolean = true, var debug
                 it.tocHtml = ""
                 it.infoHtml = ""
                 it
+            }.also {list->
+                list.forEach{book->
+                    book.variableMap.forEach {
+                        book.putVariable(it.key, it.value)
+                    }
+                }
             }
         }?:arrayListOf()
     }
@@ -102,7 +108,7 @@ class WBook (val bookSource: BookSource, val debugLog: Boolean = true, var debug
         url: String,
         page: Int? = 1
     ): List<SearchBook> {
-        val variableBook =  SearchBook.getSearchBook(userid?:"",sourceUrl)
+        val variableBook =  SearchBook()
         val analyzeUrl = AnalyzeUrl(
             mUrl = url,
             page = page,
@@ -130,7 +136,13 @@ class WBook (val bookSource: BookSource, val debugLog: Boolean = true, var debug
             variableBook,
             false,
             debugLog = debugger
-        )
+        ).also {list->
+            list.forEach{book->
+                book.variableMap.forEach {
+                    book.putVariable(it.key, it.value)
+                }
+            }
+        }
     }
 
     /**
@@ -202,7 +214,8 @@ class WBook (val bookSource: BookSource, val debugLog: Boolean = true, var debug
                 book.tocHtml,
                 bookSource,
                 book.tocUrl,
-                book.tocUrl
+                book.tocUrl,
+                debugLog = debugger
             )
         } else {
             val analyzeUrl = AnalyzeUrl(

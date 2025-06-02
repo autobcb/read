@@ -4,16 +4,15 @@ import book.WBook.Debugger
 import book.model.RssSource
 import com.google.gson.Gson
 import kotlinx.coroutines.runBlocking
-import org.apache.ibatis.solon.annotation.Db
 import org.noear.solon.annotation.Controller
 import org.noear.solon.annotation.Inject
 import org.noear.solon.net.annotation.ServerEndpoint
 import org.noear.solon.net.websocket.WebSocket
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import web.mapper.RssSourceMapper
-import web.mapper.UserRssSourceMapper
 import web.response.JsonResponse
+import web.service.RssSourceService
+import web.service.UserRssSourceService
 import java.io.IOException
 
 @Controller
@@ -21,13 +20,12 @@ import java.io.IOException
 class RssDebugWebSocket : BaseDebug() {
 
 
-    @Db("db")
     @Inject
-    lateinit var rssSourceMapper: RssSourceMapper
+    lateinit var rssSourceService: RssSourceService
 
-    @Db("db")
+
     @Inject
-    lateinit var userRssSourceMapper: UserRssSourceMapper
+    lateinit var userRssSourceService: UserRssSourceService
 
     override  val logger:Logger= LoggerFactory.getLogger(RssDebugWebSocket::class.java)
 
@@ -51,9 +49,9 @@ class RssDebugWebSocket : BaseDebug() {
             return@runBlocking
         }
         val rss=if(user.source == 2){
-            userRssSourceMapper.getRssSource(msg.url?:"",user.id!!)?.toBaseSource()
+            userRssSourceService.getRssSource(msg.url?:"",user.id!!)?.toBaseSource()
         }else{
-            rssSourceMapper.getRssSource(msg.url?:"")?.toBaseSource()
+            rssSourceService.getRssSource(msg.url?:"")?.toBaseSource()
         }
         if (rss == null){
             socket.send("event: error\n")

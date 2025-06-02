@@ -10,8 +10,6 @@ interface HttpTTSMapper: BaseMapper<HttpTts> {
     @Select("SELECT * FROM http_tts WHERE id = #{id} and userid = #{userid} LIMIT 1")
     fun gettts(@Param("id") id: String,@Param("userid") userid: String): HttpTts?
 
-    @Select("SELECT * FROM http_tts WHERE id = #{id} and userid = #{userid}")
-    fun gettts2(@Param("id") id: String,@Param("userid") userid: String):  List<HttpTts>?
 
     @Select("SELECT * FROM http_tts  WHERE userid = #{userid} and name = #{name}")
     fun getttsbyname(@Param("userid") userid: String, @Param("name") name: String): List<HttpTts>

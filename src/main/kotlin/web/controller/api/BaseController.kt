@@ -1,45 +1,51 @@
 package web.controller.api
 
-import org.apache.ibatis.solon.annotation.Db
+
+import org.noear.solon.annotation.Controller
 import org.noear.solon.annotation.Inject
 import org.noear.solon.core.util.DataThrowable
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import web.mapper.*
 import web.model.*
 import web.response.*
+import web.service.BookSourceService
+import web.service.UserBookSourceService
+import web.service.UsersService
+import web.service.UsertockenService
 
 const val routepath="/api/{v}"
 
+@Controller
 open class BaseController {
 
     val logger: Logger = LoggerFactory.getLogger(BaseController::class.java)
 
-    @Db("db")
-    @Inject
-    lateinit var usersMapper: UsersMapper
 
-    @Db("db")
     @Inject
-    lateinit var usertockenMapper: UsertockenMapper
+    lateinit var usersService: UsersService
 
-    @Db("db")
     @Inject
-    lateinit var bookSourcemapper: BookSourceMapper
+    lateinit var usertockenService: UsertockenService
 
-    @Db("db")
+
     @Inject
-    lateinit var userBookSourceMapper: UserBookSourceMapper
+    lateinit var bookSourceService: BookSourceService
 
-    var apiversion = 4
+
+    @Inject
+    lateinit var userBookSourceService: UserBookSourceService
+
+    val apiversion = 5
+
+    val appversion="2.14.0"
 
 
     fun getuserbytocken(accessToken:String?): Users{
         if (accessToken.isNullOrBlank()) {
             throw DataThrowable().data(JsonResponse(false,NEED_LOGIN))
         }
-        val tocken= usertockenMapper.selectById(accessToken) ?: throw DataThrowable().data(JsonResponse(false,NEED_LOGIN))
-        val user= usersMapper.selectById(tocken.userid) ?: throw DataThrowable().data(JsonResponse(false,NEED_LOGIN))
+        val tocken= usertockenService.getUsertocken(accessToken) ?: throw DataThrowable().data(JsonResponse(false,NEED_LOGIN))
+        val user= usersService.getUser(tocken.userid) ?: throw DataThrowable().data(JsonResponse(false,NEED_LOGIN))
         return user
     }
 
@@ -49,14 +55,14 @@ open class BaseController {
             throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         }
         val source:BaseSource= if(user.source == 2){
-            userBookSourceMapper.getBookSource(bookSourceUrl,user.id!!)?.toBaseSource()
+            userBookSourceService.getBookSource(bookSourceUrl,user.id!!)?.toBaseSource()
         }else{
-            bookSourcemapper.getBookSource(bookSourceUrl)?.toBaseSource()
+            bookSourceService.getBookSource(bookSourceUrl)?.toBaseSource()
         }?: throw DataThrowable().data(JsonResponse(false, NOT_SOURCE))
         return Pair(user,source)
     }
 
-    fun getsource(accessToken:String?,  bookSourceUrl:String?,user: Users): BaseSource{
+    fun getsource(accessToken:String?,  bookSourceUrl:String?): BaseSource{
         return getsourceuser(accessToken,bookSourceUrl).second
     }
 
@@ -65,18 +71,18 @@ open class BaseController {
             throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         }
         val source:BaseSource= if(user.source == 2){
-            userBookSourceMapper.getBookSource(bookSourceUrl,user.id!!)?.toBaseSource()
+            userBookSourceService.getBookSource(bookSourceUrl,user.id!!)?.toBaseSource()
         }else{
-            bookSourcemapper.getBookSource(bookSourceUrl)?.toBaseSource()
+            bookSourceService.getBookSource(bookSourceUrl)?.toBaseSource()
         }?: throw DataThrowable().data(JsonResponse(false, NOT_SOURCE))
         return source
     }
 
     fun getsource( bookSourceUrl:String,user: Users): BaseSource?{
         val source:BaseSource?= if(user.source == 2){
-            userBookSourceMapper.getBookSource(bookSourceUrl,user.id!!)?.toBaseSource()
+            userBookSourceService.getBookSource(bookSourceUrl,user.id!!)?.toBaseSource()
         }else{
-            bookSourcemapper.getBookSource(bookSourceUrl)?.toBaseSource()
+            bookSourceService.getBookSource(bookSourceUrl)?.toBaseSource()
         }
         return source
     }
@@ -84,11 +90,11 @@ open class BaseController {
     fun  getallBookSourcelist(user: Users): List<BaseSource>{
         val list = mutableListOf<BaseSource>()
         if(user.source == 2){
-            userBookSourceMapper.getallBookSourcelist(user.id!!)?.forEach {
+            userBookSourceService.getallBookSourcelist(user.id!!)?.forEach {
                 list.add(it.toBaseSource())
             }
         }else{
-            bookSourcemapper.getallBookSourcelist()?.forEach {
+            bookSourceService.getallBookSourcelist()?.forEach {
                 list.add(it.toBaseSource())
             }
         }
@@ -99,11 +105,11 @@ open class BaseController {
     fun  getBookSourcelist(enabled: Boolean,user: Users): List<BaseSource>{
         val list = mutableListOf<BaseSource>()
         if(user.source == 2){
-            userBookSourceMapper.getBookSourcelist(enabled,user.id!!)?.forEach {
+            userBookSourceService.getBookSourcelist(enabled,user.id!!)?.forEach {
                 list.add(it.toBaseSource())
             }
         }else{
-            bookSourcemapper.getBookSourcelist(enabled)?.forEach {
+            bookSourceService.getBookSourcelist(enabled)?.forEach {
                 list.add(it.toBaseSource())
             }
         }

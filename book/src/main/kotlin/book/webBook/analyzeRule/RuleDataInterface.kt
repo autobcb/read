@@ -8,6 +8,7 @@ interface RuleDataInterface {
     var userid: String
 
     fun putVariable(key: String, value: String?): Boolean {
+        //println("putVariable key: $key value: $value")
         val keyExist = variableMap.contains(key)
         return when {
             value == null -> {
@@ -23,7 +24,7 @@ interface RuleDataInterface {
             }*/
 
             else -> {
-                variableMap.remove(key)
+                variableMap[key] = value
                 putBigVariable(key, value)
                 keyExist
             }
@@ -31,7 +32,7 @@ interface RuleDataInterface {
     }
 
     fun getVariable(key: String): String {
-        return variableMap[key] ?: getBigVariable(key) ?: ""
+        return( variableMap[key] ?: getBigVariable(key) ?: "")
     }
 
     fun putBigVariable(key: String, value: String?)

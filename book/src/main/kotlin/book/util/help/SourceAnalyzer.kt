@@ -81,6 +81,7 @@ object SourceAnalyzer {
                     loginUrl = jsonItem.readString("loginUrl")
                     loginUi = jsonItem.readString("loginUi")
                     loginCheckJs = jsonItem.readString("loginCheckJs")
+                    coverDecodeJs = jsonItem.readString("coverDecodeJs")
                     bookSourceComment = jsonItem.readString("bookSourceComment") ?: ""
                     bookUrlPattern = jsonItem.readString("ruleBookUrlPattern")
                     customOrder = jsonItem.readInt("serialNumber") ?: 0
@@ -184,6 +185,7 @@ object SourceAnalyzer {
                 source.enabledCookieJar=sourceAny.enabledCookieJar
                 source.phonehttp=sourceAny.phonehttp
                 source.loginCheckJs = sourceAny.loginCheckJs
+                source.coverDecodeJs =  sourceAny.coverDecodeJs
                 source.bookSourceComment = sourceAny.bookSourceComment
                 source.lastUpdateTime = sourceAny.lastUpdateTime
                 source.respondTime = sourceAny.respondTime
@@ -259,6 +261,7 @@ object SourceAnalyzer {
         var enabledCookieJar: Boolean?=false,
         var phonehttp: Boolean?=null,
         var variableComment:String?=null,
+        var coverDecodeJs: String? = null,
     )
 
     // default规则适配

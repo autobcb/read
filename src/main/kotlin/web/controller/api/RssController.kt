@@ -1,7 +1,6 @@
 package web.controller.api
 
 import book.app.App
-import book.model.BookSource
 import book.model.RssArticle
 import book.model.RssSource
 import book.util.GSON
@@ -10,7 +9,6 @@ import book.util.fromJsonArray
 import book.util.fromJsonObject
 import book.webBook.rss.Rss
 import book.webBook.sortUrls
-import jdk.internal.org.jline.utils.Colors.s
 import kotlinx.coroutines.runBlocking
 import org.apache.ibatis.solon.annotation.Db
 import org.noear.solon.annotation.Body
@@ -22,12 +20,12 @@ import org.noear.solon.core.util.DataThrowable
 import org.noear.solon.data.annotation.Tran
 import org.noear.solon.data.cache.CacheService
 import org.noear.solon.web.cors.annotation.CrossOrigin
-import web.mapper.RssSourceMapper
-import web.mapper.UserRssSourceMapper
 import web.model.BaseRssSource
 import web.model.UserRssSource
 import web.model.Users
 import web.response.*
+import web.service.RssSourceService
+import web.service.UserRssSourceService
 import java.util.*
 
 @Controller
@@ -35,13 +33,13 @@ import java.util.*
 @CrossOrigin(origins = "*")
 open class RssController :BaseController() {
 
-    @Db("db")
-    @Inject
-    lateinit var rssSourceMapper: RssSourceMapper
 
-    @Db("db")
     @Inject
-    lateinit var userRssSourceMapper: UserRssSourceMapper
+    lateinit var rssSourceService: RssSourceService
+
+
+    @Inject
+    lateinit var userRssSourceService: UserRssSourceService
 
     @Inject
     lateinit var cacheService: CacheService
@@ -54,17 +52,17 @@ open class RssController :BaseController() {
         val sources: MutableList<BaseRssSource> = mutableListOf()
         when (user.source) {
             0 -> {
-                rssSourceMapper.getEnabledSourcelist()?.forEach{
+                rssSourceService.getEnabledSourcelist()?.forEach{
                     sources.add(it.toBaseSource())
                 }
             }
             1 -> {
-                rssSourceMapper.getallSourcelist()?.forEach{
+                rssSourceService.getallSourcelist()?.forEach{
                     sources.add(it.toBaseSource())
                 }
             }
             else -> {
-                userRssSourceMapper.getallSourcelist(user.id!!)?.forEach{
+                userRssSourceService.getallSourcelist(user.id!!).forEach{
                     sources.add(it.toBaseSource())
                 }
             }
@@ -108,9 +106,9 @@ open class RssController :BaseController() {
             throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         }
         val bookSource= if(user.source == 2){
-            userRssSourceMapper.getRssSource(id,user.id!!)?.toBaseSource()
+            userRssSourceService.getRssSource(id,user.id!!)?.toBaseSource()
         }else{
-            rssSourceMapper.getRssSource(id)?.toBaseSource()
+            rssSourceService.getRssSource(id)?.toBaseSource()
         } ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
         JsonResponse(true).Data(mapOf(
             "json" to bookSource.json,
@@ -134,35 +132,37 @@ open class RssController :BaseController() {
             rsssource.sourceorder=9999
             if(content.id  != null && content.id!!.isNotEmpty()){
                 val bs=
-                    userRssSourceMapper.getRssSource(content.id!!,user.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+                    userRssSourceService.getRssSource(content.id!!,user.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
                 rsssource.sourceorder=bs.sourceorder
                 rsssource.createtime=bs.createtime
-                userRssSourceMapper.deleteById(content.id)
+                userRssSourceService.userRssSourceMapper.deleteById(content.id)
             }else{
-                val bs=userRssSourceMapper.getRssSource(rsssource.sourceUrl,user.id!!)
+                val bs=userRssSourceService.getRssSource(rsssource.sourceUrl,user.id!!)
                 if (bs != null){
                     throw DataThrowable().data(JsonResponse(false, SOURCE_IS))
                 }
             }
             rsssource.enabled=source.enabled
-            userRssSourceMapper.insert(rsssource)
+            userRssSourceService.userRssSourceMapper.insert(rsssource)
+            userRssSourceService.cleancache(user.id)
         }else{
             val rsssource= web.model.RssSource().jsontomodel(source)
             rsssource.sourceorder=9999
             if(content.id  != null && content.id!!.isNotEmpty()){
                 val bs=
-                    rssSourceMapper.getRssSource(content.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+                    rssSourceService.getRssSource(content.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
                 rsssource.sourceorder=bs.sourceorder
                 rsssource.createtime=bs.createtime
-                rssSourceMapper.deleteById(bs.id)
+                rssSourceService.rssSourceMapper.deleteById(bs.id)
             }else{
-                val bs=rssSourceMapper.getRssSource(source.sourceUrl)
+                val bs=rssSourceService.getRssSource(source.sourceUrl)
                 if (bs != null){
                     throw DataThrowable().data(JsonResponse(false, SOURCE_IS))
                 }
             }
             rsssource.enabled=source.enabled
-            rssSourceMapper.insert(rsssource)
+            rssSourceService.rssSourceMapper.insert(rsssource)
+            rssSourceService.cleancache()
         }
 
         JsonResponse(true)
@@ -176,26 +176,26 @@ open class RssController :BaseController() {
             throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         }
         if(user.source == 2){
-            val rsssource= userRssSourceMapper.getRssSource(id,user.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
-            val sources = userRssSourceMapper.getallSourcelist(user.id!!)
+            val rsssource= userRssSourceService.getRssSource(id,user.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+            val sources = userRssSourceService.getallSourcelist(user.id!!)
             var order=1
-            for( it in sources!!){
+            for( it in sources){
                 if(it.sourceUrl == rsssource.sourceUrl){
-                    userRssSourceMapper.changeorder(it.id?:"", 0)
+                    userRssSourceService.changeorder(it.id?:"",user.id, 0)
                 }else{
-                    userRssSourceMapper.changeorder(it.id?:"", order)
+                    userRssSourceService.changeorder(it.id?:"",user.id, order)
                     order++
                 }
             }
         }else{
-            val rsssource= rssSourceMapper.getRssSource(id) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
-            val sources = rssSourceMapper.getallSourcelist()
+            val rsssource= rssSourceService.getRssSource(id) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+            val sources = rssSourceService.getallSourcelist()
             var order=1
             for( it in sources!!){
                 if(it.sourceUrl == rsssource.sourceUrl){
-                    rssSourceMapper.changeorder(it.sourceUrl, 0)
+                    rssSourceService.changeorder(it.sourceUrl, 0)
                 }else{
-                    rssSourceMapper.changeorder(it.sourceUrl, order)
+                    rssSourceService.changeorder(it.sourceUrl, order)
                     order++
                 }
             }
@@ -210,11 +210,13 @@ open class RssController :BaseController() {
             throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         }
         if(user.source == 2){
-            val rsssource= userRssSourceMapper.getRssSource(id,user.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
-            userRssSourceMapper.deleteById(rsssource.id?:"")
+            val rsssource= userRssSourceService.getRssSource(id,user.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+            userRssSourceService.userRssSourceMapper.deleteById(rsssource.id?:"")
+            userRssSourceService.cleancache(user.id)
         }else{
-            val rsssource= rssSourceMapper.getRssSource(id) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
-            rssSourceMapper.deleteById(rsssource.id?:"")
+            val rsssource= rssSourceService.getRssSource(id) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+            rssSourceService.rssSourceMapper.deleteById(rsssource.id?:"")
+            rssSourceService.cleancache()
         }
         JsonResponse(true)
     }
@@ -227,24 +229,24 @@ open class RssController :BaseController() {
             throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         }
         if(user.source == 2){
-            val rss= userRssSourceMapper.getRssSource(id,user.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+            val rss= userRssSourceService.getRssSource(id,user.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
             when(st){
                 "0"->{
-                    userRssSourceMapper.changeEnabled(rss.id!!,false)
+                    userRssSourceService.changeEnabled(rss.id!!,user.id,false)
                 }
                 "1"->{
-                    userRssSourceMapper.changeEnabled(rss.id!!,true)
+                    userRssSourceService.changeEnabled(rss.id!!,user.id,true)
                 }
                 else -> throw DataThrowable().data(JsonResponse(false, USE_ERROE))
             }
         }else{
-            rssSourceMapper.getRssSource(id) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+            rssSourceService.getRssSource(id) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
             when(st){
                 "0"->{
-                    rssSourceMapper.changeEnabled(id,false)
+                    rssSourceService.changeEnabled(id,false)
                 }
                 "1"->{
-                    rssSourceMapper.changeEnabled(id,true)
+                    rssSourceService.changeEnabled(id,true)
                 }
                 else -> throw DataThrowable().data(JsonResponse(false, USE_ERROE))
             }
@@ -259,15 +261,15 @@ open class RssController :BaseController() {
             ids?.forEach {
                 if (it.isNotBlank()){
                     val rss=
-                        userRssSourceMapper.getRssSource(it,user.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
-                    userRssSourceMapper.changeEnabled(rss.id!!,true)
+                        userRssSourceService.getRssSource(it,user.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+                    userRssSourceService.changeEnabled(rss.id!!,user.id,true)
                 }
             }
         }else{
             ids?.forEach {
                 if (it.isNotBlank()){
-                    rssSourceMapper.getRssSource(it) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
-                    rssSourceMapper.changeEnabled(it,true)
+                    rssSourceService.getRssSource(it) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+                    rssSourceService.changeEnabled(it,true)
                 }
             }
         }
@@ -281,15 +283,15 @@ open class RssController :BaseController() {
             ids?.forEach {
                 if (it.isNotBlank()){
                     val rss=
-                        userRssSourceMapper.getRssSource(it,user.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
-                    userRssSourceMapper.changeEnabled(rss.id!!,false)
+                        userRssSourceService.getRssSource(it,user.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+                    userRssSourceService.changeEnabled(rss.id!!,user.id,false)
                 }
             }
         }else{
             ids?.forEach {
                 if (it.isNotBlank()){
-                    rssSourceMapper.getRssSource(it) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
-                    rssSourceMapper.changeEnabled(it,false)
+                    rssSourceService.getRssSource(it) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+                    rssSourceService.changeEnabled(it,false)
                 }
             }
         }
@@ -302,9 +304,10 @@ open class RssController :BaseController() {
         ids?.forEach {id->
             if (id.isNotBlank()){
                 if(user.source == 2){
-                    userRssSourceMapper.delRssSource(id,user.id!!)
+                    userRssSourceService.delRssSource(id,user.id!!)
                 }else{
-                    rssSourceMapper.deleteById(MD5Utils.md5Encode(id))
+                    rssSourceService.rssSourceMapper.deleteById(MD5Utils.md5Encode(id))
+                    rssSourceService.cleancache()
                 }
             }
         }
@@ -318,9 +321,9 @@ open class RssController :BaseController() {
         ids?.forEach {
             if (it.isNotBlank()){
                 val rss=if(user.source == 2){
-                    userRssSourceMapper.getRssSource(it,user.id!!)?.toBaseSource()
+                    userRssSourceService.getRssSource(it,user.id!!)?.toBaseSource()
                 }else{
-                    rssSourceMapper.getRssSource(it)?.toBaseSource()
+                    rssSourceService.getRssSource(it)?.toBaseSource()
                 } ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
                 s = if(s == "[" ){
                     "$s ${rss.json}"
@@ -366,9 +369,9 @@ open class RssController :BaseController() {
     fun getRssType(accessToken:String?, id:String)= runBlocking{
         val user = getuserbytocken(accessToken)
         val rss=if(user.source == 2){
-            userRssSourceMapper.getRssSource(id,user.id!!)?.toBaseSource()
+            userRssSourceService.getRssSource(id,user.id!!)?.toBaseSource()
         }else{
-            rssSourceMapper.getRssSource(id)?.toBaseSource()
+            rssSourceService.getRssSource(id)?.toBaseSource()
         } ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
         val rssSource=RssSource.fromJson(rss.json?:"")
         rssSource.userid=user.id
@@ -415,9 +418,9 @@ open class RssController :BaseController() {
     fun  getArticles(accessToken:String?, id:String,sortUrl :String ,sortName:String,page:Int)= runBlocking{
         val user = getuserbytocken(accessToken)
         val rss=if(user.source == 2){
-            userRssSourceMapper.getRssSource(id,user.id!!)?.toBaseSource()
+            userRssSourceService.getRssSource(id,user.id!!)?.toBaseSource()
         }else{
-            rssSourceMapper.getRssSource(id)?.toBaseSource()
+            rssSourceService.getRssSource(id)?.toBaseSource()
         } ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
         val rssSource=RssSource.fromJson(rss.json?:"")
         rssSource.userid=user.id
@@ -444,9 +447,9 @@ open class RssController :BaseController() {
     fun  getRsssortUrls(accessToken:String?, id:String)= runBlocking{
         val user = getuserbytocken(accessToken)
         val rss=if(user.source == 2){
-            userRssSourceMapper.getRssSource(id,user.id!!)?.toBaseSource()
+            userRssSourceService.getRssSource(id,user.id!!)?.toBaseSource()
         }else{
-            rssSourceMapper.getRssSource(id)?.toBaseSource()
+            rssSourceService.getRssSource(id)?.toBaseSource()
         } ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
         val rssSource=RssSource.fromJson(rss.json?:"")
         kotlin.runCatching {
@@ -471,9 +474,9 @@ open class RssController :BaseController() {
 
         val user = getuserbytocken(accessToken)
         val rss=if(user.source == 2){
-            userRssSourceMapper.getRssSource(id,user.id!!)?.toBaseSource()
+            userRssSourceService.getRssSource(id,user.id!!)?.toBaseSource()
         }else{
-            rssSourceMapper.getRssSource(id)?.toBaseSource()
+            rssSourceService.getRssSource(id)?.toBaseSource()
         } ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
 
         kotlin.runCatching {
@@ -482,11 +485,10 @@ open class RssController :BaseController() {
             val rssSource=RssSource.fromJson(rss.json?:"")
             rssSource.userid=user.id
             rssSource.usertocken=accessToken
-            var body=""
-            if (rssSource.ruleDescription.isNullOrBlank()) {
-                body=Rss().getContent(rssArticle, rssSource.ruleContent?:"",rssSource)
+            var body: String = if (rssSource.ruleDescription.isNullOrBlank()) {
+                Rss().getContent(rssArticle, rssSource.ruleContent?:"",rssSource)
             }else{
-                body=rssArticle.description?:""
+                rssArticle.description?:""
             }
             val header=rssSource.getHeaderMap()
             if(body.isNotEmpty()){
@@ -513,9 +515,9 @@ open class RssController :BaseController() {
     open fun getRssLoginInfo(accessToken: String?, id: String) = run {
         val user = getuserbytocken(accessToken)
         val rss=if(user.source == 2){
-            userRssSourceMapper.getRssSource(id,user.id!!)?.toBaseSource()
+            userRssSourceService.getRssSource(id,user.id!!)?.toBaseSource()
         }else{
-            rssSourceMapper.getRssSource(id)?.toBaseSource()
+            rssSourceService.getRssSource(id)?.toBaseSource()
         } ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
         val rssSource=RssSource.fromJson(rss.json?:"")
         rssSource.userid = user.id
@@ -531,9 +533,9 @@ open class RssController :BaseController() {
     open fun putRssLoginInfo(accessToken: String?, id: String, info: String?) = run {
         val user = getuserbytocken(accessToken)
         val rss=if(user.source == 2){
-            userRssSourceMapper.getRssSource(id,user.id!!)?.toBaseSource()
+            userRssSourceService.getRssSource(id,user.id!!)?.toBaseSource()
         }else{
-            rssSourceMapper.getRssSource(id)?.toBaseSource()
+            rssSourceService.getRssSource(id)?.toBaseSource()
         } ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
         val rssSource=RssSource.fromJson(rss.json?:"")
         rssSource.userid = user.id
@@ -548,9 +550,9 @@ open class RssController :BaseController() {
         val user = getuserbytocken(accessToken)
         if(action == null) throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         val rss=if(user.source == 2){
-            userRssSourceMapper.getRssSource(id,user.id!!)?.toBaseSource()
+            userRssSourceService.getRssSource(id,user.id!!)?.toBaseSource()
         }else{
-            rssSourceMapper.getRssSource(id)?.toBaseSource()
+            rssSourceService.getRssSource(id)?.toBaseSource()
         } ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
         val rssSource=RssSource.fromJson(rss.json?:"")
         rssSource.userid = user.id
@@ -569,9 +571,9 @@ open class RssController :BaseController() {
     open fun getRssVariable(accessToken: String?, id: String) = run {
         val user = getuserbytocken(accessToken)
         val rss=if(user.source == 2){
-            userRssSourceMapper.getRssSource(id,user.id!!)?.toBaseSource()
+            userRssSourceService.getRssSource(id,user.id!!)?.toBaseSource()
         }else{
-            rssSourceMapper.getRssSource(id)?.toBaseSource()
+            rssSourceService.getRssSource(id)?.toBaseSource()
         } ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
         val rssSource=RssSource.fromJson(rss.json?:"")
         rssSource.userid = user.id
@@ -584,9 +586,9 @@ open class RssController :BaseController() {
     open fun setRssVariable(accessToken: String?, id: String, info: String?) = run {
         val user = getuserbytocken(accessToken)
         val rss=if(user.source == 2){
-            userRssSourceMapper.getRssSource(id,user.id!!)?.toBaseSource()
+            userRssSourceService.getRssSource(id,user.id!!)?.toBaseSource()
         }else{
-            rssSourceMapper.getRssSource(id)?.toBaseSource()
+            rssSourceService.getRssSource(id)?.toBaseSource()
         } ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
         val rssSource=RssSource.fromJson(rss.json?:"")
         rssSource.userid = user.id
@@ -610,32 +612,34 @@ open class RssController :BaseController() {
         }
         if(user.source == 2){
             val source=UserRssSource().jsontomodel(rss, userid = user.id!!)
-            userRssSourceMapper.getRssSource(rss.sourceUrl, userid = user.id!!).let {
+            userRssSourceService.getRssSource(rss.sourceUrl, userid = user.id!!).let {
                 if (it != null){
                     source.enabled=it.enabled
                     if(it.createtime != null){
                         source.createtime=it.createtime
                     }
-                    update += userRssSourceMapper.updateById(source)
+                    update += userRssSourceService.userRssSourceMapper.updateById(source)
                 }else{
                     source.sourceorder=9999
-                    insert += userRssSourceMapper.insert(source)
+                    insert += userRssSourceService.userRssSourceMapper.insert(source)
                 }
             }
+            userRssSourceService.cleancache(user.id)
         }else{
             val source= web.model.RssSource().jsontomodel(rss)
-            rssSourceMapper.getRssSource(rss.sourceUrl).let {
+            rssSourceService.getRssSource(rss.sourceUrl).let {
                 if (it != null){
                     source.enabled=it.enabled
                     if(it.createtime != null){
                         source.createtime=it.createtime
                     }
-                    update += rssSourceMapper.updateById(source)
+                    update += rssSourceService.rssSourceMapper.updateById(source)
                 }else{
                     source.sourceorder=9999
-                    insert += rssSourceMapper.insert(source)
+                    insert += rssSourceService.rssSourceMapper.insert(source)
                 }
             }
+            rssSourceService.cleancache()
         }
         Pair(insert, update)
     }

@@ -10,7 +10,7 @@ import web.model.Code
 import web.response.*
 import web.util.admin.getcodes
 import web.util.page.PageByAjax
-import java.util.*
+
 
 
 @Controller
@@ -23,8 +23,8 @@ open class CodeController {
 
     @Mapping("/seachcode")
     fun seachcode(where:String?, order:String?, @Param(defaultValue = "1") page:Int, @Param(defaultValue = "20") limit:Int) = run  {
-        var queryWrapper: QueryWrapper<Code> = QueryWrapper()
-        if(where != null && where.isNotBlank()){
+        val queryWrapper: QueryWrapper<Code> = QueryWrapper()
+        if(!where.isNullOrBlank()){
             queryWrapper.like("code",where)
         }
         PageByAjax(codeMapper,queryWrapper,page,limit,order)
@@ -54,14 +54,11 @@ open class CodeController {
     @Tran
     @Mapping("/delcode")
     fun delcode(code: String?) = run{
-        if (code == null || code.isBlank()){
+        if (code.isNullOrBlank()){
             throw DataThrowable().data(JsonResponse(isSuccess = false, errorMsg = NOT_BANK))
         }
-        var code=codeMapper.getCode(code)
-        if (code == null){
-            throw DataThrowable().data(JsonResponse(isSuccess = false, errorMsg = NOT_IS))
-        }
-        codeMapper.deleteById(code)
+        val ncode= codeMapper.getCode(code) ?: throw DataThrowable().data(JsonResponse(isSuccess = false, errorMsg = NOT_IS))
+        codeMapper.deleteById(ncode)
         JsonResponse(true)
     }
 
@@ -69,7 +66,7 @@ open class CodeController {
     fun delcodes(@Body ids:List<String>?) = run{
         ids?.forEach { id->
             if (id.isNotBlank()){
-                var code=codeMapper.getCode(id)
+                val code=codeMapper.getCode(id)
                 if (code != null){
                     codeMapper.deleteById(code)
                 }

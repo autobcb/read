@@ -3,6 +3,7 @@ package web.controller.api
 import org.noear.solon.annotation.Controller
 import org.noear.solon.annotation.Mapping
 import org.noear.solon.annotation.Path
+import org.noear.solon.core.handle.Context
 import org.noear.solon.core.util.DataThrowable
 import org.noear.solon.data.annotation.Cache
 import org.noear.solon.web.cors.annotation.CrossOrigin
@@ -16,6 +17,11 @@ import web.util.admin.passsign
 @CrossOrigin(origins = "*")
 open class UserController:BaseController() {
 
+    @Mapping("/appversion")
+    fun lookappversion()=run {
+        appversion
+    }
+
 
 
     @Mapping("/login")
@@ -23,7 +29,7 @@ open class UserController:BaseController() {
         if (username.isNullOrBlank() || password.isNullOrBlank() )  {
             throw DataThrowable().data(JsonResponse(false,NOT_BANK))
         }
-        val user: Users?=usersMapper.getUserByusername(username)
+        val user: Users?=usersService.getUserByusername(username)
         if (user == null || !user.password.equals(passsign( password))) {
             throw DataThrowable().data(JsonResponse(false,PASS_ERROR))
         }
@@ -33,15 +39,15 @@ open class UserController:BaseController() {
             throw DataThrowable().data(JsonResponse(false,"当前后端不支持您的app，请联系管理员更新后端"))
         }
 
-        val tockens=usertockenMapper.getUsertockens(user.id!!)
+        val tockens=usertockenService.getUsertockens(user.id!!)
         //登陆设备超过20个自动登出全部
         if(tockens != null && tockens.size >= 20){
-            usertockenMapper.delUsertockens(user.id!!)
+            usertockenService.delUsertockens(user.id!!)
         }
         val tocken=Usertocken().create()
         tocken.userid=user.id
         tocken.model=model?:""
-        usertockenMapper.insert(tocken)
+        usertockenService.usertockenMapper.insert(tocken)
 
         JsonResponse(true,"success").Data(mapOf("accessToken" to tocken.id))
     }
@@ -67,7 +73,7 @@ open class UserController:BaseController() {
         if (!user.password.equals(passsign( oldpassword))) {
             throw DataThrowable().data(JsonResponse(false,PASS_ERROR))
         }
-        usersMapper.changepass(user.id!!,passsign( password))
+        usersService.changepass(user.id!!,passsign( password))
 
         JsonResponse(true,"success")
     }
@@ -76,7 +82,7 @@ open class UserController:BaseController() {
     fun getalltocken( accessToken:String?) = run {
         val user=getuserbytocken(accessToken)
 
-        val tockens=usertockenMapper.getUsertockens(user.id!!)
+        val tockens=usertockenService.getUsertockens(user.id!!)
 
         JsonResponse(true,"success").Data(tockens)
     }

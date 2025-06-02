@@ -1,20 +1,21 @@
 package web.mapper
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper
-import org.apache.ibatis.annotations.Delete
-import org.apache.ibatis.annotations.Param
-import org.apache.ibatis.annotations.Select
-import org.apache.ibatis.annotations.Update
+import org.apache.ibatis.annotations.*
+import org.noear.solon.data.annotation.Cache
 import web.model.Users
 
+@Mapper
 interface  UsersMapper : BaseMapper<Users> {
+
+
     @Select("SELECT * FROM users WHERE id = #{id} LIMIT 1")
     fun getUser(@Param("id") id: String): Users?
 
     @Select("SELECT * FROM users")
     fun getAllUser(): List<Users>
 
-    @Select("SELECT * FROM users WHERE username = #{username}" )
+    @Select("SELECT * FROM users WHERE username = #{username} LIMIT 1" )
     fun getUserByusername(@Param("username") username: String): Users?
 
     @Select("SELECT * FROM users WHERE email = #{email}" )

@@ -123,6 +123,12 @@ class AnalyzeUrl(
         //debugLog?.log(source?. getKey(), ruleUrl)
     }
 
+    override fun toString(): String {
+        val hashCode = this.hashCode()
+        val hexHash = Integer.toHexString(hashCode)
+        val s="io.legado.app.model.analyzeRule.AnalyzeUrl@"+hexHash
+        return s
+    }
 
     private fun analyzeJs() {
         var start = 0
@@ -299,12 +305,13 @@ class AnalyzeUrl(
             chapter?.userid = userid
             ruleData?.userid = userid
         }
+        //println("put key: $key")
         chapter?.putVariable(key, value)
             ?: ruleData?.putVariable(key, value)
         return value
     }
 
-    private fun setCookie() {
+    fun setCookie() {
         val store=source?.getCookieManger()
         val cookie = (store?.getCookie(urlNoQuery))?:""
         if (cookie.isNotEmpty()) {
@@ -338,7 +345,7 @@ class AnalyzeUrl(
         if (type != null) {
             return StrResponse(url, StringUtils.byteToHexString(getByteArrayAwait()))
         }
-        logger.info("ajaxurl:$urlNoQuery")
+        logger.info("ajaxurl:$urlNoQuery,type:$type")
         var strResponse: StrResponse
         concurrentRateLimiter.withLimit{
             setCookie()
@@ -375,10 +382,12 @@ class AnalyzeUrl(
                                 headerMap["Content-Type"]="application/json; charset=UTF-8"
                             }
                         }
-                        return  App.post(url,body?:"" ,GSON.toJson(headerMap),getSource()?.usertocken?:"")
+                        val body=App.post(url,body?:"" ,GSON.toJson(headerMap),getSource()?.usertocken?:"",true)
+                        return  StrResponse(body.url,body.body())
                     }
                     else -> {
-                        return  App.get(url,GSON.toJson(headerMap),getSource()?.usertocken?:"")
+                        val body=App.get(url,GSON.toJson(headerMap),getSource()?.usertocken?:"",true)
+                        return  StrResponse(body.url,body.body())
                     }
                 }
             }else {
@@ -671,4 +680,5 @@ class AnalyzeUrl(
         var time: Long,
         var frequency: Int
     )
+
 }

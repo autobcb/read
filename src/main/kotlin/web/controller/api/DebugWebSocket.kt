@@ -4,17 +4,16 @@ import book.WBook.Debugger
 import book.webBook.WBook
 import com.google.gson.Gson
 import kotlinx.coroutines.runBlocking
-import org.apache.ibatis.solon.annotation.Db
 import org.noear.solon.annotation.Controller
 import org.noear.solon.annotation.Inject
 import org.noear.solon.net.annotation.ServerEndpoint
 import org.noear.solon.net.websocket.WebSocket
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import web.mapper.BookSourceMapper
-import web.mapper.UserBookSourceMapper
 import web.model.BaseSource
 import web.response.JsonResponse
+import web.service.BookSourceService
+import web.service.UserBookSourceService
 import java.io.IOException
 
 @Controller
@@ -22,13 +21,14 @@ import java.io.IOException
 open  class DebugWebSocket : BaseDebug() {
 
 
-    @Db("db")
-    @Inject
-    lateinit var booksourcemapper: BookSourceMapper
 
-    @Db("db")
     @Inject
-    lateinit var userBookSourceMapper: UserBookSourceMapper
+    lateinit var bookSourceService: BookSourceService
+
+
+    @Inject
+    lateinit var userBookSourceService: UserBookSourceService
+
 
     override val logger: Logger = LoggerFactory.getLogger(DebugWebSocket::class.java)
 
@@ -56,9 +56,9 @@ open  class DebugWebSocket : BaseDebug() {
             return@runBlocking
         }
         val bookSource: BaseSource?= if(user.source == 2){
-            userBookSourceMapper.getBookSource(msg.url!!,user.id!!)?.toBaseSource()
+            userBookSourceService.getBookSource(msg.url!!,user.id!!)?.toBaseSource()
         }else{
-            booksourcemapper.getBookSource(msg.url!!)?.toBaseSource()
+            bookSourceService.getBookSource(msg.url!!)?.toBaseSource()
         }
         if (bookSource == null){
             socket.send("event: error\n")

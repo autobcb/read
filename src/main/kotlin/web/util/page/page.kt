@@ -8,13 +8,13 @@ fun <T> Page(mapper: BaseMapper<T>,queryWrapper: QueryWrapper<T>,  _page:Int, _l
     val page=_page.let { if (_page<1 ) 0 else _page  }
     val limit=_limit.let { if (_limit <= 0 ) 20 else _limit  }
 
-    var count=mapper.selectCount(queryWrapper)
+    val count=mapper.selectCount(queryWrapper)
     if (count == 0.toLong()){
         return Triple(0,page,emptyList())
     }
 
     if (_order != null && _order.isNotBlank()){
-        var order=_order.trim().split(" ")
+        val order=_order.trim().split(" ")
         if (order.size > 2){
             throw PageException("排序错误")
         }
@@ -24,18 +24,18 @@ fun <T> Page(mapper: BaseMapper<T>,queryWrapper: QueryWrapper<T>,  _page:Int, _l
             queryWrapper.orderByDesc(order[0])
         }
     }
-    var rowBegin = (page - 1) * limit
+    val rowBegin = (page - 1) * limit
     if (rowBegin > 0){
         queryWrapper.last("LIMIT $limit offset $rowBegin")
     }else{
         queryWrapper.last("LIMIT $limit")
     }
 
-    var list=mapper.selectList(queryWrapper)
+    val list=mapper.selectList(queryWrapper)
     return Triple(count,page,list)
 }
 
 fun <T> PageByAjax(mapper: BaseMapper<T>,queryWrapper: QueryWrapper<T>,  _page:Int, _limit:Int, _order:String?):PageResponse{
-    var (count,page,data) = Page(mapper, queryWrapper, _page, _limit, _order)
+    val (count,page,data) = Page(mapper, queryWrapper, _page, _limit, _order)
     return PageResponse(count,page,data)
 }

@@ -9,7 +9,6 @@ import kotlinx.coroutines.sync.Semaphore
 import org.noear.solon.annotation.Inject
 import org.noear.solon.scheduling.annotation.Scheduled
 import org.slf4j.LoggerFactory
-import web.model.Booklist
 import web.util.mapper.mapper
 import web.util.read.updatebook
 
@@ -34,16 +33,16 @@ class BookJob: Runnable {
         logger.info("更新书本信息")
         isupdatebookcron = true
         runCatching {
-            val booklist = mapper.get().booklistMapper.selectList(QueryWrapper<Booklist>())
+            val booklist = mapper.get().booklistService.booklistMapper.selectList(QueryWrapper())
             booklist.forEach {
                 runCatching {
                     if(it.origin != "loc_book"){
-                        val user = mapper.get().usersMapper.selectById(it.userid)
+                        val user = mapper.get().usersService.getUser(it.userid)
                         if (user != null) {
                             val source = if(user.source == 2){
-                                mapper.get().userBookSourceMapper.getBookSource(it.origin?:"",user.id?:"")?.toBaseSource()
+                                mapper.get().userBookSourceService.getBookSource(it.origin?:"",user.id?:"")?.toBaseSource()
                             }else{
-                                mapper.get().bookSourcemapper.getBookSource(it.origin?:"")?.toBaseSource()
+                                mapper.get().bookSourceService.getBookSource(it.origin?:"")?.toBaseSource()
                             }
                             if (source != null ) {
                                 val book=it

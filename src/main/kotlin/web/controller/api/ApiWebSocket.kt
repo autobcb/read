@@ -7,7 +7,6 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
-import org.apache.ibatis.solon.annotation.Db
 import org.noear.solon.annotation.Controller
 import org.noear.solon.annotation.Inject
 import org.noear.solon.net.annotation.ServerEndpoint
@@ -15,8 +14,8 @@ import org.noear.solon.net.websocket.WebSocket
 import org.noear.solon.net.websocket.listener.SimpleWebSocketListener
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import web.mapper.UsersMapper
-import web.mapper.UsertockenMapper
+import web.service.UsersService
+import web.service.UsertockenService
 import web.util.ResponseManager
 import java.io.IOException
 
@@ -68,13 +67,11 @@ class ApiWebSocket : SimpleWebSocketListener() {
         }
     }
 
-    @Db("db")
     @Inject
-    lateinit var usersMapper: UsersMapper
+    lateinit var usersService: UsersService
 
-    @Db("db")
     @Inject
-    lateinit var usertockenMapper: UsertockenMapper
+    lateinit var usertockenService: UsertockenService
 
     override fun onOpen(socket: WebSocket) {
         val accessToken: String = socket.param("id")
@@ -84,7 +81,7 @@ class ApiWebSocket : SimpleWebSocketListener() {
             return
         }
 
-        val tocken=usertockenMapper.selectById(accessToken)
+        val tocken=usertockenService.getUsertocken(accessToken)
         if (tocken == null) {
             logger.info("websocket tocken is null")
             socket.send(Gson().toJson(ToastMessage(msg = "logout", str="logout" )))
@@ -92,7 +89,7 @@ class ApiWebSocket : SimpleWebSocketListener() {
             return
         }
 
-        val user=usersMapper.selectById(tocken.userid)
+        val user=usersService.getUser(tocken.userid)
         if (user == null) {
             logger.info("websocket user is null")
             socket.send(Gson().toJson(ToastMessage(msg = "logout", str="logout" )))

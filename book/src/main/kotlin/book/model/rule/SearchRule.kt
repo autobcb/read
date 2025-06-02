@@ -1,6 +1,8 @@
 package book.model.rule
 
 data class SearchRule(
+    /**校验关键字**/
+    var checkKeyWord: String? = null,
     override var bookList: String? = null,
     override var name: String? = null,
     override var author: String? = null,
@@ -10,6 +12,5 @@ data class SearchRule(
     override var updateTime: String? = null,
     override var bookUrl: String? = null,
     override var coverUrl: String? = null,
-    override var wordCount: String? = null,
-    var checkKeyWord: String? = null
+    override var wordCount: String? = null
 ) : BookListRule

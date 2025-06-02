@@ -9,7 +9,6 @@ import book.util.help.CookieStore
 import book.webBook.WBook
 import com.google.gson.Gson
 import kotlinx.coroutines.runBlocking
-import org.apache.ibatis.solon.annotation.Db
 import org.noear.solon.annotation.*
 import org.noear.solon.core.util.DataThrowable
 import org.noear.solon.data.annotation.Cache
@@ -18,14 +17,14 @@ import org.noear.solon.data.annotation.Tran
 import org.noear.solon.web.cors.annotation.CrossOrigin
 import web.controller.api.ReadController.Companion.setBookbycache
 import web.controller.api.ReadController.Companion.setChapterListbycache
-import web.mapper.BookCacheMapper
-import web.mapper.BookGroupMapper
-import web.mapper.BooklistMapper
 import web.model.BookCache
 import web.model.BookGroup
 import web.model.Booklist
 import web.model.Users
 import web.response.*
+import web.service.BookCacheService
+import web.service.BookGroupService
+import web.service.BooklistService
 import web.util.ResponseManager
 import web.util.hash.EncryptUtils
 import web.util.read.Bookcache
@@ -40,15 +39,14 @@ import kotlin.concurrent.thread
 @CrossOrigin(origins = "*")
 open class BookController:BaseController() {
 
-    @Db("db")
     @Inject
-    lateinit var booklistMapper: BooklistMapper
+    lateinit var booklistService: BooklistService
 
     @Inject
-    lateinit var bookGroupMapper: BookGroupMapper
+    lateinit var bookGroupService: BookGroupService
 
     @Inject
-    lateinit var bookCacheMapper: BookCacheMapper
+    lateinit var bookCacheService: BookCacheService
 
     fun search(accessToken:String?, bookSourceUrl:String?, page:Int?, key:String?,type:Int)= runBlocking{
         val (user,source)=getsourceuser(accessToken,bookSourceUrl)
@@ -100,8 +98,8 @@ open class BookController:BaseController() {
                 throw DataThrowable().data(JsonResponse(false,NOT_BANK))
             }
         }
-        val mybook=booklistMapper.getbook(user.id!!,book.bookUrl) ?: throw DataThrowable().data(JsonResponse(false,NO_BOOK))
-        booklistMapper.upbookinfo(mybook.id?:"",book.name,book.author,book.coverUrl?:"",book.intro?:"")
+        val mybook=booklistService.getbook(user.id!!,book.bookUrl) ?: throw DataThrowable().data(JsonResponse(false,NO_BOOK))
+        booklistService.upbookinfo(mybook.id?:"",user.id,book.name,book.author,book.coverUrl?:"",book.intro?:"")
         JsonResponse(true,SUCCESS)
     }
 
@@ -123,18 +121,19 @@ open class BookController:BaseController() {
             return@runBlocking JsonResponse(false,BOOKSEARCHERROR)
         }
         setBookbycache(book.bookUrl,new!!,user.id!!)
-        if (booklistMapper.getbook(user.id!!,booktolist.bookUrl!!) != null){
+        if (booklistService.getbook(user.id!!,booktolist.bookUrl!!) != null){
             return@runBlocking JsonResponse(false,BOOKIS)
         }
         new!!.type=book.type
 
-        booklistMapper.insert(booktolist.bookto(new!!,false).apply {
+        booklistService.booklistMapper.insert(booktolist.bookto(new!!,false).apply {
             this.useReplaceRule=(useReplaceRule == 1)
             val s= BookSource.fromJson(source.json).getOrNull()
             if(s != null && s.hasimageDecode() ){
                 this.imageDecode=true
             }
         })
+        booklistService.cleancache(user.id)
         thread {
             updatebook(booktolist, source,user.id!!)
         }
@@ -157,7 +156,7 @@ open class BookController:BaseController() {
             if (book.bookUrl.isBlank() || book.name.isBlank()){
                 continue
             }
-            if (booklistMapper.getbook(user.id!!,book.bookUrl) != null){
+            if (booklistService.getbook(user.id!!,book.bookUrl) != null){
                 continue
             }
             val type = when(book.type){
@@ -173,11 +172,12 @@ open class BookController:BaseController() {
                     0
                 }
             }
-            if (booklistMapper.getbooklistbynametype(user.id!!,book.name,book.author,type).isNotEmpty()){
+            if (booklistService.getbooklistbynametype(user.id!!,book.name,book.author,type).isNotEmpty()){
                 continue
             }
             val booktolist=Booklist.tobooklist(book,user.id!!)
-            num+=booklistMapper.insert(booktolist.bookto(book, canchangeindex = true))
+            num+=booklistService.booklistMapper.insert(booktolist.bookto(book, canchangeindex = true))
+            booklistService.cleancache(user.id)
         }
         JsonResponse(true, errorMsg = "共添加${num}本书")
     }
@@ -188,7 +188,7 @@ open class BookController:BaseController() {
         if (bookurl.isNullOrBlank()){
             throw DataThrowable().data(JsonResponse(false,NOT_BANK))
         }
-        val book=booklistMapper.getbook(user.id!!,bookurl).also {
+        val book=booklistService.getbook(user.id!!,bookurl).also {
             if(it == null){
                 throw DataThrowable().data(JsonResponse(false,NO_BOOK))
             }
@@ -222,7 +222,8 @@ open class BookController:BaseController() {
             book.bookto(new!!,false)
             val s= BookSource.fromJson(source.json).getOrNull()
             book.imageDecode = s != null && s.hasimageDecode()
-            booklistMapper.updateById(book)
+            booklistService.booklistMapper.updateById(book)
+            booklistService.cleancache(user.id)
         }.onFailure {
             return@runBlocking JsonResponse(false,it.message?:BOOKSEARCHERROR)
         }
@@ -279,7 +280,7 @@ open class BookController:BaseController() {
                 throw DataThrowable().data(JsonResponse(false,NOT_BANK))
             }
         }
-        val booktolist=booklistMapper.getbook(user.id!!,book.bookUrl).also {
+        val booktolist=booklistService.getbook(user.id!!,book.bookUrl).also {
             if(it == null){
                 throw DataThrowable().data(JsonResponse(false,NOT_BANK))
             }
@@ -290,10 +291,12 @@ open class BookController:BaseController() {
                 file.delete()
             }
         }
-        booklistMapper.deleteById(booktolist.id!!)
-        bookCacheMapper.getCache(user.id!!,booktolist.id!!).also {
+        booklistService.booklistMapper.deleteById(booktolist.id!!)
+        booklistService.cleancache(user.id)
+        bookCacheService.getCache(user.id!!,booktolist.id!!).also {
             if(it != null){
-                bookCacheMapper.deleteById(it.id)
+                bookCacheService.bookCacheMapper.deleteById(it.id)
+                bookCacheService.cleancache(user.id)
             }
         }
        JsonResponse(true,SUCCESS)
@@ -302,15 +305,15 @@ open class BookController:BaseController() {
     @Mapping("/updateuseReplaceRule")
     fun  updateuseReplaceRule( accessToken:String?, url: String ,useReplaceRule:Int?){
         val user=getuserbytocken(accessToken)
-        val book=booklistMapper.getbook(user.id!!,url).also {
+        val book=booklistService.getbook(user.id!!,url).also {
             if(it == null){
                 throw DataThrowable().data(JsonResponse(true))
             }
         }!!
         if (useReplaceRule == 1){
-            booklistMapper.uprule(book.id!!,true)
+            booklistService.uprule(book.id!!,user.id,true)
         }else{
-            booklistMapper.uprule(book.id!!,false)
+            booklistService.uprule(book.id!!,user.id,false)
         }
         JsonResponse(true,SUCCESS)
     }
@@ -318,7 +321,7 @@ open class BookController:BaseController() {
     @Mapping("/getcancache")
     open fun getcancache( accessToken:String?,  url: String)=run{
         val (user,booktolist)=getbook(accessToken,url)
-        val cache=bookCacheMapper.getCache(user.id!!,booktolist.id!!)
+        val cache=bookCacheService.getCache(user.id!!,booktolist.id!!)
         if(cache != null){
             throw DataThrowable().data(JsonResponse(false))
         }
@@ -328,13 +331,13 @@ open class BookController:BaseController() {
     @Mapping("/getcancachelist")
     open fun getcancachelist( accessToken:String?)=run{
         val user=getuserbytocken(accessToken)
-        JsonResponse(true).Data(bookCacheMapper.getlistbyuserid(user.id!!))
+        JsonResponse(true).Data(bookCacheService.getlistbyuserid(user.id!!))
     }
 
     @Mapping("/addCache")
     open fun addCache( accessToken:String?, url: String)=run{
         val (user,booktolist)=getbook(accessToken,url)
-        bookCacheMapper.getlistbyuserid(user.id!!).also { if(it.size >=  5) throw DataThrowable().data(JsonResponse(false,CACHE_ERROR))}
+        bookCacheService.getlistbyuserid(user.id!!).also { if(it.size >=  5) throw DataThrowable().data(JsonResponse(false,CACHE_ERROR))}
         if (booktolist.origin == "loc_book"){
             val cache= BookCache().create(user.id!!,booktolist)
             cache.num=booktolist.totalChapterNum
@@ -343,7 +346,8 @@ open class BookController:BaseController() {
                 list.add(i.toString())
             }
             cache.cacheindex= list.joinToString(",")
-            bookCacheMapper.insert(cache)
+            bookCacheService.bookCacheMapper.insert(cache)
+            bookCacheService.cleancache(user.id!!)
             JsonResponse(true)
         }else{
             val source = getsource(booktolist.origin?:"",user)
@@ -353,14 +357,15 @@ open class BookController:BaseController() {
             if((source.json).lowercase().contains("webview".lowercase())){
                 throw DataThrowable().data(JsonResponse(false,IS_WEBVIEW))
             }
-            val cache=bookCacheMapper.getCache(user.id!!,booktolist.id!!).let {
+            val cache=bookCacheService.getCache(user.id!!,booktolist.id!!).let {
                 if(it == null){
                     BookCache().create(user.id!!,booktolist)
                 }else{
                     throw DataThrowable().data(JsonResponse(false,CacheIS))
                 }
             }
-            bookCacheMapper.insert(cache)
+            bookCacheService.bookCacheMapper.insert(cache)
+            bookCacheService.cleancache(user.id)
             thread { Bookcache.addcache(cache.id!!) }
             JsonResponse(true,SUCCESS)
         }
@@ -369,11 +374,12 @@ open class BookController:BaseController() {
     @Mapping("/delCache")
     open fun delCache( accessToken:String?, id: String)=run{
         val user=getuserbytocken(accessToken)
-        val cache=bookCacheMapper.selectById(id)
+        val cache=bookCacheService.bookCacheMapper.selectById(id)
         if (cache == null || cache.userid != user.id){
             throw DataThrowable().data(JsonResponse(false,NOT_IS))
         }
-        bookCacheMapper.deleteById(cache.id!!)
+        bookCacheService.bookCacheMapper.deleteById(cache.id!!)
+        bookCacheService.cleancache(user.id)
         JsonResponse(true,SUCCESS)
     }
 
@@ -448,7 +454,7 @@ open class BookController:BaseController() {
     @Mapping("/getgroup")
     open fun getgroup( accessToken:String?)=run{
         val user=getuserbytocken(accessToken)
-        JsonResponse(true).Data(bookGroupMapper.getGroupbyuserid(user.id!!))
+        JsonResponse(true).Data(bookGroupService.getGroupbyuserid(user.id!!))
     }
 
     @Tran
@@ -458,10 +464,11 @@ open class BookController:BaseController() {
         if(name == null){
             throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         }
-        if(name == "全部"  || bookGroupMapper.getGroupbyName(user.id!!,name) != null) {
+        if(name == "全部"  || bookGroupService.getGroupbyName(user.id!!,name) != null) {
             throw DataThrowable().data(JsonResponse(isSuccess = false, errorMsg = GROUPIS))
         }
-        bookGroupMapper.insert(BookGroup().create(user.id!!,name))
+        bookGroupService.bookGroupMapper.insert(BookGroup().create(user.id!!,name))
+        bookGroupService.cleancache(user.id)
         JsonResponse(true)
     }
 
@@ -472,13 +479,14 @@ open class BookController:BaseController() {
         if(name == null){
             throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         }
-        val group=bookGroupMapper.getGroupbyName(user.id!!,name).also {
+        val group=bookGroupService.getGroupbyName(user.id!!,name).also {
             if(it == null){
                 throw DataThrowable().data(JsonResponse(false, NOT_IS))
             }
         }!!
-        bookGroupMapper.deleteById(group.id!!)
-        booklistMapper.delbookgroup(user.id!!,group.bookgroup!!)
+        bookGroupService.bookGroupMapper.deleteById(group.id!!)
+        bookGroupService.cleancache(user.id)
+        booklistService.delbookgroup(user.id!!,user.id,group.bookgroup!!)
         JsonResponse(true)
     }
 
@@ -489,14 +497,15 @@ open class BookController:BaseController() {
         if(oldname == null || newname == null){
             throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         }
-        val group=bookGroupMapper.getGroupbyName(user.id!!,oldname).also {
+        val group=bookGroupService.getGroupbyName(user.id!!,oldname).also {
             if(it == null){
                 throw DataThrowable().data(JsonResponse(false, NOT_IS))
             }
         }!!
         group.bookgroup=newname
-        bookGroupMapper.updateById(group)
-        booklistMapper.upbookgroup(user.id!!,oldname,newname)
+        bookGroupService.bookGroupMapper.updateById(group)
+        bookGroupService.cleancache(user.id)
+        booklistService.upbookgroup(user.id!!,oldname,newname)
         JsonResponse(true)
     }
 
@@ -508,18 +517,18 @@ open class BookController:BaseController() {
             throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         }
         if(name != null && name != "全部"){
-            bookGroupMapper.getGroupbyName(user.id!!,name).also {
+            bookGroupService.getGroupbyName(user.id!!,name).also {
                 if(it == null){
                     throw DataThrowable().data(JsonResponse(false, NOT_IS))
                 }
             }!!
         }
-        val book=booklistMapper.getbook(user.id!!,url).also {
+        val book=booklistService.getbook(user.id!!,url).also {
             if(it == null){
                 throw DataThrowable().data(JsonResponse(false, NOT_IS))
             }
         }!!
-        booklistMapper.changebookgroup(book.id!!,name?:"")
+        booklistService.changebookgroup(book.id!!,user.id,name?:"")
         JsonResponse(true)
     }
 
@@ -528,7 +537,7 @@ open class BookController:BaseController() {
         if(user.AllowCache != true){
             throw DataThrowable().data(JsonResponse(false,CAN_NOT))
         }
-        val booktolist=booklistMapper.getbook(user.id!!,url).also {
+        val booktolist=booklistService.getbook(user.id!!,url).also {
             if(it == null){
                 throw DataThrowable().data(JsonResponse(false,NOT_BANK))
             }

@@ -10,7 +10,13 @@ val jsonPath: ParseContext by lazy {
     )
 }
 
-fun ReadContext.readString(path: String): String? = this.read(path, String::class.java)
+fun ReadContext.readString(path: String): String? {
+    val str=this.read(path, String::class.java)
+    if(str == null || str.isEmpty()){
+        return null
+    }
+    return str
+}
 
 fun ReadContext.readBool(path: String): Boolean? = this.read(path, Boolean::class.java)
 

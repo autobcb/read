@@ -5,7 +5,6 @@ import book.model.BaseSource
 import book.util.*
 import book.util.AppConst.dateFormat
 import book.util.Base64
-import book.util.help.cookieJarHeader
 import book.util.http.*
 import book.webBook.Debug
 import book.webBook.DebugLog
@@ -137,6 +136,11 @@ interface JsExtensions: JsEncodeUtils  {
         }
         val header= GSON.toJson(headerMap)
         return App.webview(html,url,js,getSource()?.usertocken?:"",header)
+    }
+
+    fun webViewGetSource(html: String?, url: String?, js: String?, sourceRegex: String): String? {
+        logger.info("用了 webViewGetSource")
+        return  ""
     }
 
     /**
@@ -324,9 +328,9 @@ interface JsExtensions: JsEncodeUtils  {
     }
 
 
-    private fun  getrequestHeaders(urlStr: String, headers: Map<String, String>) : Map<String, String>{
+    private fun  getrequestHeaders(urlStr: String, headers: Map<String, String>) : MutableMap<String, String>{
         val cookie = (getSource()?.getCookieManger()?.getCookie(urlStr))?:""
-        return if (cookie.isNotEmpty()) {
+        val headerMap =if (cookie.isNotEmpty()) {
             var key="Cookie"
             headers.keys.forEach {
                 if(it.lowercase(Locale.getDefault()) == "Cookie".lowercase(Locale.getDefault())){
@@ -340,29 +344,44 @@ interface JsExtensions: JsEncodeUtils  {
                     put("Cookie", it)
                 }
             }
-        } else headers
+        } else headers.toMutableMap()
+        return headerMap
     }
 
     /**
      * js实现重定向拦截,网络访问get
      */
     fun get(urlStr: String, headers: Map<String, String>): Connection.Response {
+        if(getSource()?.phonehttp == true){
+            return  getusePhone(urlStr, headers)
+        }else{
+            val requestHeaders = getrequestHeaders(urlStr,headers)
+            logger.info("get:$urlStr,headers:${GSON.toJson(requestHeaders)}")
+            val rateLimiter = ConcurrentRateLimiter(getSource())
+            val response = rateLimiter.withLimitBlocking {
+                Jsoup.connect(urlStr)
+                    .sslSocketFactory(SSLHelper.unsafeSSLSocketFactory)
+                    .ignoreContentType(true)
+                    .followRedirects(false)
+                    .headers(requestHeaders)
+                    .method(Connection.Method.GET)
+                    .execute()
+            }
+            val source=getSource()
+            if(source?.enabledCookieJar == true) {
+                val store=getSource()?.getCookieManger()
+                store?.savejsonResponse(response)
+            }
+            return response
+        }
+    }
+
+    fun getusePhone(urlStr: String, headers: Map<String, String>): Connection.Response {
         val requestHeaders = getrequestHeaders(urlStr,headers)
-        logger.info("get:$urlStr,headers:${GSON.toJson(requestHeaders)}")
+        logger.info("getusePhone:$urlStr,headers:${GSON.toJson(requestHeaders)}")
         val rateLimiter = ConcurrentRateLimiter(getSource())
         val response = rateLimiter.withLimitBlocking {
-            Jsoup.connect(urlStr)
-                .sslSocketFactory(SSLHelper.unsafeSSLSocketFactory)
-                .ignoreContentType(true)
-                .followRedirects(false)
-                .headers(requestHeaders)
-                .method(Connection.Method.GET)
-                .execute()
-        }
-        val source=getSource()
-        if(source?.enabledCookieJar == true) {
-            val store=getSource()?.getCookieManger()
-            store?.savejsonResponse(response)
+            App.get(urlStr,GSON.toJson(requestHeaders),getSource()?.usertocken?:"",false)
         }
         return response
     }
@@ -373,22 +392,36 @@ interface JsExtensions: JsEncodeUtils  {
      * js实现重定向拦截,网络访问head,不返回Response Body更省流量
      */
     fun head(urlStr: String, headers: Map<String, String>): Connection.Response {
+        if(getSource()?.phonehttp == true){
+            return  headusePhone(urlStr, headers)
+        }else{
+            val requestHeaders = getrequestHeaders(urlStr,headers)
+            logger.info("head:$urlStr,headers:${GSON.toJson(requestHeaders)}")
+            val rateLimiter = ConcurrentRateLimiter(getSource())
+            val response = rateLimiter.withLimitBlocking {
+                Jsoup.connect(urlStr)
+                    .sslSocketFactory(SSLHelper.unsafeSSLSocketFactory)
+                    .ignoreContentType(true)
+                    .followRedirects(false)
+                    .headers(requestHeaders)
+                    .method(Connection.Method.HEAD)
+                    .execute()
+            }
+            val source=getSource()
+            if(source?.enabledCookieJar == true) {
+                val store=getSource()?.getCookieManger()
+                store?.savejsonResponse(response)
+            }
+            return response
+        }
+    }
+
+    fun headusePhone(urlStr: String, headers: Map<String, String>): Connection.Response {
         val requestHeaders = getrequestHeaders(urlStr,headers)
-        logger.info("head:$urlStr,headers:${GSON.toJson(requestHeaders)}")
+        logger.info("headusePhone:$urlStr,headers:${GSON.toJson(requestHeaders)}")
         val rateLimiter = ConcurrentRateLimiter(getSource())
         val response = rateLimiter.withLimitBlocking {
-            Jsoup.connect(urlStr)
-                .sslSocketFactory(SSLHelper.unsafeSSLSocketFactory)
-                .ignoreContentType(true)
-                .followRedirects(false)
-                .headers(requestHeaders)
-                .method(Connection.Method.HEAD)
-                .execute()
-        }
-        val source=getSource()
-        if(source?.enabledCookieJar == true) {
-            val store=getSource()?.getCookieManger()
-            store?.savejsonResponse(response)
+            App.head(urlStr,GSON.toJson(requestHeaders),getSource()?.usertocken?:"",false)
         }
         return response
     }
@@ -397,54 +430,99 @@ interface JsExtensions: JsEncodeUtils  {
      * 打开图片验证码对话框，等待返回验证结果
      */
     fun getVerificationCode(imageUrl: String): String = runBlocking{
-        logger.info("getVerificationCode:$imageUrl")
+        if(imageUrl.startsWith("data:image")){
+            logger.info("getVerificationCode:$imageUrl")
+            val code=App.getVerificationCode(imageUrl,getSource()?.usertocken?:"").trim()
+            logger.info("获取到code:$code")
+            code
+        }else{
+            if (getSource()?.phonehttp == true){
+                getVerificationCodeusePhone(imageUrl)
+            }else{
+                logger.info("getVerificationCode:$imageUrl")
+                val analyzeUrl = AnalyzeUrl(imageUrl, source = getSource(),debugLog = null)
+                val img=analyzeUrl.getByteArrayAwait()
+                val coverFile = "${MD5Utils.md5Encode16(getSource()?.getKey() +getSource()?.userid +"VerificationCode")}.jpg"
+                val relativeCoverUrl = Paths.get("assets", "", "codes", coverFile).toString()
+                val  url="/" + relativeCoverUrl
+                val coverUrl = Paths.get("", "storage", relativeCoverUrl).toString()
+                val file=File(coverUrl)
+                if (file.exists()) {
+                    file.delete()
+                }
+                FileUtils.writeBytes(coverUrl,img)
+                logger.info("url:$url")
+                val code=App.getVerificationCode(url+"?time=${LocalDateTime.now()}",getSource()?.usertocken?:"").trim()
+                logger.info("获取到code:$code")
+                code
+            }
+        }
+
+    }
+
+    fun getVerificationCodeusePhone(imageUrl: String): String = runBlocking{
+        logger.info("getVerificationCodeusePhone:$imageUrl")
         if(imageUrl.startsWith("data:image")){
             val code=App.getVerificationCode(imageUrl,getSource()?.usertocken?:"").trim()
             logger.info("获取到code:$code")
             code
         }else{
             val analyzeUrl = AnalyzeUrl(imageUrl, source = getSource(),debugLog = null)
-            val img=analyzeUrl.getByteArrayAwait()
-            val coverFile = "${MD5Utils.md5Encode16(getSource()?.getKey() +getSource()?.userid +"VerificationCode")}.jpg"
-            val relativeCoverUrl = Paths.get("assets", "", "codes", coverFile).toString()
-            val  url="/" + relativeCoverUrl
-            val coverUrl = Paths.get("", "storage", relativeCoverUrl).toString()
-            val file=File(coverUrl)
-            if (file.exists()) {
-                file.delete()
-            }
-            FileUtils.writeBytes(coverUrl,img)
-            logger.info("url:$url")
-            val code=App.getVerificationCode(url+"?time=${LocalDateTime.now()}",getSource()?.usertocken?:"").trim()
+            analyzeUrl.setCookie()
+            val code=App.getVerificationCodeusePhone(imageUrl, GSON.toJson(analyzeUrl.headerMap),getSource()?.usertocken?:"").trim()
             logger.info("获取到code:$code")
             code
         }
-
     }
+
 
     /**
      * 网络访问post
      */
     fun post(urlStr: String, body: String, headers: Map<String, String>): Connection.Response {
-        val requestHeaders = getrequestHeaders(urlStr,headers)
-        logger.info("post:$urlStr,body:$body,headers:${GSON.toJson(requestHeaders)}")
-        val rateLimiter = ConcurrentRateLimiter(getSource())
-        val response = rateLimiter.withLimitBlocking {
-            Jsoup.connect(urlStr)
-                .sslSocketFactory(SSLHelper.unsafeSSLSocketFactory)
-                .ignoreContentType(true)
-                .followRedirects(false)
-                .requestBody(body)
-                .headers(requestHeaders)
-                .method(Connection.Method.POST)
-                .execute()
-        }
-        val source=getSource()
-        if(source?.enabledCookieJar == true) {
-            val store=getSource()?.getCookieManger()
-            store?.savejsonResponse(response)
-        }
+        if(getSource()?.phonehttp == true){
+            return postusePhone(urlStr,body,headers)
+        }else{
+            val requestHeaders = getrequestHeaders(urlStr,headers)
+            logger.info("post:$urlStr,body:$body,headers:${GSON.toJson(requestHeaders)}")
+            val rateLimiter = ConcurrentRateLimiter(getSource())
+            val response = rateLimiter.withLimitBlocking {
+                Jsoup.connect(urlStr)
+                    .sslSocketFactory(SSLHelper.unsafeSSLSocketFactory)
+                    .ignoreContentType(true)
+                    .followRedirects(false)
+                    .requestBody(body)
+                    .headers(requestHeaders)
+                    .method(Connection.Method.POST)
+                    .execute()
+            }
+            val source=getSource()
+            if(source?.enabledCookieJar == true) {
+                val store=getSource()?.getCookieManger()
+                store?.savejsonResponse(response)
+            }
 
+            return response
+        }
+    }
+
+    fun postusePhone(urlStr: String, body: String, headers: Map<String, String>): Connection.Response {
+        val requestHeaders = getrequestHeaders(urlStr,headers)
+        logger.info("postusePhone:$urlStr,body:$body,headers:${GSON.toJson(requestHeaders)}")
+        val rateLimiter = ConcurrentRateLimiter(getSource())
+        var key="Content-Type"
+        var value="application/x-www-form-urlencoded"
+        requestHeaders.keys.forEach {
+            if(it.lowercase(Locale.getDefault()) == "Content-Type".lowercase(Locale.getDefault())){
+                key = it
+                value=requestHeaders[it]?:""
+            }
+        }
+        requestHeaders.remove(key)
+        requestHeaders["Content-Type"]=value
+        val response = rateLimiter.withLimitBlocking {
+            App.post(urlStr,body,GSON.toJson(requestHeaders),getSource()?.usertocken?:"",false)
+        }
         return response
     }
 
@@ -853,6 +931,24 @@ interface JsExtensions: JsEncodeUtils  {
     fun randomUUID(): String {
         return UUID.randomUUID().toString()
     }
+
+    fun openUrl(url: String) {
+        openUrl(url, null)
+    }
+
+    // 新增 mimeType 参数，默认为 null（保持兼容性）
+    fun openUrl(url: String, mimeType: String? = null) {
+        /*val source = getSource() ?: throw NoStackTraceException("openUrl source cannot be null")
+        appCtx.startActivity<OpenUrlConfirmActivity> {
+            putExtra("uri", url)
+            putExtra("mimeType", mimeType)
+            putExtra("sourceOrigin", source.getKey())
+            putExtra("sourceName", source.getTag())
+        }*/
+        logger.info("openUrl: $url,mimeType: $mimeType")
+        App.openurl(url, mimeType,getSource()?.usertocken?:"")
+    }
+
 
 
 }

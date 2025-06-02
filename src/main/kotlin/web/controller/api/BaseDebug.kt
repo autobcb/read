@@ -9,15 +9,15 @@ import org.slf4j.LoggerFactory
 import web.mapper.UsersMapper
 import web.mapper.UsertockenMapper
 import web.model.Users
+import web.service.UsersService
+import web.service.UsertockenService
 
 open class BaseDebug: SimpleWebSocketListener()  {
-    @Db("db")
     @Inject
-    lateinit var usersMapper: UsersMapper
+    lateinit var usersService: UsersService
 
-    @Db("db")
     @Inject
-    lateinit var usertockenMapper: UsertockenMapper
+    lateinit var usertockenService: UsertockenService
 
     open val logger: Logger = LoggerFactory.getLogger(BaseDebug::class.java)
 
@@ -29,14 +29,14 @@ open class BaseDebug: SimpleWebSocketListener()  {
             return
         }
 
-        val tocken=usertockenMapper.selectById(accessToken)
+        val tocken=usertockenService.getUsertocken(accessToken)
         if (tocken == null) {
             logger.info("websocket tocken is null")
             socket.close()
             return
         }
 
-        val user=usersMapper.selectById(tocken.userid)
+        val user=usersService.getUser(tocken.userid)
         if (user == null) {
             logger.info("websocket user is null")
             socket.close()
@@ -48,8 +48,8 @@ open class BaseDebug: SimpleWebSocketListener()  {
         if (accessToken.isNullOrBlank()) {
             return null
         }
-        val tocken= usertockenMapper.selectById(accessToken) ?: return null
-        val user= usersMapper.selectById(tocken.userid) ?: return null
+        val tocken= usertockenService.getUsertocken(accessToken) ?: return null
+        val user= usersService.getUser(tocken.userid) ?: return null
         return user
     }
 }

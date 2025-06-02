@@ -1,7 +1,6 @@
 package web.util.admin
 
 import org.noear.solon.core.handle.Context
-import web.model.Code
 import web.util.hash.Sha256
 import java.util.*
 
@@ -29,11 +28,7 @@ fun logout(ctx: Context) {
 }
 
 fun islogin(ctx: Context) :Boolean =run{
-    if(ctx.session("username") != null && ctx.session("username").toString().isNotBlank()){
-        true
-    }else{
-        false
-    }
+    ctx.session("username") != null && ctx.session("username").toString().isNotBlank()
 }
 
 fun getMailCode():String{
@@ -43,8 +38,8 @@ fun getMailCode():String{
 
 
 fun getcodes(num:Int):MutableList<String>{
-    var codes = mutableListOf<String>()
-    var date=  Date().time
+    val codes = mutableListOf<String>()
+    val date=  Date().time
     for(i in 1..num){
         val randoms = getRandomString(6)
         val code= "$date$randoms"

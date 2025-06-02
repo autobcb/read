@@ -11,7 +11,7 @@ interface UserRssSourceMapper : BaseMapper<UserRssSource> {
 
 
     @Select("SELECT * FROM user_rss_source  WHERE userid = #{userid} order by sourceorder asc")
-    fun getallSourcelist(@Param("userid") userid: String): List<UserRssSource>?
+    fun getallSourcelist(@Param("userid") userid: String): List<UserRssSource>
 
 
     @Select("SELECT * FROM user_rss_source WHERE source_url = #{source_url} and userid = #{userid} LIMIT 1")

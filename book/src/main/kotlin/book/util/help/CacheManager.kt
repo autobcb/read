@@ -32,6 +32,7 @@ fun hash(algorithm: String, srcStr: String): String {
 
 }
 
+val memoryLruCache:MyCache = MyCache(50)
 
 @Suppress("unused")
 class CacheManager(val userid:String) {
@@ -41,10 +42,6 @@ class CacheManager(val userid:String) {
     private val ruleDataDir = FileUtils.createFolderIfNotExist(appCtx.externalFiles, "cache")
     private val cahceData = FileUtils.createFolderIfNotExist(ruleDataDir, "cache",userid)
 
-    /**
-     * 最多只缓存50M的数据,防止OOM
-     */
-     val memoryLruCache:MyCache = MyCache(50)
 
     private fun setcache(_key:String,value:String){
         val key= Md5(_key)
@@ -104,7 +101,7 @@ class CacheManager(val userid:String) {
 
     fun get(key: String): String? {
        // println("getkey: $key")
-        var v=getcache(key)
+        val v=getcache(key)
         var re:String?= null
         runCatching {
             if (v != null && v.isNotBlank()) {
@@ -114,9 +111,9 @@ class CacheManager(val userid:String) {
                 }
             }
         }
-        if(re == null){
+        //if(re == null){
             //println("get cache error,key:$key")
-        }
+        //}
         if(re == "undefined"){
             return null
         }
@@ -169,5 +166,12 @@ class CacheManager(val userid:String) {
             }
             deleteMemory(key)
         }
+    }
+
+    override fun toString(): String {
+        val hashCode = this.hashCode()
+        val hexHash = Integer.toHexString(hashCode)
+        val s="io.legado.app.help.CacheManager@"+hexHash
+        return s
     }
 }

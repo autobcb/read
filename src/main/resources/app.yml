@@ -12,10 +12,13 @@ solon.logging:
 mybatis.db:
   typeAliases:    #支持包名 或 类名 //支持 ** 和 *
     - "web.model"
-  #        - "demo4031.*.AppxModel"
   mappers:        #支持包名 或 类名 或 xml（.xml结尾）//支持 ** 和 *
     - "web.mapper"
-  #        - "classpath:demo4031/dso/mapper/*.xml"
+  configuration:
+    cache-enabled: true  # 开启二级缓存
+mybatis-plus:
+  configuration:
+    cache-enabled: true  # 开启二级缓存
 solon.config.add: "./conf.yml"
 cache:
   driverType: "local"
@@ -25,8 +28,7 @@ solon.serialization.json:
   dateAsTimeZone: 'GMT+8' #配置时区
   dateAsTicks: false #将date转为毫秒数（和 dateAsFormat 二选一）
 server.http:
-  coreThreads: x2
-  ioBound: true
+  coreThreads: x5
 server.request:
   maxBodySize: 50mb
   maxFileSize: 50mb

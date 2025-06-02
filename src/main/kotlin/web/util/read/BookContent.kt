@@ -48,6 +48,7 @@ object  BookContent {
         remove(key).let { "" }
     }
 
+    @Suppress("DeferredResultUnused")
     private suspend fun remove(key:String){
         mutex.withLock {
             ma.remove(key)
@@ -68,7 +69,7 @@ object  BookContent {
           }
           // println("目录链接1 ${chapterlist[index].baseUrl}")
           //println("目录链接 ${chapterlist[index].url}")
-         val systembook=mapper.get().booklistMapper.getbook(user.id!!,url)
+         val systembook=mapper.get().booklistService.getbook(user.id!!,url)
           if(systembook!=null){
              // println("获取阅读进度1:${url},index:${systembook.durChapterIndex}")
               book.durChapterIndex=systembook.durChapterIndex?:0

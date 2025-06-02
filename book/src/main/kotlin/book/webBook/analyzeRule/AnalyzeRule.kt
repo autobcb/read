@@ -35,6 +35,13 @@ class AnalyzeRule(
     private val source: BaseSource? = null
 ):JsExtensions {
 
+    override fun toString(): String {
+        val hashCode = this.hashCode()
+        val hexHash = Integer.toHexString(hashCode)
+        val s="io.legado.app.model.analyzeRule.AnalyzeRule@"+hexHash
+        return s
+    }
+
     override val logger: Logger
         get() =  LoggerFactory.getLogger(AnalyzeRule::class.java)
 
@@ -689,6 +696,7 @@ class AnalyzeRule(
             book?.userid = userid
             ruleData?.userid = userid
         }
+        //println("put2: $key: $value")
         chapter?.putVariable(key, value)
             ?: book?.putVariable(key, value)
             ?: ruleData?.putVariable(key, value)
@@ -711,6 +719,7 @@ class AnalyzeRule(
             book?.userid = userid
             ruleData?.userid = userid
         }
+        //println("get key: $key")
         return ( chapter?.getVariable(key)?.takeIf { it.isNotEmpty() }
             ?: book?.getVariable(key)?.takeIf { it.isNotEmpty() }
             ?: ruleData?.getVariable(key)?.takeIf { it.isNotEmpty() }

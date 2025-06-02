@@ -35,9 +35,9 @@ interface BaseBook: RuleDataInterface {
 //    }
 
     override fun putVariable(key: String, value: String?): Boolean {
-        if (super.putVariable(key, value)) {
-            variable = GSON.toJson(variableMap)
-        }
+        //println("book put variable $key $value")
+        super.putVariable(key, value)
+        variable = GSON.toJson(variableMap)
         return true
     }
 

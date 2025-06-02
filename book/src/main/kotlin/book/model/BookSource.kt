@@ -5,6 +5,7 @@ import book.util.AppPattern.JS_PATTERN
 import book.util.GSON
 import book.util.fromJsonArray
 import book.util.fromJsonObject
+import book.util.help.RuleBigDataHelp
 import book.util.help.SourceAnalyzer
 import book.util.isJsonArray
 import book.webBook.DebugLog
@@ -44,6 +45,7 @@ class BookSource(
     var ruleToc: TocRule? = null,                   // 目录页规则
     var ruleContent: ContentRule? = null,            // 正文页规则
     var bookSourceComment: String? = null,           // 注释
+    var coverDecodeJs: String? = null,
     var respondTime: Long = 180000L,               // 响应时间，用于排序
     override var jsLib:String?=null,
     override var enabledCookieJar: Boolean?=false,
@@ -116,12 +118,19 @@ class BookSource(
         return ruleContent ?: ContentRule()
     }
 
-    fun  exploreKinds():String{
+    fun  exploreKinds(need:Boolean):String{
         val exploreUrl = exploreUrl
         if (exploreUrl.isNullOrBlank()) {
             return ""
         }
-        var list = mutableListOf<Any>()
+        if(!need){
+            val str=RuleBigDataHelp.getSourceVariable(getKey(),userid?:"","exploreKinds")
+            if(!str.isNullOrBlank()){
+                return str
+            }
+        }
+        println("获取发现:$bookSourceUrl")
+        val list = mutableListOf<Any>()
         var ruleStr:String = exploreUrl
         runCatching {
             val jsMatcher = JS_PATTERN.matcher(ruleStr)
@@ -151,6 +160,7 @@ class BookSource(
         }.onFailure {
            it.printStackTrace()
         }
+        RuleBigDataHelp.putSourceVariable(getKey(),userid?:"","exploreKinds",ruleStr)
         return ruleStr
     }
 
@@ -207,6 +217,7 @@ class BookSource(
     }
 
     class Converters {
+
 
         fun exploreRuleToString(exploreRule: ExploreRule?): String =
             GSON.toJson(exploreRule)

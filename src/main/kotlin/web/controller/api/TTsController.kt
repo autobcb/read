@@ -7,7 +7,6 @@ import book.util.MD5Utils
 import book.util.fromJsonArray
 import book.webBook.WBook
 import kotlinx.coroutines.runBlocking
-import org.apache.ibatis.solon.annotation.Db
 import org.noear.solon.annotation.Body
 import org.noear.solon.annotation.Controller
 import org.noear.solon.annotation.Inject
@@ -16,10 +15,10 @@ import org.noear.solon.core.handle.Context
 import org.noear.solon.core.util.DataThrowable
 import org.noear.solon.data.annotation.Tran
 import org.noear.solon.web.cors.annotation.CrossOrigin
-import web.mapper.HttpTTSMapper
 import web.model.HttpTts
 import web.model.Users
 import web.response.*
+import web.service.HttpTTSService
 import java.io.File
 import java.nio.file.Paths
 
@@ -28,9 +27,9 @@ import java.nio.file.Paths
 @Mapping(routepath)
 @CrossOrigin(origins = "*")
 open class TTsController : BaseController() {
-    @Db("db")
+
     @Inject
-    lateinit var httpTTSMapper: HttpTTSMapper
+    lateinit var httpTTSService: HttpTTSService
 
     @Inject(value = "\${default.tts:}", autoRefreshed=true)
     var tts:String=""
@@ -47,32 +46,34 @@ open class TTsController : BaseController() {
         val user = getuserbytocken(accessToken)
         if(tts.name.isBlank() || tts.url.isBlank()) throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         if(tts.id.isNullOrBlank()){
-            httpTTSMapper.getttsbyname(user.id!!,tts.name).also {
+            httpTTSService.getttsbyname(user.id!!,tts.name).also {
                 if(it.isNotEmpty()){
                     throw DataThrowable().data(JsonResponse(false, NAME_ERROR))
                 }
             }
             tts.create(user.id!!,tts.name)
-            httpTTSMapper.insert(tts)
+            httpTTSService.httpTTSMapper.insert(tts)
         }else{
-            httpTTSMapper.getttsbyname(user.id!!,tts.name).forEach{
+            httpTTSService.getttsbyname(user.id!!,tts.name).forEach{
                 if(it.id != tts.id){
                     throw DataThrowable().data(JsonResponse(false, NAME_ERROR))
                 }
             }
             tts.create(user.id!!,tts.name)
-            httpTTSMapper.deleteById(tts.id)
-            httpTTSMapper.insert(tts)
+            httpTTSService.httpTTSMapper.deleteById(tts.id)
+            httpTTSService.httpTTSMapper.insert(tts)
         }
+        httpTTSService.cleancache(user.id)
         JsonResponse(true)
     }
 
     @Mapping("/deltts")
     fun deltts(accessToken:String?,id: String?) = run{
         val user = getuserbytocken(accessToken)
-        val tts= httpTTSMapper.gettts(id?:throw DataThrowable().data(JsonResponse(false, NOT_BANK)) ,user.id!!) ?:
+        val tts= httpTTSService.gettts(id?:throw DataThrowable().data(JsonResponse(false, NOT_BANK)) ,user.id!!) ?:
         throw DataThrowable().data(JsonResponse(false, NOT_IS))
-        httpTTSMapper.deleteById(tts.id)
+        httpTTSService.httpTTSMapper.deleteById(tts.id)
+        httpTTSService.cleancache(user.id)
         JsonResponse(true)
     }
 
@@ -81,11 +82,12 @@ open class TTsController : BaseController() {
         val user = getuserbytocken(accessToken)
         ids?.forEach {id->
             if (id.isNotBlank()){
-                httpTTSMapper.gettts2(id,user.id!!)?.let {
-                    if(it.isNotEmpty()) httpTTSMapper.deleteById(id)
+                httpTTSService.gettts(id,user.id!!)?.let {
+                    httpTTSService.httpTTSMapper.deleteById(id)
                 }
             }
         }
+        httpTTSService.cleancache(user.id)
         JsonResponse(true)
     }
 
@@ -93,7 +95,7 @@ open class TTsController : BaseController() {
     fun getalltts(accessToken:String?) = run{
         val user = getuserbytocken(accessToken)
         val list:MutableList<HttpTts> = mutableListOf()
-        httpTTSMapper.getalltts(user.id!!).forEach{
+        httpTTSService.getalltts(user.id!!).forEach{
             var loginUi=it.loginUi
             if(!loginUi.isNullOrEmpty()){
                 kotlin.runCatching {
@@ -130,7 +132,7 @@ open class TTsController : BaseController() {
         var rate=speechRate?:5.0
         if (rate < 5) rate=5.0
         if(rate > 50) rate=50.0
-        val tts= (httpTTSMapper.selectById(id)?:throw Exception(NOT_BANK)).totts()
+        val tts= (httpTTSService.httpTTSMapper.selectById(id)?:throw Exception(NOT_BANK)).totts()
         tts.userid=user.id
         tts.usertocken=accessToken
         if(tts.contentType.isNullOrBlank()){
@@ -152,7 +154,7 @@ open class TTsController : BaseController() {
     @Mapping("/getttsLoginInfo")
     open fun getLoginInfo(accessToken: String?, id: String?) = run {
         val user = getuserbytocken(accessToken)
-        val tts=(httpTTSMapper.selectById(id)?:throw DataThrowable().data(JsonResponse(false, NOT_IS) )).totts()
+        val tts=(httpTTSService.httpTTSMapper.selectById(id)?:throw DataThrowable().data(JsonResponse(false, NOT_IS) )).totts()
         tts.userid = user.id
         tts.usertocken = accessToken
         var info = tts.getLoginInfo()
@@ -166,7 +168,7 @@ open class TTsController : BaseController() {
     @Mapping("/putttsLoginInfo")
     open fun putLoginInfo(accessToken: String?, id: String?, info: String?) = run {
         val user = getuserbytocken(accessToken)
-        val tts=(httpTTSMapper.selectById(id)?:throw DataThrowable().data(JsonResponse(false, NOT_IS) )).totts()
+        val tts=(httpTTSService.httpTTSMapper.selectById(id)?:throw DataThrowable().data(JsonResponse(false, NOT_IS) )).totts()
         tts.userid = user.id
         tts.usertocken = accessToken
         tts.putLoginInfo(info ?: "{}")
@@ -178,7 +180,7 @@ open class TTsController : BaseController() {
     open fun action(accessToken: String?, id: String?, action: String?) = runBlocking {
         val user = getuserbytocken(accessToken)
         if(action == null) throw DataThrowable().data(JsonResponse(false, NOT_BANK))
-        val tts=(httpTTSMapper.selectById(id)?:throw DataThrowable().data(JsonResponse(false, NOT_IS) )).totts()
+        val tts=(httpTTSService.httpTTSMapper.selectById(id)?:throw DataThrowable().data(JsonResponse(false, NOT_IS) )).totts()
         tts.userid = user.id
         tts.usertocken = accessToken
         kotlin.runCatching {
@@ -210,18 +212,19 @@ open class TTsController : BaseController() {
         if(tts.name.isEmpty()){
             return  Pair(insert, update)
         }
-        httpTTSMapper.getttsbyname(user.id!!,tts.name).let {
+        httpTTSService.getttsbyname(user.id!!,tts.name).let {
             if (it.isNotEmpty()){
                 val r=it[0]
                 tts.id=r.id
                 tts.userid=r.userid
                 tts.name = r.name
-                update+=httpTTSMapper.updateById(tts)
+                update+=httpTTSService.httpTTSMapper.updateById(tts)
             }else{
                 tts.create(user.id!!,tts.name)
-                insert+= httpTTSMapper.insert(tts)
+                insert+= httpTTSService.httpTTSMapper.insert(tts)
             }
         }
+        httpTTSService.cleancache(user.id)
         Pair(insert, update)
     }
 }

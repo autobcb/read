@@ -77,18 +77,7 @@ data class SearchBook(
         }
     }
 
-    override fun getVariable(key: String): String {
-        val value = super.getVariable(key)
-        if(value.isEmpty() && !bookUrl.startsWith("searchbook")){
-            return  getSearchBook(userid,origin).getVariable(key)
-        }
-        return  value
-    }
 
-    companion object{
-        fun  getSearchBook(userid: String,origin: String): SearchBook{
-            return SearchBook(userid = userid,origin = origin,bookUrl = "searchbook$origin")
-        }
-    }
+
 
 }

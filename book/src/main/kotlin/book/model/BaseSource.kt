@@ -213,6 +213,7 @@ interface BaseSource : JsExtensions {
      * 保存数据
      */
     fun put(key: String, value: String): String {
+       // println("sourceput: $key: $value")
         RuleBigDataHelp.putSourceVariable(getKey(),userid?:"","getv_${key}",value)
         return value
     }

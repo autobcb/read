@@ -16,11 +16,9 @@ import web.controller.api.ReadController.Companion.setBookContentbycache
 import web.controller.api.ReadController.Companion.setBookbycache
 import web.controller.api.ReadController.Companion.setChapterListbycache
 import web.model.BaseSource
-import web.model.BookSource
 import web.model.Users
 import web.util.mapper.mapper
 import java.lang.Thread.sleep
-import java.util.*
 
 object Bookcache {
 
@@ -29,13 +27,13 @@ object Bookcache {
 
     private val logger = LoggerFactory.getLogger(Bookcache::class.java)
 
-    val semaphore = Semaphore(10)
+    private val semaphore = Semaphore(10)
 
-    val semaphore2 = Semaphore(50)
+    private val semaphore2 = Semaphore(50)
 
      fun  addcache(key:String) = runBlocking {
-        var deferred: Deferred<Any>? = null
-        mutex.withLock {
+        var deferred: Deferred<Any>?
+         mutex.withLock {
             deferred= ma[key]
         }
         if(deferred == null) {
@@ -50,7 +48,8 @@ object Bookcache {
         }
     }
 
-    suspend fun  removecache(key:String) {
+    @Suppress("DeferredResultUnused")
+    private suspend fun  removecache(key:String) {
         logger.info("缓存完成remove $key")
         mutex.withLock {
             ma.remove(key)
@@ -58,28 +57,26 @@ object Bookcache {
     }
 
     fun cache(id:String) = runBlocking {
-        var cache=mapper.get().bookCacheMapper.selectById(id)
+        val cache=mapper.get().bookCacheService.bookCacheMapper.selectById(id)
         if(cache != null ) {
             var zx=(cache.num ?: 0) < (cache.totalChapterNum ?: 0)
-            var user=mapper.get().usersMapper.selectById(cache.userid)
-            if (user == null) return@runBlocking
-            var book=mapper.get().booklistMapper.selectById(cache.bookid)
-            if (book == null) return@runBlocking
+            val user= mapper.get().usersService.getUser(cache.userid) ?: return@runBlocking
+            val book= mapper.get().booklistService.booklistMapper.selectById(cache.bookid) ?: return@runBlocking
             var source:BaseSource? = null
             if(book.origin != "loc_book"){
                 source = if(user.source == 2){
-                    mapper.get().userBookSourceMapper.getBookSource(book.origin?:"",user.id?:"")?.toBaseSource()
+                    mapper.get().userBookSourceService.getBookSource(book.origin?:"",user.id?:"")?.toBaseSource()
                 }else{
-                    mapper.get().bookSourcemapper.getBookSource(book.origin?:"")?.toBaseSource()
+                    mapper.get().bookSourceService.getBookSource(book.origin?:"")?.toBaseSource()
                 }
                 if (source == null) return@runBlocking
             }
 
             val jobs = mutableListOf<Job>()
             cache.num=0
-            var list = (cache.cacheindex?:"").split(",").toMutableSet()
+            val list = (cache.cacheindex?:"").split(",").toMutableSet()
             logger.info("缓存开始${book.name}")
-            for(i in 0..(cache.totalChapterNum ?: 0)-1){
+            for(i in 0..<(cache.totalChapterNum ?: 0)){
                 val x=i
                 if(list.contains(x.toString())){
                     var re=""
@@ -98,7 +95,7 @@ object Bookcache {
                 }
                 launch{
                     semaphore.acquire()
-                    if(mapper.get().bookCacheMapper.selectById(id) == null) {
+                    if(mapper.get().bookCacheService.bookCacheMapper.selectById(id) == null) {
                         semaphore.release()
                         return@launch
                     }
@@ -112,10 +109,10 @@ object Bookcache {
                                 re=getBookContent("",user,source!!,book.bookUrl?:" ",x)
                             }else{
                                 val url=book.bookUrl?:" "
-                                var chapterlist = getChapterListbycache(url,user!!.id!!)
+                                var chapterlist = getChapterListbycache(url,user.id!!)
                                 if (chapterlist == null) {
                                     chapterlist = getlist(url).also {
-                                        setChapterListbycache(url, it,user!!.id!!)
+                                        setChapterListbycache(url, it,user.id!!)
                                     }
                                 }
                                 val b = Book.initLocalBook(url, url, "")
@@ -128,7 +125,7 @@ object Bookcache {
                             list.add(x.toString())
                             cache.cacheindex= list.joinToString(",")
                             cache.num=(cache.num ?: 0)+1
-                            if(zx) mapper.get().bookCacheMapper.updateById(cache)
+                            if(zx) mapper.get().bookCacheService.bookCacheMapper.updateById(cache).also { mapper.get().bookCacheService.cleancache(user.id) }
                         }
                         logger.info("完成缓存${book.name},index:$x")
                     }else{
@@ -144,11 +141,11 @@ object Bookcache {
             logger.info("缓存检测完成${book.name}")
             mutex.withLock {
                 cache.cacheindex= list.joinToString(",")
-                mapper.get().bookCacheMapper.updateById(cache)
+                mapper.get().bookCacheService.bookCacheMapper.updateById(cache).also { mapper.get().bookCacheService.cleancache(user.id) }
             }
             zx=true
             jobs.joinAll()
-            mapper.get().bookCacheMapper.updateById(cache)
+            mapper.get().bookCacheService.bookCacheMapper.updateById(cache).also { mapper.get().bookCacheService.cleancache(user.id) }
             logger.info("缓存完成${book.name}")
         }
     }
@@ -160,15 +157,11 @@ object Bookcache {
                 setChapterListbycache(url,it,user.id!!)
             }
         }
-        val webBook = WBook(source.json?:"",user.id!!,accessToken, false)
+        val webBook = WBook(source.json,user.id!!,accessToken, false)
         val book= getBookbycache(url,user.id!!).let {
-            if(it==null){
-                getbook(webBook, url)!!.also { setBookbycache(url,it,user.id!!) }
-            }else{
-                it
-            }
+            it ?: getbook(webBook, url)!!.also { book -> setBookbycache(url,book,user.id!!) }
         }
-        val systembook=mapper.get().booklistMapper.getbook(user.id!!,url)
+        val systembook=mapper.get().booklistService.getbook(user.id!!,url)
         if(systembook!=null){
             book.durChapterIndex=systembook.durChapterIndex?:0
         }

@@ -12,6 +12,7 @@ import org.noear.solon.web.cors.annotation.CrossOrigin
 import web.mapper.BooklistMapper
 import web.model.Booklist
 import web.response.*
+import web.service.BooklistService
 import web.util.cache.getlocalpath
 import java.io.File
 import java.net.URLDecoder
@@ -22,9 +23,9 @@ import kotlin.concurrent.thread
 @CrossOrigin(origins = "*")
 open class LocalBookController:BaseController() {
 
-    @Db("db")
+
     @Inject
-    lateinit var booklistMapper: BooklistMapper
+    lateinit var booklistService: BooklistService
 
 
     @Mapping("/importBookPreview")
@@ -52,17 +53,23 @@ open class LocalBookController:BaseController() {
         uploadedFile.writeBytes(file.contentAsBytes)
         val book = Book.initLocalBook(localpath, localpath, "")
         val chapters = LocalBook.getChapterList(book)
-        if(booklistMapper.getbook(user.id!!,book.bookUrl) == null){
-            val booklist= Booklist().create().bookto(book)
-            booklist.originName="本地"
-            booklist.userid=user.id
-            booklist.lastCheckTime=System.currentTimeMillis()
-            booklist.lastCheckCount=chapters.size
-            booklist.totalChapterNum=chapters.size
-            booklist.latestChapterTitle=chapters[chapters.size-1].title
-            booklist.latestChapterTime=System.currentTimeMillis()
-            booklistMapper.insert(booklist)
+        val booklist= Booklist().create().bookto(book)
+        booklistService.getbook(user.id!!,book.bookUrl)?.let {
+           // booklist.durChapterTime=it.durChapterTime
+            booklist.durChapterTitle=it.durChapterTitle
+            booklist.durChapterPos=it.durChapterPos
+            booklist.durChapterIndex=it.durChapterIndex
+            booklistService.booklistMapper.deleteById(it.id)
         }
+        booklist.originName="本地"
+        booklist.userid=user.id
+        booklist.lastCheckTime=System.currentTimeMillis()
+        booklist.lastCheckCount=chapters.size
+        booklist.totalChapterNum=chapters.size
+        booklist.latestChapterTitle=chapters[chapters.size-1].title
+        booklist.latestChapterTime=System.currentTimeMillis()
+        booklistService.booklistMapper.insert(booklist)
+        booklistService.cleancache(user.id)
         thread {
             ReadController.removeChapterListbycache(book.bookUrl,user.id!!)
             ReadController.removeallBookContentbycache(book.bookUrl,user.id!!)

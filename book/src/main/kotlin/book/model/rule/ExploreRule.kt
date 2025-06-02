@@ -11,5 +11,5 @@ data class ExploreRule(
     override var updateTime: String? = null,
     override var bookUrl: String? = null,
     override var coverUrl: String? = null,
-    override var wordCount: String? = null
+    override var wordCount: String? = null,
 ) : BookListRule

@@ -8,7 +8,7 @@ import javax.mail.internet.MimeMessage
 object  Mail {
 
     private  fun getmailSession():Session{
-        val conf=MailConf.get();
+        val conf=MailConf.get()
         val account = conf.account
         val password = conf.password
 
@@ -33,8 +33,8 @@ object  Mail {
 
 
 
-    fun SendCode(code:String,to:String){
-        val conf=MailConf.get();
+    fun sendCode(code:String,to:String){
+        val conf=MailConf.get()
         val account = conf.account
         val personal = conf.personal
         val subject = conf.codesubject

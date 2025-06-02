@@ -30,9 +30,22 @@ web端不支持cookie的保存，不支持webview，漫画或者图片或者听�
 接口地址：/getcode?code=$code。  
 code参数在conf.yml文件中设置
 
-# 开发中
-订阅源功能   
-编辑书本信息   
+# 代理
+代理功能为轻阅读独属，开启后可将get post等http请求从服务器发送改为从手机发送（仅支持调用系统函数时，如果书源直接自己调用java类而非自有函数时可能会不支持）。书源页开启的为全局代理，也可以使用下面的函数进行单url代理，
+当然也可以这样写搜索链接 http://127.0.0.1,{“usePhone”:true}。
+
+# 独有函数
+````
+java.getWebViewUANEW()   //获取机型真正的ua用以判断型号为了兼容性getWebViewUA函数值返回安卓ua。  
+java.getusePhone(urlStr: String, headers: Map<String, String>) //用法和java.get一致，但此函数会使用代理功能    
+java.headusePhone(urlStr: String, headers: Map<String, String>) //用法和java.head一致，但此函数会使用代理功能       
+java.postusePhone(urlStr: String, body: String, headers: Map<String, String>) //用法和java.post一致，但此函数会使用代理功能
+````
+
+# 开发中   
+同步自定义主题。   
+书签功能   
+设置备份   
 和开源阅读进度同步   
 
 # 书源权限
@@ -57,7 +70,6 @@ fun get7zStringContent(url: String, path: String): String
 fun get7zStringContent(url: String, path: String, charsetName: String): String 
 fun getRarByteArrayContent(url: String, path: String): ByteArray?
 fun get7zByteArrayContent(url: String, path: String): ByteArray? 
-fun openUrl(url: String) 
 fun getGlideUrl(): GlideUrl
 fun getMediaItem(): MediaItem 
 ````
@@ -82,6 +94,8 @@ docker run -tid  -e TZ=Asia/Shanghai --name read  -v /root/read:/app -p 8080:808
 如果需要使用nginx反向代理后端必须要注意websocket配置，目前websocket有两个：
 /api/接口版本号/ws
 /api/接口版本号/debug
+/api/接口版本号/rssdebug
+
 
 # 已知问题
 RSA加密，RSA加密安卓端和JAVA端加密标准不同，所以有可能安卓版本轻阅读能解密的web版本不能解密，如果安卓端能解密的web不行请修改代码

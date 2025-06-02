@@ -96,26 +96,26 @@ open class SourceController:BaseController() {
             throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         }
         if(user.source == 2){
-            val bookSource= userBookSourceMapper.getBookSource(id,user.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
-            val sources = userBookSourceMapper.getallBookSourcelist(user.id!!)
+            val bookSource= userBookSourceService.getBookSource(id,user.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+            val sources = userBookSourceService.getallBookSourcelist(user.id!!)
             var order=1
             for( it in sources!!){
                 if(it.bookSourceUrl == bookSource.bookSourceUrl){
-                    userBookSourceMapper.changeorder(it.id?:"", 0)
+                    userBookSourceService.changeorder(it.id?:"",user.id, 0)
                 }else{
-                    userBookSourceMapper.changeorder(it.id?:"", order)
+                    userBookSourceService.changeorder(it.id?:"",user.id, order)
                     order++
                 }
             }
         }else{
-            val bookSource= bookSourcemapper.getBookSource(id) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
-            val sources = bookSourcemapper.getallBookSourcelist()
+            val bookSource= bookSourceService.getBookSource(id) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+            val sources = bookSourceService.getallBookSourcelist()
             var order=1
             for( it in sources!!){
                 if(it.bookSourceUrl == bookSource.bookSourceUrl){
-                    bookSourcemapper.changeorder(it.bookSourceUrl?:"", 0)
+                    bookSourceService.changeorder(it.bookSourceUrl?:"", 0)
                 }else{
-                    bookSourcemapper.changeorder(it.bookSourceUrl?:"", order)
+                    bookSourceService.changeorder(it.bookSourceUrl?:"", order)
                     order++
                 }
             }
@@ -130,11 +130,13 @@ open class SourceController:BaseController() {
             throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         }
         if(user.source == 2){
-            val bookSource= userBookSourceMapper.getBookSource(id,user.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
-            userBookSourceMapper.deleteById(bookSource.id?:"")
+            val bookSource= userBookSourceService.getBookSource(id,user.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+            userBookSourceService.userBookSourceMapper.deleteById(bookSource.id?:"")
+            userBookSourceService.cleancache(user.id)
         }else{
-            bookSourcemapper.getBookSource(id) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
-            bookSourcemapper.deleteById(id)
+            bookSourceService.getBookSource(id) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+            bookSourceService.booksSourceMapper.deleteById(id)
+            bookSourceService.cleancache()
         }
         JsonResponse(true)
     }
@@ -145,9 +147,10 @@ open class SourceController:BaseController() {
         ids?.forEach {id->
             if (id.isNotBlank()){
                 if(user.source == 2){
-                    userBookSourceMapper.delBookSource(id,user.id!!)
+                    userBookSourceService.delBookSource(id,user.id!!)
                 }else{
-                    bookSourcemapper.deleteById(id)
+                    bookSourceService.booksSourceMapper.deleteById(id)
+                    bookSourceService.cleancache()
                 }
             }
         }
@@ -161,9 +164,9 @@ open class SourceController:BaseController() {
             throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         }
         val bookSource= if(user.source == 2){
-            userBookSourceMapper.getBookSource(id,user.id!!)?.toBaseSource()
+            userBookSourceService.getBookSource(id,user.id!!)?.toBaseSource()
         }else{
-            bookSourcemapper.getBookSource(id)?.toBaseSource()
+            bookSourceService.getBookSource(id)?.toBaseSource()
         } ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
         JsonResponse(true).Data(mapOf(
             "json" to bookSource.json,
@@ -186,37 +189,39 @@ open class SourceController:BaseController() {
             bookSource.sourceorder=9999
             if(content.id  != null && content.id!!.isNotEmpty()){
                 val bs=
-                    userBookSourceMapper.getBookSource(content.id!!,user.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+                    userBookSourceService.getBookSource(content.id!!,user.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
                 bookSource.sourceorder=bs.sourceorder
                 bookSource.createtime=bs.createtime
                 bookSource.lastUpdateTime=Date().time
-                userBookSourceMapper.deleteById(bookSource.id)
+                userBookSourceService.userBookSourceMapper.deleteById(bookSource.id)
             }else{
-                val bs=userBookSourceMapper.getBookSource(source.bookSourceUrl,user.id!!)
+                val bs=userBookSourceService.getBookSource(source.bookSourceUrl,user.id!!)
                 if (bs != null){
                     throw DataThrowable().data(JsonResponse(false, SOURCE_IS))
                 }
             }
             bookSource.enabled=source.enabled
-            userBookSourceMapper.insert(bookSource)
+            userBookSourceService.userBookSourceMapper.insert(bookSource)
+            userBookSourceService.cleancache(user.id)
         }else{
             val bookSource= web.model.BookSource().jsontomodel(source)
             bookSource.sourceorder=9999
             if(content.id  != null && content.id!!.isNotEmpty()){
                 val bs=
-                    bookSourcemapper.getBookSource(content.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+                    bookSourceService.getBookSource(content.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
                 bookSource.sourceorder=bs.sourceorder
                 bookSource.createtime=bs.createtime
                 bookSource.lastUpdateTime=Date().time
-                bookSourcemapper.deleteById(content.id)
+                bookSourceService.booksSourceMapper.deleteById(content.id)
             }else{
-                val bs=bookSourcemapper.getBookSource(source.bookSourceUrl)
+                val bs=bookSourceService.getBookSource(source.bookSourceUrl)
                 if (bs != null){
                     throw DataThrowable().data(JsonResponse(false, SOURCE_IS))
                 }
             }
             bookSource.enabled=source.enabled
-            bookSourcemapper.insert(bookSource)
+            bookSourceService.booksSourceMapper.insert(bookSource)
+            bookSourceService.cleancache()
         }
 
         JsonResponse(true)
@@ -230,24 +235,24 @@ open class SourceController:BaseController() {
             throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         }
         if(user.source == 2){
-            val bookSource= userBookSourceMapper.getBookSource(id,user.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+            val bookSource= userBookSourceService.getBookSource(id,user.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
             when(st){
                 "0"->{
-                    userBookSourceMapper.changeEnabled(bookSource.id!!,false)
+                    userBookSourceService.changeEnabled(bookSource.id!!,user.id,false)
                 }
                 "1"->{
-                    userBookSourceMapper.changeEnabled(bookSource.id!!,true)
+                    userBookSourceService.changeEnabled(bookSource.id!!,user.id,true)
                 }
                 else -> throw DataThrowable().data(JsonResponse(false, USE_ERROE))
             }
         }else{
-            bookSourcemapper.getBookSource(id) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+            bookSourceService.getBookSource(id) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
             when(st){
                 "0"->{
-                    bookSourcemapper.changeEnabled(id,false)
+                    bookSourceService.changeEnabled(id,false)
                 }
                 "1"->{
-                    bookSourcemapper.changeEnabled(id,true)
+                    bookSourceService.changeEnabled(id,true)
                 }
                 else -> throw DataThrowable().data(JsonResponse(false, USE_ERROE))
             }
@@ -262,15 +267,15 @@ open class SourceController:BaseController() {
             ids?.forEach {
                 if (it.isNotBlank()){
                     val bookSource=
-                        userBookSourceMapper.getBookSource(it,user.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
-                    userBookSourceMapper.changeEnabled(bookSource.id!!,false)
+                        userBookSourceService.getBookSource(it,user.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+                    userBookSourceService.changeEnabled(bookSource.id!!,user.id,false)
                 }
             }
         }else{
             ids?.forEach {
                 if (it.isNotBlank()){
-                    bookSourcemapper.getBookSource(it) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
-                    bookSourcemapper.changeEnabled(it,false)
+                    bookSourceService.getBookSource(it) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+                    bookSourceService.changeEnabled(it,false)
                 }
             }
         }
@@ -284,15 +289,15 @@ open class SourceController:BaseController() {
             ids?.forEach {
                 if (it.isNotBlank()){
                     val bookSource=
-                        userBookSourceMapper.getBookSource(it,user.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
-                    userBookSourceMapper.changeEnabled(bookSource.id!!,true)
+                        userBookSourceService.getBookSource(it,user.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+                    userBookSourceService.changeEnabled(bookSource.id!!,user.id,true)
                 }
             }
         }else{
             ids?.forEach {
                 if (it.isNotBlank()){
-                    bookSourcemapper.getBookSource(it) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
-                    bookSourcemapper.changeEnabled(it,true)
+                    bookSourceService.getBookSource(it) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+                    bookSourceService.changeEnabled(it,true)
                 }
             }
         }
@@ -306,15 +311,15 @@ open class SourceController:BaseController() {
             ids?.forEach {
                 if (it.isNotBlank()){
                     val bookSource=
-                        userBookSourceMapper.getBookSource(it,user.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
-                    userBookSourceMapper.changeenabledExplore(bookSource.id!!,false)
+                        userBookSourceService.getBookSource(it,user.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+                    userBookSourceService.changeenabledExplore(bookSource.id!!,user.id,false)
                 }
             }
         }else{
             ids?.forEach {
                 if (it.isNotBlank()){
-                    bookSourcemapper.getBookSource(it) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
-                    bookSourcemapper.changeenabledExplore(it,false)
+                    bookSourceService.getBookSource(it) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+                    bookSourceService.changeenabledExplore(it,false)
                 }
             }
         }
@@ -328,15 +333,15 @@ open class SourceController:BaseController() {
             ids?.forEach {
                 if (it.isNotBlank()){
                     val bookSource=
-                        userBookSourceMapper.getBookSource(it,user.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
-                    userBookSourceMapper.changeenabledExplore(bookSource.id!!,true)
+                        userBookSourceService.getBookSource(it,user.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+                    userBookSourceService.changeenabledExplore(bookSource.id!!,user.id,true)
                 }
             }
         }else{
             ids?.forEach {
                 if (it.isNotBlank()){
-                    bookSourcemapper.getBookSource(it) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
-                    bookSourcemapper.changeenabledExplore(it,true)
+                    bookSourceService.getBookSource(it) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+                    bookSourceService.changeenabledExplore(it,true)
                 }
             }
         }
@@ -351,9 +356,9 @@ open class SourceController:BaseController() {
         ids?.forEach {
             if (it.isNotBlank()){
                 val bookSource=if(user.source == 2){
-                    userBookSourceMapper.getBookSource(it,user.id!!)?.toBaseSource()
+                    userBookSourceService.getBookSource(it,user.id!!)?.toBaseSource()
                 }else{
-                    bookSourcemapper.getBookSource(it)?.toBaseSource()
+                    bookSourceService.getBookSource(it)?.toBaseSource()
                 } ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
                 s = if(s == "[" ){
                     "$s ${bookSource.json}"
@@ -375,36 +380,38 @@ open class SourceController:BaseController() {
         }
        if(user.source == 2){
            val source= web.model.UserBookSource().jsontomodel(bookSource, userid = user.id!!)
-           userBookSourceMapper.getBookSource(bookSource.bookSourceUrl, userid = user.id!!).let {
+           userBookSourceService.getBookSource(bookSource.bookSourceUrl, userid = user.id!!).let {
                if (it != null){
                    source.enabled=it.enabled
                    if(it.createtime != null){
                        source.createtime=it.createtime
                    }
                    bookSource.lastUpdateTime=Date().time
-                   update += userBookSourceMapper.updateById(source)
+                   update += userBookSourceService.userBookSourceMapper.updateById(source)
                }else{
                    source.enabled=true
                    source.sourceorder=9999
-                   insert += userBookSourceMapper.insert(source)
+                   insert += userBookSourceService.userBookSourceMapper.insert(source)
                }
            }
+           userBookSourceService.cleancache(user.id)
        }else{
            val source= web.model.BookSource().jsontomodel(bookSource)
-           bookSourcemapper.getBookSource(bookSource.bookSourceUrl).let {
+           bookSourceService.getBookSource(bookSource.bookSourceUrl).let {
                if (it != null){
                    source.enabled=it.enabled
                    if(it.createtime != null){
                        source.createtime=it.createtime
                    }
                    bookSource.lastUpdateTime=Date().time
-                   update += bookSourcemapper.updateById(source)
+                   update += bookSourceService.booksSourceMapper.updateById(source)
                }else{
                    source.enabled=true
                    source.sourceorder=9999
-                   insert += bookSourcemapper.insert(source)
+                   insert += bookSourceService.booksSourceMapper.insert(source)
                }
            }
+           bookSourceService.cleancache()
        }
         Pair(insert, update)
     }

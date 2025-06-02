@@ -7,7 +7,6 @@ import org.dromara.autotable.annotation.ColumnNotNull
 import org.dromara.autotable.annotation.PrimaryKey
 import org.dromara.autotable.annotation.TableIndex
 import org.dromara.autotable.annotation.enums.IndexTypeEnum
-
 import org.noear.snack.annotation.ONodeAttr
 import web.response.EMAIL_ERROR
 import web.response.NOT_BANK
@@ -35,12 +34,13 @@ class Users {
     var username: String? = null
 
     @ColumnNotNull
-    var password: String? = null
+    @Transient
+    var  password: String? = null
         get(){
-            if (field == null || field!!.isBlank()){
-                return null
+            return if (field == null || field!!.isBlank()){
+                null
             }else{
-                return field
+                field
             }
         }
 

@@ -26,14 +26,14 @@ fun updatebook(book: Booklist, source: BaseSource,userid:String) = runBlocking{
             val latestChapterTime=System.currentTimeMillis()
             ReadController.removeChapterListbycache(book.bookUrl?:"",userid)
             ReadController.setChapterListbycache(book.bookUrl?:"",list,userid)
-            mapper.get().booklistMapper.updatetime(book.id!!,latestChapterTitle,latestChapterTime,lastCheckTime,lastCheckCount, totalChapterNum )
-            mapper.get().bookCacheMapper.getCache(book.userid!!,book.id!!).let {
+            mapper.get().booklistService.updatetime(book.id!!,userid,latestChapterTitle,latestChapterTime,lastCheckTime,lastCheckCount, totalChapterNum )
+            mapper.get().bookCacheService.getCache(book.userid!!,book.id!!).let {
                 if(it!=null){
-                    mapper.get().bookCacheMapper.updatetime(it.id!!,totalChapterNum)
+                    mapper.get().bookCacheService.updatetime(it.id!!,userid,totalChapterNum)
                 }
             }
         }else{
-            mapper.get().booklistMapper.updatetimefail(book.id!!,lastCheckTime,lastCheckCount)
+            mapper.get().booklistService.updatetimefail(book.id!!,userid,lastCheckTime,lastCheckCount)
         }
     }
 }
@@ -45,13 +45,9 @@ fun getlist(url:String):List<BookChapter>{
 }
 
 suspend fun getlist(url:String, source: BaseSource,userid:String,accessToken :String):List<BookChapter>{
-    val webBook = WBook(source.json?:"",userid,accessToken, false)
+    val webBook = WBook(source.json,userid,accessToken, false)
     val book= getBookbycache(url,userid).let {
-        if(it==null){
-            getbook(webBook,url).also { setBookbycache(url,it,userid) }
-        }else{
-            it
-        }
+        it ?: getbook(webBook,url).also { it1 -> setBookbycache(url,it1,userid) }
     }
     return getChapterList(webBook,book)
 }

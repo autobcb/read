@@ -3,22 +3,16 @@ package book.util.help
 
 
 import book.util.GSON
-import book.util.MD5Utils
 import book.util.NetworkUtils
 import book.util.TextUtils
+import jdk.internal.vm.vector.VectorSupport.store
+import okhttp3.*
+import org.jsoup.Connection
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.File
-import okhttp3.Cookie
-import okhttp3.Headers
-import okhttp3.HttpUrl
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
-import okhttp3.Request
-import okhttp3.Response
-import org.jsoup.Connection
 import java.net.IDN
 import java.net.URI
-
 
 
 // TODO 处理cookie
@@ -268,6 +262,13 @@ class CookieStore(val userid:String) : CookieManager {
         }
         if(!isadd){return  null}
         return builder.deleteCharAt(builder.lastIndexOf(";")).toString()
+    }
+
+    override fun toString(): String {
+        val hashCode = this.hashCode()
+        val hexHash = Integer.toHexString(hashCode)
+        val s="io.legado.app.help.http.CookieStore@"+hexHash
+        return s
     }
 
 }

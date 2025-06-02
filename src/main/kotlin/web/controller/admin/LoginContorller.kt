@@ -13,10 +13,10 @@ import web.util.admin.logout as logout2
 class LoginContorller {
 
     @Inject(value = "\${admin.username}", autoRefreshed=true)
-    lateinit var _username:String
+    lateinit var adminusername:String
 
     @Inject(value = "\${admin.password}", autoRefreshed=true)
-    lateinit var _password: String
+    lateinit var adminpassword: String
 
 
 
@@ -27,8 +27,8 @@ class LoginContorller {
             throw DataThrowable().data(JsonResponse(isSuccess = false, errorMsg = NOT_BANK))
         }
 
-        if(_username.equals(username) && _password.equals(password)) {
-            loginok(username!!,ctx)
+        if(adminusername == username && adminpassword == password) {
+            loginok(username,ctx)
             JsonResponse(true)
         }else{
             JsonResponse(isSuccess = false, errorMsg =PASS_ERROR )

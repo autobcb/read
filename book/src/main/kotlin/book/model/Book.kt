@@ -295,11 +295,4 @@ data class Book(
         fun stringToReadConfig(json: String?) = GSON.fromJsonObject<ReadConfig>(json)
     }
 
-    override fun getVariable(key: String): String {
-        val value = super.getVariable(key)
-        if(value.isEmpty()){
-            return  SearchBook.getSearchBook(userid,origin).getVariable(key)
-        }
-        return  value
-    }
 }

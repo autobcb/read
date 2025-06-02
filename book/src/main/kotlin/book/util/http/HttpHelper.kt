@@ -20,7 +20,6 @@ import java.net.InetSocketAddress
 import java.net.Proxy
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
-import kotlin.coroutines.resume
 import java.io.IOException
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.ThreadPoolExecutor

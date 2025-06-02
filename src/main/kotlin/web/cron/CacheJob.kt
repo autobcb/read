@@ -5,9 +5,6 @@ import kotlinx.coroutines.runBlocking
 import org.noear.solon.annotation.Inject
 import org.noear.solon.scheduling.annotation.Scheduled
 import org.slf4j.LoggerFactory
-import web.cron.BookJob.Companion
-import web.model.BookCache
-import web.model.Booklist
 import web.util.mapper.mapper
 import web.util.read.Bookcache
 import kotlin.concurrent.thread
@@ -31,7 +28,7 @@ class CacheJob: Runnable {
         }
         logger.info("开始添加缓存")
         isupdatebookcron = true
-        val caches = mapper.get().bookCacheMapper.selectList(QueryWrapper())
+        val caches = mapper.get().bookCacheService.bookCacheMapper.selectList(QueryWrapper())
         runCatching {
             caches.forEach {
                 thread { Bookcache.addcache(it.id!!) }
