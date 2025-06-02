@@ -89,7 +89,11 @@ open class UserController {
         if(!where.isNullOrBlank()){
             queryWrapper.like("code",where).or().like("username",where).or().like("email",where).or().like("phone",where)
         }
-        PageByAjax(usersService.usersMapper,queryWrapper,page,limit,order)
+        PageByAjax(usersService.usersMapper,queryWrapper,page,limit,order).also {
+            (it.data as List<Users>).forEach{
+                it.password = ""
+            }
+        }
     }
 
     @Mapping("/deluser")

@@ -34,7 +34,6 @@ class Users {
     var username: String? = null
 
     @ColumnNotNull
-    @Transient
     var  password: String? = null
         get(){
             return if (field == null || field!!.isBlank()){
