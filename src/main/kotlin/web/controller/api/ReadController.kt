@@ -504,7 +504,7 @@ open class ReadController : BaseController() {
             list.add(
                 mapOf(
                     "variableComment" to s?.variableComment,
-                    "bookSourceGroup" to s?.bookSourceGroup,
+                    "bookSourceGroup" to it.bookSourceGroup,
                     "loginUrl" to s?.loginUrl,
                     "loginUi" to loginUi,
                     "bookSourceName" to it.bookSourceName,

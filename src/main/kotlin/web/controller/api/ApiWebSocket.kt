@@ -73,6 +73,7 @@ class ApiWebSocket : SimpleWebSocketListener() {
     @Inject
     lateinit var usertockenService: UsertockenService
 
+
     override fun onOpen(socket: WebSocket) {
         val accessToken: String = socket.param("id")
         logger.info("websocket Open $accessToken")

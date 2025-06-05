@@ -17,6 +17,8 @@ import org.noear.solon.annotation.Inject
 import org.noear.solon.annotation.Mapping
 import org.noear.solon.core.handle.Context
 import org.noear.solon.core.util.DataThrowable
+import org.noear.solon.data.annotation.Cache
+import org.noear.solon.data.annotation.CacheRemove
 import org.noear.solon.data.annotation.Tran
 import org.noear.solon.data.cache.CacheService
 import org.noear.solon.web.cors.annotation.CrossOrigin
@@ -414,6 +416,7 @@ open class RssController :BaseController() {
         }
     }
 
+    @Cache(key = "getArticles:\${accessToken},\${id},\${page},\${sortUrl},\${sortName}", tags = "rsssearch\${accessToken}", seconds = 600)
     @Mapping("/getArticles")
     fun  getArticles(accessToken:String?, id:String,sortUrl :String ,sortName:String,page:Int)= runBlocking{
         val user = getuserbytocken(accessToken)
@@ -443,6 +446,7 @@ open class RssController :BaseController() {
         JsonResponse(true).Data(mapOf("articles" to articles.first,"next" to articles.second))
     }
 
+    @Cache(key = "getRsssortUrls:\${accessToken},\${id}", tags = "rsssearch\${accessToken}", seconds = 600)
     @Mapping("/getRsssortUrls")
     fun  getRsssortUrls(accessToken:String?, id:String)= runBlocking{
         val user = getuserbytocken(accessToken)
@@ -468,6 +472,7 @@ open class RssController :BaseController() {
 
     }
 
+    @Cache(key = "getRssContent:\${accessToken},\${id},\${article}", tags = "rsssearch\${accessToken}", seconds = 300)
     @Mapping("/getRssContent")
     fun  getRssContent(accessToken:String?, id:String,article : String)= runBlocking{
         val myid=UUID.randomUUID().toString()
@@ -480,7 +485,6 @@ open class RssController :BaseController() {
         } ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
 
         kotlin.runCatching {
-
             val rssArticle= GSON.fromJsonObject<RssArticle>(article).getOrNull()?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
             val rssSource=RssSource.fromJson(rss.json?:"")
             rssSource.userid=user.id
@@ -511,6 +515,7 @@ open class RssController :BaseController() {
     }
 
 
+
     @Mapping("/getRssLoginInfo")
     open fun getRssLoginInfo(accessToken: String?, id: String) = run {
         val user = getuserbytocken(accessToken)
@@ -529,6 +534,7 @@ open class RssController :BaseController() {
         JsonResponse(true).Data(info)
     }
 
+    @CacheRemove(tags = "rsssearch\${accessToken}")
     @Mapping("/putRssLoginInfo")
     open fun putRssLoginInfo(accessToken: String?, id: String, info: String?) = run {
         val user = getuserbytocken(accessToken)
@@ -545,6 +551,7 @@ open class RssController :BaseController() {
         JsonResponse(true)
     }
 
+    @CacheRemove(tags = "rsssearch\${accessToken}")
     @Mapping("/rssaction")
     open fun rssaction(accessToken: String?, id: String, action: String?) = runBlocking {
         val user = getuserbytocken(accessToken)
@@ -582,6 +589,7 @@ open class RssController :BaseController() {
         JsonResponse(true).Data(info)
     }
 
+    @CacheRemove(tags = "rsssearch\${accessToken}")
     @Mapping("/setRssVariable")
     open fun setRssVariable(accessToken: String?, id: String, info: String?) = run {
         val user = getuserbytocken(accessToken)
@@ -596,6 +604,7 @@ open class RssController :BaseController() {
         rssSource.setVariable(info)
         JsonResponse(true)
     }
+
 
     @Mapping("/getRssContenthtml")
     fun  getRssContenthtml(ctx: Context, id:String)= runBlocking{

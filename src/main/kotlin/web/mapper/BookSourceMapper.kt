@@ -16,6 +16,8 @@ interface BookSourceMapper : BaseMapper<BookSource> {
     @Select("SELECT * FROM book_source  order by sourceorder asc")
     fun getallBookSourcelist(): List<BookSource>?
 
+    @Update("UPDATE book_source set book_source_group= #{group} WHERE book_source_url = #{bookSourceUrl}")
+    fun changegroup(@Param("bookSourceUrl") bookSourceUrl: String, @Param("group") group: String):Int
 
     @Update("UPDATE book_source set enabled= #{enabled} WHERE book_source_url = #{bookSourceUrl}")
     fun changeEnabled(@Param("bookSourceUrl") bookSourceUrl: String,@Param("enabled") enabled: Boolean):Int

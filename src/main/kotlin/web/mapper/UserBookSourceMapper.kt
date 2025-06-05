@@ -18,6 +18,9 @@ interface UserBookSourceMapper : BaseMapper<UserBookSource> {
     @Select("SELECT * FROM user_book_source  WHERE userid = #{userid} order by sourceorder asc")
     fun getallBookSourcelist(@Param("userid") userid: String): List<UserBookSource>?
 
+    @Update("UPDATE user_book_source set book_source_group= #{group} WHERE id = #{id}")
+    fun changegroup(@Param("id") id: String, @Param("group") group: String):Int
+
 
     @Update("UPDATE user_book_source set enabled= #{enabled} WHERE id = #{id}")
     fun changeEnabled(@Param("id") id: String, @Param("enabled") enabled: Boolean):Int

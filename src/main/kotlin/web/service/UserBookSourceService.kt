@@ -48,6 +48,11 @@ open class UserBookSourceService {
         }
     }
 
+    fun changegroup(id: String?, userid: String?,  group: String?):Int{
+        cleancache(userid)
+        return userBookSourceMapper.changegroup(id?:"", group?:"")
+    }
+
     fun changeEnabled(id: String, userid: String?,enabled: Boolean):Int{
         cleancache(userid)
         return userBookSourceMapper.changeEnabled(id, enabled)

@@ -45,6 +45,11 @@ open class BookSourceService {
         }
     }
 
+    fun changegroup( bookSourceUrl: String?, group: String?):Int{
+        cleancache()
+        return booksSourceMapper.changegroup(bookSourceUrl?:"", group?:"")
+    }
+
     fun changeEnabled( bookSourceUrl: String, enabled: Boolean):Int{
         cleancache()
         return booksSourceMapper.changeEnabled(bookSourceUrl, enabled)
