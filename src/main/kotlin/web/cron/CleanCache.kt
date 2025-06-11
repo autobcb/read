@@ -5,6 +5,7 @@ import book.model.Cache
 import book.util.FileUtils
 import com.google.gson.Gson
 import kotlinx.coroutines.runBlocking
+import org.noear.solon.annotation.Inject
 import org.noear.solon.scheduling.annotation.Scheduled
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -13,6 +14,9 @@ import java.io.File
 @Scheduled(fixedRate = 1000 * 60*60*8)
 class CleanCache : Runnable {
 
+    @Inject(value = "\${admin.cron:true}", autoRefreshed=true)
+    var cron:Boolean=true
+
     companion object {
         private var isdo = false
         private val cachefile = FileUtils.createFolderIfNotExist(appCtx.externalFiles, "cache","cache")
@@ -20,6 +24,9 @@ class CleanCache : Runnable {
     }
 
     override fun run() = runBlocking{
+        if(!cron){
+            return@runBlocking
+        }
         if (isdo) {
             return@runBlocking
         }

@@ -28,6 +28,9 @@ import web.model.Users
 import web.response.*
 import web.service.RssSourceService
 import web.service.UserRssSourceService
+import web.util.hash.Md5
+import java.net.SocketException
+import java.net.SocketTimeoutException
 import java.util.*
 
 @Controller
@@ -115,6 +118,7 @@ open class RssController :BaseController() {
         JsonResponse(true).Data(mapOf(
             "json" to bookSource.json,
             "enabled" to bookSource.enabled,
+            "sourceGroup" to bookSource.sourceGroup,
         ))
     }
 
@@ -177,10 +181,10 @@ open class RssController :BaseController() {
         if (id.isNullOrBlank()){
             throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         }
+        var order=1
         if(user.source == 2){
             val rsssource= userRssSourceService.getRssSource(id,user.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
             val sources = userRssSourceService.getallSourcelist(user.id!!)
-            var order=1
             for( it in sources){
                 if(it.sourceUrl == rsssource.sourceUrl){
                     userRssSourceService.changeorder(it.id?:"",user.id, 0)
@@ -192,7 +196,6 @@ open class RssController :BaseController() {
         }else{
             val rsssource= rssSourceService.getRssSource(id) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
             val sources = rssSourceService.getallSourcelist()
-            var order=1
             for( it in sources!!){
                 if(it.sourceUrl == rsssource.sourceUrl){
                     rssSourceService.changeorder(it.sourceUrl, 0)
@@ -200,6 +203,171 @@ open class RssController :BaseController() {
                     rssSourceService.changeorder(it.sourceUrl, order)
                     order++
                 }
+            }
+        }
+        JsonResponse(true)
+    }
+
+    @Mapping("/bottomallrssSource")
+    fun bottomallrssSource( accessToken:String?,@Body ids: List<String>?)= run{
+        val user=getsourceuser(accessToken)
+        if (ids == null || ids.isEmpty()){
+            throw DataThrowable().data(JsonResponse(false, NOT_BANK))
+        }
+        var order=0
+        if(user.source == 2){
+            val sources = userRssSourceService.getallSourcelist(user.id!!)
+            for( it in sources){
+                if(!ids.contains(it.sourceUrl)){
+                    userRssSourceService.changeorder(it.id?:"",user.id, order)
+                    order++
+                }
+            }
+            for(id in ids){
+                for( it in sources){
+                    if(it.sourceUrl == id){
+                        userRssSourceService.changeorder(it.id?:"",user.id, order)
+                        break;
+                    }
+                }
+                order++
+            }
+        }else{
+            val sources = rssSourceService.getallSourcelist()
+            for( it in sources!!){
+                if(!ids.contains(it.sourceUrl)){
+                    rssSourceService.changeorder(it.sourceUrl, order)
+                    order++
+                }
+            }
+            for(id in ids){
+                rssSourceService.changeorder(id, order)
+                order++
+            }
+        }
+        JsonResponse(true)
+    }
+
+    @Mapping("/topallrssSource")
+    fun topallrssSource( accessToken:String?,@Body ids: List<String>?)= run{
+        val user=getsourceuser(accessToken)
+        if (ids == null || ids.isEmpty()){
+            throw DataThrowable().data(JsonResponse(false, NOT_BANK))
+        }
+        var order=ids.size
+        if(user.source == 2){
+            val sources = userRssSourceService.getallSourcelist(user.id!!)
+            for( it in sources){
+                if(!ids.contains(it.sourceUrl)){
+                    userRssSourceService.changeorder(it.id?:"",user.id, order)
+                    order++
+                }
+            }
+            order = 0
+            for(id in ids){
+                for( it in sources){
+                    if(it.sourceUrl == id){
+                        userRssSourceService.changeorder(it.id?:"",user.id, order)
+                        break;
+                    }
+                }
+                order++
+            }
+        }else{
+            val sources = rssSourceService.getallSourcelist()
+            for( it in sources!!){
+                if(!ids.contains(it.sourceUrl)){
+                    rssSourceService.changeorder(it.sourceUrl, order)
+                    order++
+                }
+            }
+            order = 0
+            for(id in ids){
+                rssSourceService.changeorder(id, order)
+                order++
+            }
+        }
+        JsonResponse(true)
+    }
+
+    @Mapping("/bottomSource")
+    fun bottomSource( accessToken:String?, id: String?)= run{
+        val user=getsourceuser(accessToken)
+        if (id.isNullOrBlank()){
+            throw DataThrowable().data(JsonResponse(false, NOT_BANK))
+        }
+        var order=0
+        if(user.source == 2){
+            val rsssource= userRssSourceService.getRssSource(id,user.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+            val sources = userRssSourceService.getallSourcelist(user.id!!)
+            for( it in sources){
+                if(it.sourceUrl == rsssource.sourceUrl){
+                    userRssSourceService.changeorder(it.id?:"",user.id, sources.size-1)
+                }else{
+                    userRssSourceService.changeorder(it.id?:"",user.id, order)
+                    order++
+                }
+            }
+        }else{
+            val rsssource= rssSourceService.getRssSource(id) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+            val sources = rssSourceService.getallSourcelist()
+            for( it in sources!!){
+                if(it.sourceUrl == rsssource.sourceUrl){
+                    rssSourceService.changeorder(it.sourceUrl, sources.size-1)
+                }else{
+                    rssSourceService.changeorder(it.sourceUrl, order)
+                    order++
+                }
+            }
+        }
+        JsonResponse(true)
+    }
+
+    @Mapping("/editrsssourcegroup")
+    fun editrsssourcegroup( accessToken:String?,st:String,group:String,@Body ids: List<String>?)= run{
+        val user=getsourceuser(accessToken)
+        if (ids == null || ids.isEmpty()){
+            throw DataThrowable().data(JsonResponse(false, NOT_BANK))
+        }
+        if(user.source == 2){
+            for(id in ids){
+                val bookSource= userRssSourceService.getRssSource(id,user.id!!)
+                if (bookSource == null) continue
+                val sp=bookSource.sourceGroup?.split(",")
+                val groups=mutableListOf<String>()
+                if(st == "0"){
+                    groups.add(group)
+                }
+                sp?.forEach{
+                    if(it != group){
+                        groups.add(it)
+                    }
+                }
+                bookSource.sourceGroup=groups.joinToString(",")
+                if(bookSource.sourceGroup!!.endsWith(",")){
+                    bookSource.sourceGroup=bookSource.sourceGroup!!.substring(0, bookSource.sourceGroup!!.length - 1)
+                }
+                userRssSourceService.changegroup(bookSource.id, user.id,bookSource.sourceGroup)
+            }
+        }else{
+            for(id in ids){
+                val bookSource= rssSourceService.getRssSource(id)
+                if (bookSource == null) continue
+                val sp=bookSource.sourceGroup?.split(",")
+                val groups=mutableListOf<String>()
+                if(st == "0"){
+                    groups.add(group)
+                }
+                sp?.forEach{
+                    if(it != group){
+                        groups.add(it)
+                    }
+                }
+                bookSource.sourceGroup=groups.joinToString(",")
+                if(bookSource.sourceGroup!!.endsWith(",")){
+                    bookSource.sourceGroup=bookSource.sourceGroup!!.substring(0, bookSource.sourceGroup!!.length - 1)
+                }
+                rssSourceService.changegroup(id,bookSource.sourceGroup)
             }
         }
         JsonResponse(true)
@@ -367,6 +535,28 @@ open class RssController :BaseController() {
         JsonResponse(true,"新增${insert}条订阅源，更新${update}条订阅源")
     }
 
+
+    @Mapping("/getRssSourcesloginui")
+    fun getRssSourcesloginui(accessToken: String?, url: String) = run {
+        val user = getuserbytocken(accessToken)
+        val rss=if(user.source == 2){
+            userRssSourceService.getRssSource(url,user.id!!)?.toBaseSource()
+        }else{
+            rssSourceService.getRssSource(url)?.toBaseSource()
+        } ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+        val rssSource=RssSource.fromJson(rss.json?:"")
+        rssSource.userid=user.id
+        rssSource.usertocken=accessToken
+        var loginUi=rssSource.loginUi
+        if(!loginUi.isNullOrEmpty()){
+            kotlin.runCatching {
+                val r=GSON.fromJsonArray<Any>(loginUi).getOrNull()
+                loginUi= GSON.toJson(r)
+            }
+        }
+        JsonResponse(true).Data(loginUi)
+    }
+
     @Mapping("/getRssType")
     fun getRssType(accessToken:String?, id:String)= runBlocking{
         val user = getuserbytocken(accessToken)
@@ -375,6 +565,7 @@ open class RssController :BaseController() {
         }else{
             rssSourceService.getRssSource(id)?.toBaseSource()
         } ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+        if(rss.enabled != true) throw DataThrowable().data(JsonResponse(false, NOT_IS))
         val rssSource=RssSource.fromJson(rss.json?:"")
         rssSource.userid=user.id
         rssSource.usertocken=accessToken
@@ -410,6 +601,22 @@ open class RssController :BaseController() {
                 "header" to GSON.toJson(header),
             ))
         }.onFailure {
+            if ( it is SocketTimeoutException  || it is SocketException || (it.message?.contains("timeout"))?:false) {
+                val md5=Md5(rss.json?:"")
+                var num=  cacheService.getOrStore(md5, Int::class.java,600) {
+                    0
+                }
+                if(num > 2){
+                    if(user.source == 2){
+                        userRssSourceService.changeEnabled(id,user.id!!,false)
+                    }else{
+                        rssSourceService.changeEnabled(id,false);
+                    }
+                }else{
+                    num++
+                    cacheService.store(md5,num,600)
+                }
+            }
             App.log("${rss.sourceName}sorts加载失败:${it.message}",accessToken?:"")
             App.toast("${rss.sourceName}sorts加载失败:${it.message}",accessToken?:"")
             throw it
@@ -425,6 +632,7 @@ open class RssController :BaseController() {
         }else{
             rssSourceService.getRssSource(id)?.toBaseSource()
         } ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+        if(rss.enabled != true) throw DataThrowable().data(JsonResponse(false, NOT_IS))
         val rssSource=RssSource.fromJson(rss.json?:"")
         rssSource.userid=user.id
         rssSource.usertocken=accessToken
@@ -455,6 +663,7 @@ open class RssController :BaseController() {
         }else{
             rssSourceService.getRssSource(id)?.toBaseSource()
         } ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+        if(rss.enabled != true) throw DataThrowable().data(JsonResponse(false, NOT_IS))
         val rssSource=RssSource.fromJson(rss.json?:"")
         kotlin.runCatching {
             rssSource.userid=user.id
@@ -465,6 +674,22 @@ open class RssController :BaseController() {
             }
             return@runBlocking JsonResponse(true).Data(list)
         }.onFailure {
+            if ( it is SocketTimeoutException  || it is SocketException || (it.message?.contains("timeout"))?:false) {
+                val md5=Md5(rss.json?:"")
+                var num=  cacheService.getOrStore(md5, Int::class.java,600) {
+                    0
+                }
+                if(num > 2){
+                    if(user.source == 2){
+                        userRssSourceService.changeEnabled(id,user.id!!,false)
+                    }else{
+                        rssSourceService.changeEnabled(id,false);
+                    }
+                }else{
+                    num++
+                    cacheService.store(md5,num,600)
+                }
+            }
             App.log("${rss.sourceName}tabs加载失败:${it.message}",accessToken?:"")
             App.toast("${rss.sourceName}tabs加载失败:${it.message}",accessToken?:"")
             return@runBlocking JsonResponse(false,it.message?:"")
@@ -483,7 +708,7 @@ open class RssController :BaseController() {
         }else{
             rssSourceService.getRssSource(id)?.toBaseSource()
         } ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
-
+        if(rss.enabled != true) throw DataThrowable().data(JsonResponse(false, NOT_IS))
         kotlin.runCatching {
             val rssArticle= GSON.fromJsonObject<RssArticle>(article).getOrNull()?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
             val rssSource=RssSource.fromJson(rss.json?:"")

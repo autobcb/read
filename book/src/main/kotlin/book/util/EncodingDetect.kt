@@ -71,7 +71,7 @@ object EncodingDetect {
                 it.read(byteArray)
             }
         } catch (e: Exception) {
-            System.err.println("Error: $e")
+           // System.err.println("Error: $e")
         }
         return byteArray
     }

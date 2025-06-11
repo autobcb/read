@@ -92,6 +92,10 @@ class AnalyzeUrl(
             runCatching {
                 headerMap.putAll(source!!.getHeaderMap(hasLoginHeader))
             }
+            if (headerMap.containsKey("proxy")) {
+                proxy = headerMap["proxy"]
+                headerMap.remove("proxy")
+            }
         }
         initUrl()
         domain = NetworkUtils.getSubDomain(source?.getKey() ?: url)
@@ -328,7 +332,7 @@ class AnalyzeUrl(
             }
         }
         if (enabledCookieJar) {
-            headerMap[cookieJarHeader] = source?.getcookieJarHeaderid()?:""
+             source?.getcookieJarHeaderid()?:""
         } else {
             headerMap.remove(cookieJarHeader)
         }
@@ -362,10 +366,10 @@ class AnalyzeUrl(
                                 headerMap["Content-Type"]="application/json; charset=UTF-8"
                             }
                         }
-                        return  App.webviewbody("",url,webJs ?: jsStr,getSource()?.usertocken?:"",GSON.toJson(headerMap),body?:"")
+                        return  App.webviewbody("",url,webJs ?: jsStr,getSource()?.usertocken?:"",GSON.toJson(headerMap),body?:"",sourceRegex?:"","")
                     }
                     else -> {
-                        return  App.webview("",url,webJs ?: jsStr,getSource()?.usertocken?:"",GSON.toJson(headerMap))
+                        return  App.webview("",url,webJs ?: jsStr,getSource()?.usertocken?:"",GSON.toJson(headerMap),sourceRegex?:"","")
                     }
                 }
                 //return  webview("",url,"")
@@ -445,7 +449,7 @@ class AnalyzeUrl(
                 addHeaders(headerMap)
                 when (method) {
                     RequestMethod.POST -> {
-                        println("urlNoQuery:$urlNoQuery")
+                       // println("urlNoQuery:$urlNoQuery")
                         url(urlNoQuery)
                         val contentType = headerMap["Content-Type"]
                         val body = body

@@ -29,13 +29,11 @@ object  BookContent {
     fun  getbookcontent(accessToken:String, user: Users, source: BaseSource, url:String, index:Int, type:Int):String= runBlocking{
         val key="url:$url,index:$index"
         var deferred: Deferred<String>?
-        mutex.withLock {
-            deferred=ma[key]
-        }
+        deferred=ma[key]
         if(deferred == null) {
             mutex.withLock {
                 deferred=async{ getBookContent(accessToken,user,source,url,index,type) }
-                ma[key]= deferred!!
+                ma[key]=async{ getBookContent(accessToken,user,source,url,index,type) }
             }
         }
         runCatching {

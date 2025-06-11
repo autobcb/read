@@ -48,11 +48,11 @@ public class UmdChapters {
 		int st=contentLengths.get(index);
 		byte[] b=contents.toByteArray();
 		int end=index+1<contentLengths.size()?contentLengths.get(index+1): getTotalContentLen();
-		System.out.println("总长度:"+contents.size());
-		System.out.println("起始值:"+st);
-		System.out.println("结束值:"+end);
+		//System.out.println("总长度:"+contents.size());
+		//System.out.println("起始值:"+st);
+		//System.out.println("结束值:"+end);
 		byte[] bAr=new byte[end-st];
-		System.arraycopy(b,st,bAr,0,bAr.length);
+		//System.arraycopy(b,st,bAr,0,bAr.length);
 		return bAr;
 
 	}

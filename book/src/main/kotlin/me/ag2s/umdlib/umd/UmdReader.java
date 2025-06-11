@@ -44,7 +44,7 @@ public class UmdReader {
             byte segFlag = reader.readByte();
             short len = (short) (reader.readUint8() - 5);
 
-            System.out.println("块标识:" + segType);
+            //System.out.println("块标识:" + segType);
             //short length1 = reader.readByte();
             ReadSection(segType, segFlag, len, reader, umdHeader);
 
@@ -53,7 +53,7 @@ public class UmdReader {
             }
             for (ch = reader.readByte(); ch == 36; ch = reader.readByte()) {
                 //int num3 = reader.readByte();
-                System.out.println(ch);
+                //System.out.println(ch);
                 int additionalCheckNumber = reader.readIntLe();
                 int length2 = (reader.readIntLe() - 9);
                 ReadAdditionalSection(segType, additionalCheckNumber, length2, reader);
@@ -61,7 +61,7 @@ public class UmdReader {
             num1 = segType;
 
         }
-        System.out.println(book.getHeader().toString());
+        //System.out.println(book.getHeader().toString());
         return book;
 
     }

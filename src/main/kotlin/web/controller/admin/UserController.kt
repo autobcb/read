@@ -1,6 +1,7 @@
 package web.controller.admin
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper
+import org.apache.ibatis.solon.annotation.Db
 import org.noear.solon.annotation.Body
 import org.noear.solon.annotation.Controller
 import org.noear.solon.annotation.Inject
@@ -10,6 +11,7 @@ import org.noear.solon.annotation.Post
 import org.noear.solon.core.util.DataThrowable
 import org.noear.solon.data.annotation.Tran
 import org.noear.solon.data.tran.TranPolicy
+import web.mapper.BackGroundMapper
 import web.model.Users
 import web.response.*
 import web.service.*
@@ -44,6 +46,10 @@ open class UserController {
 
     @Inject
     lateinit var replaceRuleService: ReplaceRuleService
+
+    @Db("db")
+    @Inject
+    lateinit var backGroundMapper: BackGroundMapper
 
     @Post
     @Mapping("/adduser")
@@ -128,5 +134,6 @@ open class UserController {
         bookCacheService.delUserCache(id)
         userBookSourceService.delUserSource(id)
         replaceRuleService.delUserrule(id)
+        backGroundMapper.delUserGround(id)
     }
 }

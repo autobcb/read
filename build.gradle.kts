@@ -38,9 +38,7 @@ dependencies {
 
     implementation("javax.mail:mail:1.4.7")
 
-
-
-    implementation(platform("org.noear:solon-parent:3.0.5"))
+    implementation(platform("org.noear:solon-parent:3.3.2-M1"))
 
     implementation("org.noear:solon-web"){
         exclude(group = "org.noear", module = "solon-serialization-snack3")
@@ -61,6 +59,9 @@ dependencies {
         exclude(group = "org.slf4j", module = "slf4j-simple")
     }
     implementation("org.noear:solon-serialization-gson"){
+        exclude(group = "org.slf4j", module = "slf4j-simple")
+    }
+    implementation("org.noear:solon-cache-redisson"){
         exclude(group = "org.slf4j", module = "slf4j-simple")
     }
 

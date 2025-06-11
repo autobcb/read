@@ -51,6 +51,12 @@ open class UserRssSourceService {
         return userRssSourceMapper.delRssSource(source_url,userid)
     }
 
+    fun changegroup(id: String?, userid: String?,  group: String?):Int{
+        cleancache(userid)
+        return userRssSourceMapper.changegroup(id?:"", group?:"")
+    }
+
+
     fun cleancache(userid: String?){
         if(userid.isNullOrBlank()) return
         cache.remove(getlistkey(userid))

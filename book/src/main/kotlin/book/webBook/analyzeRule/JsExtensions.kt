@@ -5,6 +5,7 @@ import book.model.BaseSource
 import book.util.*
 import book.util.AppConst.dateFormat
 import book.util.Base64
+import book.util.help.cookieJarHeader
 import book.util.http.*
 import book.webBook.Debug
 import book.webBook.DebugLog
@@ -30,6 +31,7 @@ import org.slf4j.Logger
 import java.io.FileOutputStream
 import java.nio.file.Paths
 import java.time.LocalDateTime
+import kotlin.collections.set
 import kotlin.concurrent.thread
 
 /**
@@ -135,12 +137,49 @@ interface JsExtensions: JsEncodeUtils  {
             }
         }
         val header= GSON.toJson(headerMap)
-        return App.webview(html,url,js,getSource()?.usertocken?:"",header)
+        return App.webview(html,url,js,getSource()?.usertocken?:"",header,"","")
     }
 
     fun webViewGetSource(html: String?, url: String?, js: String?, sourceRegex: String): String? {
-        logger.info("用了 webViewGetSource")
-        return  ""
+        val headerMap =getSource()?.getHeaderMap(true)?: hashMapOf()
+        runCatching {
+            if(!url.isNullOrBlank() && ( url.startsWith("http://") || url.startsWith("https://"))){
+                val store=getSource()?.getCookieManger()
+                val cookie = (store?.getCookie(url))?:""
+                if (cookie.isNotEmpty()) {
+                    store?.mergeCookies(cookie, headerMap["Cookie"])?.let {
+                        headerMap.put("Cookie", it)
+                    }
+                }
+            }
+        }
+        val header= GSON.toJson(headerMap)
+        return App.webview(html,url,js,getSource()?.usertocken?:"",header,sourceRegex,"").body
+    }
+
+    /**
+     * 使用webView获取跳转url
+     */
+    fun webViewGetOverrideUrl(
+        html: String?,
+        url: String?,
+        js: String?,
+        overrideUrlRegex: String
+    ): String? {
+        val headerMap =getSource()?.getHeaderMap(true)?: hashMapOf()
+        runCatching {
+            if(!url.isNullOrBlank() && ( url.startsWith("http://") || url.startsWith("https://"))){
+                val store=getSource()?.getCookieManger()
+                val cookie = (store?.getCookie(url))?:""
+                if (cookie.isNotEmpty()) {
+                    store?.mergeCookies(cookie, headerMap["Cookie"])?.let {
+                        headerMap.put("Cookie", it)
+                    }
+                }
+            }
+        }
+        val header= GSON.toJson(headerMap)
+        return App.webview(html,url,js,getSource()?.usertocken?:"",header,"",overrideUrlRegex).body
     }
 
     /**
@@ -154,9 +193,6 @@ interface JsExtensions: JsEncodeUtils  {
         return webview(html,url,js).body
     }
 
-    fun webViewhasheader(html: String?, url: String?, js: String?, headers: Map<String, String>): String? {
-        return App.webview(html,url,js,getSource()?.usertocken?:"",GSON.toJson(headers)).body
-    }
 
     fun getWebViewUA(): String {
         return  AppConst.defaultuserAgent;
@@ -301,7 +337,7 @@ interface JsExtensions: JsEncodeUtils  {
                 iStream.copyTo(oStream)
             }
         }
-        return path.substring(FileUtils.getCachePath().length).also { println(it) }
+        return path.substring(FileUtils.getCachePath().length)
     }
 
     /**
@@ -365,6 +401,7 @@ interface JsExtensions: JsEncodeUtils  {
                     .followRedirects(false)
                     .headers(requestHeaders)
                     .method(Connection.Method.GET)
+                    .timeout(60000)
                     .execute()
             }
             val source=getSource()
@@ -378,6 +415,9 @@ interface JsExtensions: JsEncodeUtils  {
 
     fun getusePhone(urlStr: String, headers: Map<String, String>): Connection.Response {
         val requestHeaders = getrequestHeaders(urlStr,headers)
+        if(getSource()?.enabledCookieJar == true) {
+            requestHeaders[cookieJarHeader] = "12345"
+        }
         logger.info("getusePhone:$urlStr,headers:${GSON.toJson(requestHeaders)}")
         val rateLimiter = ConcurrentRateLimiter(getSource())
         val response = rateLimiter.withLimitBlocking {
@@ -405,6 +445,7 @@ interface JsExtensions: JsEncodeUtils  {
                     .followRedirects(false)
                     .headers(requestHeaders)
                     .method(Connection.Method.HEAD)
+                    .timeout(60000)
                     .execute()
             }
             val source=getSource()
@@ -418,6 +459,9 @@ interface JsExtensions: JsEncodeUtils  {
 
     fun headusePhone(urlStr: String, headers: Map<String, String>): Connection.Response {
         val requestHeaders = getrequestHeaders(urlStr,headers)
+        if(getSource()?.enabledCookieJar == true) {
+            requestHeaders[cookieJarHeader] = "12345"
+        }
         logger.info("headusePhone:$urlStr,headers:${GSON.toJson(requestHeaders)}")
         val rateLimiter = ConcurrentRateLimiter(getSource())
         val response = rateLimiter.withLimitBlocking {
@@ -493,6 +537,7 @@ interface JsExtensions: JsEncodeUtils  {
                     .followRedirects(false)
                     .requestBody(body)
                     .headers(requestHeaders)
+                    .timeout(60000)
                     .method(Connection.Method.POST)
                     .execute()
             }
@@ -508,6 +553,9 @@ interface JsExtensions: JsEncodeUtils  {
 
     fun postusePhone(urlStr: String, body: String, headers: Map<String, String>): Connection.Response {
         val requestHeaders = getrequestHeaders(urlStr,headers)
+        if(getSource()?.enabledCookieJar == true) {
+            requestHeaders[cookieJarHeader] = "12345"
+        }
         logger.info("postusePhone:$urlStr,body:$body,headers:${GSON.toJson(requestHeaders)}")
         val rateLimiter = ConcurrentRateLimiter(getSource())
         var key="Content-Type"

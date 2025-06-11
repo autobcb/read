@@ -8,6 +8,8 @@ data class WebMessage (
     val header:String="",
     val body:String="",
     val id: String,
+    val urlregex: String="",
+    val overrideUrlRegex: String="",
 )
 
 data class ToastMessage (

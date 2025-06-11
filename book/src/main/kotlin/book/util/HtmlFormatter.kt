@@ -21,6 +21,8 @@ object HtmlFormatter {
     private val indent2Regex = "^[\\n\\s]+".toRegex()
     private val lastRegex = "[\\n\\s]+$".toRegex()
 
+
+
     fun format(html: String?, otherRegex: Regex = otherHtmlRegex): String {
         html ?: return ""
         return html.replace(nbspRegex, " ")
@@ -33,6 +35,7 @@ object HtmlFormatter {
             .replace(indent2Regex, "　　")
             .replace(lastRegex, "")
     }
+
 
     fun formatKeepImg(html: String?, redirectUrl: URL? = null): String {
         html ?: return ""

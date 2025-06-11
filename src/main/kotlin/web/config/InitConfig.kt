@@ -48,22 +48,22 @@ class InitConfig {
             return@runBlocking  StrResponse(urlStr,"")
         }
 
-        App.webview=fun (html: String?, url: String?, js: String?, tocken:String, header:String):StrResponse = runBlocking{
+        App.webview=fun (html: String?, url: String?, js: String?, tocken:String, header:String,urlregex:String,overrideUrlRegex:String):StrResponse = runBlocking{
             val socket=ApiWebSocket.get(tocken)
             if(socket!=null){
                 val id= UUID.randomUUID().toString()
                 //logger.info("webview ,url: $url ,js: $js, html:$html, tocken: $tocken ")
-                socket.send(Gson().toJson(WebMessage(msg = "webview", url = url?:"",title=js?:"", html = html?:"" ,id=id ,header=header)))
+                socket.send(Gson().toJson(WebMessage(msg = "webview", url = url?:"",title=js?:"", html = html?:"" ,id=id ,header=header,urlregex=urlregex,overrideUrlRegex=overrideUrlRegex)))
                 return@runBlocking  StrResponse(url?:"",ApiWebSocket.WaitForResponse(id)?:"")
             }
             return@runBlocking  StrResponse(url?:"","")
         }
-        App.webviewbody=fun (html: String?, url: String?, js: String?, tocken:String, header:String, body:String):StrResponse = runBlocking{
+        App.webviewbody=fun (html: String?, url: String?, js: String?, tocken:String, header:String, body:String,urlregex:String,overrideUrlRegex:String):StrResponse = runBlocking{
             val socket=ApiWebSocket.get(tocken)
             if(socket!=null){
                 val id= UUID.randomUUID().toString()
                 //logger.info("webview ,url: $url ,js: $js, html:$html, tocken: $tocken ")
-                socket.send(Gson().toJson(WebMessage(msg = "webview", url = url?:"",title=js?:"", html = html?:"" ,id=id ,header=header,body=body)))
+                socket.send(Gson().toJson(WebMessage(msg = "webview", url = url?:"",title=js?:"", html = html?:"" ,id=id ,header=header,body=body,urlregex=urlregex,overrideUrlRegex=overrideUrlRegex)))
                 return@runBlocking  StrResponse(url?:"",ApiWebSocket.WaitForResponse(id)?:"")
             }
             return@runBlocking  StrResponse(url?:"","")
@@ -175,7 +175,7 @@ class InitConfig {
             }
             return@runBlocking MyResponse().also {
                 it.url = url?:""
-                it.method = "get"
+                it.method = "post"
                 it.statusCode = 403
             }.tojsonresponse()
         }

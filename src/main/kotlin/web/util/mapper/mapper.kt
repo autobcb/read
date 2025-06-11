@@ -32,7 +32,12 @@ class mapper {
     @Inject
     lateinit var cacheService: CacheService
 
+    @Inject
+    lateinit var rssSourceService: RssSourceService
 
+
+    @Inject
+    lateinit var userRssSourceService: UserRssSourceService
 
     companion object{
         var mapper:mapper?=null

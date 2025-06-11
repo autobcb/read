@@ -26,3 +26,6 @@ smtp:
 default:
   tts: #默认tts链接
   rule: #默认净化链接
+server.http:
+  coreThreads: x5 #默认线程
+  maxThreads: x10  #最大线程

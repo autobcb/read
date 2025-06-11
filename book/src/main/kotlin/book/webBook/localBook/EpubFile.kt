@@ -257,8 +257,8 @@ class EpubFile(var book: Book) {
             /*注:这里较大增加了内容加载的时间，所以首次获取内容后可存储到本地cache，减少重复加载*/
             for (res in epubBook.contents) {
                 if (chapter.url.substringBeforeLast("#") == res.href) {
-                    println(startFragmentId)
-                    println(endFragmentId)
+                   // println(startFragmentId)
+                   // println(endFragmentId)
                     elements.add(getBody(res, startFragmentId, endFragmentId))
                     isChapter = true
                     /**

@@ -4,17 +4,11 @@ import book.webBook.exception.RegexTimeoutException
 import com.script.ScriptBindings
 import com.script.rhino.RhinoScriptEngine
 import kotlinx.coroutines.*
-import kotlinx.coroutines.Dispatchers.IO
-import java.lang.Thread.sleep
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.regex.Matcher
 import java.util.regex.Pattern
-import kotlin.concurrent.thread
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
-
 
 /**
  * 带有超时检测的正则替换

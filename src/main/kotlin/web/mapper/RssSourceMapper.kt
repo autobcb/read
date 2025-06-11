@@ -8,10 +8,10 @@ import web.model.BookSource
 import web.model.RssSource
 
 interface RssSourceMapper : BaseMapper<RssSource> {
-    @Select("SELECT * FROM rss_source  order by sourceorder asc")
+    @Select("SELECT * FROM rss_source  order by sourceorder,source_url asc")
     fun getallSourcelist(): List<RssSource>?
 
-    @Select("SELECT * FROM rss_source where enabled = true order by sourceorder asc")
+    @Select("SELECT * FROM rss_source where enabled = true order by sourceorder,source_url asc")
     fun getEnabledSourcelist(): List<RssSource>?
 
     @Select("SELECT * FROM rss_source WHERE source_url = #{source_url} LIMIT 1")
@@ -22,4 +22,7 @@ interface RssSourceMapper : BaseMapper<RssSource> {
 
     @Update("UPDATE rss_source set enabled= #{enabled} WHERE source_url = #{source_url}")
     fun changeEnabled(@Param("source_url") source_url: String,@Param("enabled") enabled: Boolean):Int
+
+    @Update("UPDATE rss_source set source_group= #{group} WHERE source_url = #{source_url}")
+    fun changegroup(@Param("source_url") source_url: String, @Param("group") group: String):Int
 }

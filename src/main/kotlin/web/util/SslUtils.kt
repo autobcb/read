@@ -23,7 +23,7 @@ object SslUtils {
     @Throws(Exception::class)
     fun ignoreSsl() {
         val hv = HostnameVerifier { urlHostName, session ->
-            println("Warning: URL Host: " + urlHostName + " vs. " + session.peerHost)
+           // println("Warning: URL Host: " + urlHostName + " vs. " + session.peerHost)
             true
         }
         trustAllHttpsCertificates()

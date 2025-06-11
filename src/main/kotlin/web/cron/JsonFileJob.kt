@@ -1,5 +1,6 @@
 package web.cron
 
+import org.noear.solon.annotation.Inject
 import org.noear.solon.scheduling.annotation.Scheduled
 import java.io.File
 import java.nio.file.Files
@@ -8,9 +9,14 @@ import java.nio.file.attribute.BasicFileAttributes
 @Scheduled(fixedRate = 1000 * 60*60*24)
 class JsonFileJob : Runnable{
     val filepath="storage/assets/json"
+    @Inject(value = "\${admin.cron:true}", autoRefreshed=true)
+    var cron:Boolean=true
 
     override fun run(){
-        var file= File(filepath)
+        if(!cron){
+            return
+        }
+        val file= File(filepath)
         file.walk().maxDepth(1).forEach {
             if(it.isFile && it.extension == "json"){
                 kotlin.runCatching {

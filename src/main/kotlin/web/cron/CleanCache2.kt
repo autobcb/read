@@ -3,6 +3,7 @@ package web.cron
 import book.appCtx
 import book.util.FileUtils
 import kotlinx.coroutines.runBlocking
+import org.noear.solon.annotation.Inject
 import org.noear.solon.scheduling.annotation.Scheduled
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -11,6 +12,9 @@ import java.nio.file.attribute.BasicFileAttributes
 
 @Scheduled(fixedRate = 1000 * 60*60*6)
 class CleanCache2 : Runnable {
+
+    @Inject(value = "\${admin.cron:true}", autoRefreshed=true)
+    var cron:Boolean=true
 
     companion object {
         private var isdo = false
@@ -22,6 +26,9 @@ class CleanCache2 : Runnable {
 
 
     override fun run() = runBlocking{
+        if(!cron){
+            return@runBlocking
+        }
         if (isdo) {
             return@runBlocking
         }

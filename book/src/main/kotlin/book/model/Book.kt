@@ -246,7 +246,6 @@ data class Book(
                     .getElementsByTag("rootfiles").get(0)
                     .getElementsByTag("rootfile").get(0);
                 val result = rootFileElement.attr("full-path");
-                System.out.println("result: " + result)
                 if (result != null && result.isNotEmpty()) {
                     return File(result).parentFile?.let{
                         it.toString()

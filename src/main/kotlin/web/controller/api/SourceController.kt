@@ -30,31 +30,13 @@ open class SourceController:BaseController() {
         JsonResponse(true)
     }
 
-    private fun torderSource( user:Users)= run{
-        var order=0
-        if(user.source == 2){
-            val sources = userBookSourceService.getallBookSourcelist(user.id!!)
-            for( it in sources!!){
-                if(it.sourceorder != order) userBookSourceService.changeorder(it.id?:"",user.id, order)
-                order++
-            }
-        }else{
-            val sources = bookSourceService.getallBookSourcelist()
-            for( it in sources!!){
-               if(it.sourceorder != order) bookSourceService.changeorder(it.bookSourceUrl?:"", order)
-                order++
-            }
-        }
-        order
-    }
-
     @Mapping("/saveBookSources")
     fun saveBookSources(accessToken:String?, @Body content:String)=run{
         val user=getsourceuser(accessToken)
         var insert = 0
         var update = 0
         val bookSourcelist= BookSource.fromJsonArray(content).getOrNull()
-        torderSource(user)
+
         bookSourcelist?.forEach {
             addorupdate(it,user).let {  (ins,ups)->
                 insert += ins
@@ -73,7 +55,6 @@ open class SourceController:BaseController() {
         if(urls.isNotEmpty()){
             list=GSON.fromJsonArray<String>(urls).getOrNull()?:listOf()
         }
-        torderSource(user)
         val bookSourcelist= BookSource.fromJsonArray(source).getOrNull()
         bookSourcelist?.forEach {
             if(list.isNotEmpty()){
@@ -100,7 +81,6 @@ open class SourceController:BaseController() {
         var insert = 0
         var update = 0
         val booksource  = BookSource.fromJson(content).getOrNull()?: BookSource()
-        torderSource(user)
         if (booksource.bookSourceName.isNotEmpty())
             addorupdate(booksource, user ).let {  (ins,ups)->
                 insert += ins
@@ -213,7 +193,12 @@ open class SourceController:BaseController() {
             }
             order = 0
             for(id in ids){
-                userBookSourceService.changeorder(id,user.id, order)
+                for( it in sources){
+                    if(it.bookSourceUrl == id){
+                        userBookSourceService.changeorder(it.id?:"",user.id, order)
+                        break;
+                    }
+                }
                 order++
             }
         }else{
@@ -249,7 +234,12 @@ open class SourceController:BaseController() {
                 }
             }
             for(id in ids){
-                userBookSourceService.changeorder(id,user.id, order)
+                for( it in sources){
+                    if(it.bookSourceUrl == id){
+                        userBookSourceService.changeorder(it.id?:"",user.id, order)
+                        break;
+                    }
+                }
                 order++
             }
         }else{
@@ -274,7 +264,6 @@ open class SourceController:BaseController() {
         if (ids == null || ids.isEmpty()){
             throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         }
-        torderSource(user)
         if(user.source == 2){
             for(id in ids){
                 val bookSource= userBookSourceService.getBookSource(id,user.id!!)
@@ -362,7 +351,6 @@ open class SourceController:BaseController() {
         val source= BookSource.fromJson(content.json?:"").getOrNull().also {
             if(it == null ) throw DataThrowable().data(JsonResponse(false, SOURCE_JSON_ERROR))
         }!!
-        torderSource(user)
         if(source.bookSourceUrl.isEmpty()) throw DataThrowable().data(JsonResponse(false, SOURCE_URL_ERROR))
         if(user.source == 2){
             val bookSource= web.model.UserBookSource().jsontomodel(source,user.id!!)
@@ -414,7 +402,7 @@ open class SourceController:BaseController() {
         if (id.isNullOrBlank()){
             throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         }
-        torderSource(user)
+        //torderSource(user)
         if(user.source == 2){
             val bookSource= userBookSourceService.getBookSource(id,user.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
             when(st){
@@ -444,7 +432,7 @@ open class SourceController:BaseController() {
     @Mapping("/stopbookSources")
     fun stopbookSources(accessToken:String?,@Body ids: List<String>?)= run{
         val user=getsourceuser(accessToken)
-        torderSource(user)
+        //torderSource(user)
         if(user.source == 2){
             ids?.forEach {
                 if (it.isNotBlank()){
@@ -467,7 +455,7 @@ open class SourceController:BaseController() {
     @Mapping("/startbookSources")
     fun startbookSources(accessToken:String?,@Body ids: List<String>?)= run{
         val user=getsourceuser(accessToken)
-        torderSource(user)
+        //torderSource(user)
         if(user.source == 2){
             ids?.forEach {
                 if (it.isNotBlank()){
@@ -490,7 +478,7 @@ open class SourceController:BaseController() {
     @Mapping("/stopbookSourceExplores")
     fun stopbookSourceExplores(accessToken:String?,@Body ids: List<String>?)= run{
         val user=getsourceuser(accessToken)
-        torderSource(user)
+        //torderSource(user)
         if(user.source == 2){
             ids?.forEach {
                 if (it.isNotBlank()){
@@ -513,7 +501,7 @@ open class SourceController:BaseController() {
     @Mapping("/startbookSourceExplores")
     fun startbookSourceExplores(accessToken:String?,@Body ids: List<String>?)= run{
         val user=getsourceuser(accessToken)
-        torderSource(user)
+       // torderSource(user)
         if(user.source == 2){
             ids?.forEach {
                 if (it.isNotBlank()){

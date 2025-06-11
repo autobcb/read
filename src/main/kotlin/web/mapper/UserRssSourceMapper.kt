@@ -10,7 +10,7 @@ import web.model.UserRssSource
 interface UserRssSourceMapper : BaseMapper<UserRssSource> {
 
 
-    @Select("SELECT * FROM user_rss_source  WHERE userid = #{userid} order by sourceorder asc")
+    @Select("SELECT * FROM user_rss_source  WHERE userid = #{userid} order by sourceorder,source_url asc")
     fun getallSourcelist(@Param("userid") userid: String): List<UserRssSource>
 
 
@@ -26,4 +26,6 @@ interface UserRssSourceMapper : BaseMapper<UserRssSource> {
     @Delete("Delete  FROM user_rss_source WHERE source_url = #{source_url} and userid = #{userid}")
     fun delRssSource(@Param("source_url") source_url: String,@Param("userid") userid: String): Int
 
+    @Update("UPDATE user_rss_source set source_group= #{group} WHERE id = #{id}")
+    fun changegroup(@Param("id") id: String, @Param("group") group: String):Int
 }

@@ -273,6 +273,7 @@ class WBook (val bookSource: BookSource, val debugLog: Boolean = true, var debug
             chapter = bookChapter,
             headerMapF = bookSource.getHeaderMap(true),debugLog = debugger
         )
+
         var res = analyzeUrl.getStrResponseAwait(
             jsStr = bookSource.getContentRule().webJs,
             sourceRegex = bookSource.getContentRule().sourceRegex,

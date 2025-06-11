@@ -129,7 +129,6 @@ class BookSource(
                 return str
             }
         }
-        println("获取发现:$bookSourceUrl")
         val list = mutableListOf<Any>()
         var ruleStr:String = exploreUrl
         runCatching {

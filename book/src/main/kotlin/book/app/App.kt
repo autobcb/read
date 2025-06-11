@@ -7,10 +7,10 @@ object App  {
     var startBrowserAwait =fun  (urlStr: String,title: String,tocken:String,header:String): StrResponse {
         return StrResponse(urlStr,"")
     }
-    var webview =fun  (html: String?, url: String?, js: String?,tocken:String,header:String):StrResponse{
+    var webview =fun  (html: String?, url: String?, js: String?,tocken:String,header:String,urlregex:String,overrideUrlRegex:String):StrResponse{
         return StrResponse(url?:"", "")
     }
-    var webviewbody =fun  (html: String?, url: String?, js: String?,tocken:String,header:String,body:String):StrResponse{
+    var webviewbody =fun  (html: String?, url: String?, js: String?,tocken:String,header:String,body:String,urlregex:String,overrideUrlRegex:String):StrResponse{
         return StrResponse(url?:"", "")
     }
     var toast =fun  (str: String,tocken:String){

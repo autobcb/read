@@ -1,13 +1,16 @@
 package web.cron
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Semaphore
 import org.noear.solon.annotation.Inject
 import org.noear.solon.scheduling.annotation.Scheduled
 import org.slf4j.LoggerFactory
 import web.util.mapper.mapper
 import web.util.read.Bookcache
-import kotlin.concurrent.thread
 
 @Scheduled(fixedRate = 1000 * 60)
 class CacheJob: Runnable {
@@ -19,22 +22,22 @@ class CacheJob: Runnable {
     @Inject(value = "\${admin.cron:true}", autoRefreshed=true)
     var cron:Boolean=true
 
-    override fun run() = runBlocking{
+
+    override fun run() {
         if(!cron){
-            return@runBlocking
+           return
         }
         if (isupdatebookcron) {
-            return@runBlocking
+            return
         }
-        logger.info("开始添加缓存")
+
         isupdatebookcron = true
+        logger.info("Cache job started")
         val caches = mapper.get().bookCacheService.bookCacheMapper.selectList(QueryWrapper())
-        runCatching {
-            caches.forEach {
-                thread { Bookcache.addcache(it.id!!) }
-            }
+        for (cache in caches) {
+            Bookcache.addcache(cache)
         }
-        logger.info("已添加缓存完成")
+        logger.info("Cache job end")
         isupdatebookcron = false
     }
 }

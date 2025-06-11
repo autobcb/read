@@ -2,6 +2,7 @@ package web.controller.api
 
 
 
+import book.app.App
 import book.model.Book
 import book.model.BookChapter
 import book.model.BookSource
@@ -16,6 +17,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withLock
 import org.noear.solon.annotation.Controller
 import org.noear.solon.annotation.Inject
 import org.noear.solon.net.annotation.ServerEndpoint
@@ -50,15 +52,19 @@ class SourceCheckDebug: BaseDebug() {
     }
 
 
-    override fun onOpen(socket: WebSocket) {
+    override fun onOpen(socket: WebSocket) =runBlocking{
         val accessToken: String = socket.param("id")
-        ApiWebSocket.logger.info("websocket Open $accessToken")
         if (accessToken.isBlank()) {
             socket.close()
-            return
+            return@runBlocking
         }
-        mutex.apply {
-            ma[accessToken] = socket
+        val checkid: String = socket.param("checkid")
+        if (checkid.isBlank()) {
+            socket.close()
+            return@runBlocking
+        }
+        mutex.withLock {
+            ma[checkid] = socket
         }
     }
 
@@ -70,55 +76,72 @@ class SourceCheckDebug: BaseDebug() {
             socket.close()
             return@runBlocking
         }
-        mutex.apply {
-            ma[accessToken] = socket
+        val checkid: String = socket.param("checkid")
+        if (checkid.isBlank()) {
+            socket.close()
+            return@runBlocking
+        }
+        mutex.withLock {
+            ma[checkid] = socket
         }
         val ids:List<String> = GSON.fromJsonArray<String>(text).getOrNull()?: listOf()
         val semaphore = Semaphore(5)
         val jobs = mutableListOf<Job>()
+        var num=0
         for (id in ids){
-            if(!isopen(accessToken)) break
+            if(!isopen(checkid)) break
             launch{
                 semaphore.acquire()
-                kotlin.runCatching { check(user,accessToken,searchkey,id) }
+                kotlin.runCatching { check(checkid,user,accessToken,searchkey,id) }
                 semaphore.release()
+                if(isopen(checkid)) {
+                    mutex.withLock {
+                        num++
+                        runCatching {
+                            getsocket(checkid).send(Gson().toJson(ErrorMsg().apply {
+                                url="已检验完成:$num,还剩:${ids.size - num}"
+                                msg="msg"
+                            }))
+                        }
+                    }
+                }
             }.let {
                 jobs.add(it)
             }
         }
         jobs.joinAll()
         logger.info("书源检验结束:$accessToken")
-        getsocket(accessToken).send(Gson().toJson(ErrorMsg().apply {
+        getsocket(checkid).send(Gson().toJson(ErrorMsg().apply {
             url=""
             msg="close"
         }))
     }
 
-    private  fun isopen(accessToken: String): Boolean{
+    private  fun isopen(checkid: String) = runBlocking{
         var z=false
-        mutex.apply {
-            if(ma[accessToken]  != null){
+        mutex.withLock {
+            if(ma[checkid]  != null){
                 z=true
             }
         }
-        return z
+        z
     }
 
-    private fun  getsocket(accessToken: String): WebSocket{
-        return  ma[accessToken]!!
+    private fun  getsocket(checkid: String): WebSocket{
+        return  ma[checkid]!!
     }
 
 
-    override fun onClose(socket: WebSocket?) {
-        val accessToken: String = socket!!.param("id")
-        mutex.apply {
-            ma.remove(accessToken)
+    override fun onClose(socket: WebSocket?): Unit = runBlocking{
+        val checkid: String = socket!!.param("checkid")
+        mutex.withLock {
+            ma.remove(checkid)
         }
     }
 
-    fun check(user:Users,accessToken:String,key:String,id:String) = runBlocking {
+    fun check(checkid:String,user:Users,accessToken:String,key:String,id:String) = runBlocking {
         if (user.source == 0) return@runBlocking
-        if(!isopen(accessToken)) return@runBlocking
+        if(!isopen(checkid)) return@runBlocking
         val source: BaseSource? = if(user.source == 2){
             userBookSourceService.getBookSource(id,user.id!!)?.toBaseSource()
         }else{
@@ -126,7 +149,7 @@ class SourceCheckDebug: BaseDebug() {
         }
         if(source != null){
             kotlin.runCatching {
-                if(!isopen(accessToken)) return@runBlocking
+                if(!isopen(checkid)) return@runBlocking
                 val webBook = WBook(source.json,user.id!!,accessToken, false)
                 var list:List<SearchBook> = listOf()
                 kotlin.runCatching {
@@ -137,25 +160,25 @@ class SourceCheckDebug: BaseDebug() {
                         list=webBook.searchBook(s.ruleSearch!!.checkKeyWord!!)
                     }
                 }.onFailure {
-                    getsocket(accessToken).send(Gson().toJson(ErrorMsg().apply {
+                    getsocket(checkid).send(Gson().toJson(ErrorMsg().apply {
                         url=id
                         msg="搜索失败:${it.message}"
                     }))
                     return@runBlocking
                 }
                 if(list.isEmpty()){
-                    getsocket(accessToken).send(Gson().toJson(ErrorMsg().apply {
+                    getsocket(checkid).send(Gson().toJson(ErrorMsg().apply {
                         url=id
                         msg="搜索结果为空"
                     }))
                     return@runBlocking
                 }
-                if(!isopen(accessToken)) return@runBlocking
+                if(!isopen(checkid)) return@runBlocking
                 var book: Book?=null
                 kotlin.runCatching {
                     book=webBook.getBookInfo(list[0].bookUrl)
                 }
-                if(!isopen(accessToken)) return@runBlocking
+                if(!isopen(checkid)) return@runBlocking
                 var chapters:List<BookChapter> = listOf()
                 kotlin.runCatching {
                     chapters = if(book!=null){
@@ -164,7 +187,7 @@ class SourceCheckDebug: BaseDebug() {
                         webBook.getChapterList(list[0].toBook())
                     }
                 }.onFailure {
-                    getsocket(accessToken).send(Gson().toJson(ErrorMsg().apply {
+                    getsocket(checkid).send(Gson().toJson(ErrorMsg().apply {
                         url=id
                         msg="目录获取失败:${it.message}"
                     }))
@@ -172,7 +195,7 @@ class SourceCheckDebug: BaseDebug() {
                 }
 
                 if(chapters.isEmpty()){
-                    getsocket(accessToken).send(Gson().toJson(ErrorMsg().apply {
+                    getsocket(checkid).send(Gson().toJson(ErrorMsg().apply {
                         url=id
                         msg="目录为空"
                     }))
@@ -194,7 +217,7 @@ class SourceCheckDebug: BaseDebug() {
 
                 }
                 if(chapter!=null){
-                    if(!isopen(accessToken)) return@runBlocking
+                    if(!isopen(checkid)) return@runBlocking
                     kotlin.runCatching {
                         if(book!=null){
                             webBook.getBookContent(book!!,chapter,nexturl)
@@ -202,7 +225,7 @@ class SourceCheckDebug: BaseDebug() {
                             webBook.getBookContent(list[0].toBook(),chapter,nexturl)
                         }
                     }.onFailure {
-                        getsocket(accessToken).send(Gson().toJson(ErrorMsg().apply {
+                        getsocket(checkid).send(Gson().toJson(ErrorMsg().apply {
                             url=id
                             msg="正文获取失败:${it.message}"
                         }))
@@ -210,7 +233,7 @@ class SourceCheckDebug: BaseDebug() {
                     }
                 }
             }.onFailure {
-                getsocket(accessToken).send(Gson().toJson(ErrorMsg().apply {
+                getsocket(checkid).send(Gson().toJson(ErrorMsg().apply {
                     url=id
                     msg=it.message ?: "error"
                 }))

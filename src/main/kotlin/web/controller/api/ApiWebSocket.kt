@@ -60,10 +60,8 @@ class ApiWebSocket : SimpleWebSocketListener() {
                 ma.remove( key)
             }
         }
-        suspend fun get(key:String):WebSocket?{
-            mutex.withLock {
-                return ma[key]
-            }
+        fun get(key:String):WebSocket?{
+            return ma[key]
         }
     }
 

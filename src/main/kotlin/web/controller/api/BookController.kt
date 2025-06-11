@@ -1,5 +1,6 @@
 package web.controller.api
 
+
 import book.app.App
 import book.model.Book
 import book.model.BookSource
@@ -14,6 +15,7 @@ import org.noear.solon.core.util.DataThrowable
 import org.noear.solon.data.annotation.Cache
 import org.noear.solon.data.annotation.CacheRemove
 import org.noear.solon.data.annotation.Tran
+import org.noear.solon.data.cache.CacheService
 import org.noear.solon.web.cors.annotation.CrossOrigin
 import web.controller.api.ReadController.Companion.setBookbycache
 import web.controller.api.ReadController.Companion.setChapterListbycache
@@ -27,12 +29,14 @@ import web.service.BookGroupService
 import web.service.BooklistService
 import web.util.ResponseManager
 import web.util.hash.EncryptUtils
+import web.util.hash.Md5
 import web.util.read.Bookcache
 import web.util.read.getlist
 import web.util.read.updatebook
 import java.io.File
+import java.net.SocketException
+import java.net.SocketTimeoutException
 import kotlin.concurrent.thread
-
 
 @Controller
 @Mapping(routepath)
@@ -48,8 +52,15 @@ open class BookController:BaseController() {
     @Inject
     lateinit var bookCacheService: BookCacheService
 
+    @Inject
+    private lateinit var cache: CacheService
+
+    @Inject(value = "\${admin.cron:true}", autoRefreshed=true)
+    var cron:Boolean=true
+
     fun search(accessToken:String?, bookSourceUrl:String?, page:Int?, key:String?,type:Int)= runBlocking{
         val (user,source)=getsourceuser(accessToken,bookSourceUrl)
+        if(!source.enabled)  throw DataThrowable().data(JsonResponse(false,"source error"))
         val webBook = WBook(source.json,user.id!!,accessToken, false)
         var re:List<SearchBook>  = arrayListOf()
         runCatching {
@@ -67,12 +78,30 @@ open class BookController:BaseController() {
         }.onFailure {
             it.printStackTrace()
             App.log("搜索出错:"+it.message,accessToken!!)
+            if (type ==1 &&( it is SocketTimeoutException  || it is SocketException || (it.message?.contains("timeout"))?:false )) {
+                val md5=Md5(source.json)
+                var num=  cache.getOrStore(md5, Int::class.java,600) {
+                    0
+                }
+                if(num > 2){
+                    if(user.source == 2){
+                        userBookSourceService.changeEnabled(source.bookSourceUrl,user.id!!,false)
+                    }else{
+                        bookSourceService.changeEnabled(source.bookSourceUrl,false);
+                    }
+                }else{
+                    num++
+                    cache.store(md5,num,600)
+                }
+            }
             throw DataThrowable().data(JsonResponse(false, it.message?:"搜索出错"))
         }
         if(re.isEmpty() &&( page == 1 || page == 0)){
             throw DataThrowable().data(JsonResponse(false,"search is empty"))
         }
         val s= BookSource.fromJson(source.json).getOrNull()
+        s?.usertocken=accessToken
+        s?.userid=user.id
         if(s != null && s.hasimageDecode() ){
             re.forEach{
                 it.imageDecode=true
@@ -129,6 +158,8 @@ open class BookController:BaseController() {
         booklistService.booklistMapper.insert(booktolist.bookto(new!!,false).apply {
             this.useReplaceRule=(useReplaceRule == 1)
             val s= BookSource.fromJson(source.json).getOrNull()
+            s?.usertocken=accessToken
+            s?.userid=user.id
             if(s != null && s.hasimageDecode() ){
                 this.imageDecode=true
             }
@@ -221,6 +252,8 @@ open class BookController:BaseController() {
             book.lastCheckTime=System.currentTimeMillis()
             book.bookto(new!!,false)
             val s= BookSource.fromJson(source.json).getOrNull()
+            s?.usertocken=accessToken
+            s?.userid=user.id
             book.imageDecode = s != null && s.hasimageDecode()
             booklistService.booklistMapper.updateById(book)
             booklistService.cleancache(user.id)
@@ -256,6 +289,8 @@ open class BookController:BaseController() {
             }
             mybook.bookto(new,false)
             val s= BookSource.fromJson(source.json).getOrNull()
+            s?.usertocken=accessToken
+            s?.userid=user.id
             if(s != null && s.hasimageDecode() ){
                 mybook.imageDecode=true
             }else{
@@ -366,7 +401,7 @@ open class BookController:BaseController() {
             }
             bookCacheService.bookCacheMapper.insert(cache)
             bookCacheService.cleancache(user.id)
-            thread { Bookcache.addcache(cache.id!!) }
+            if(cron)  Bookcache.addcache(cache)
             JsonResponse(true,SUCCESS)
         }
     }

@@ -55,13 +55,7 @@ java.postusePhone(urlStr: String, body: String, headers: Map<String, String>) //
 # 未支持函数
 以下函数还未支持，有些调用了安卓接口无法支持，有些我觉得用不上，有些我也不知道是干啥，如果有轻阅读3支持的书源，轻阅读不支持，可以在issues里发给我。
 ````
-fun webViewGetSource(html: String?, url: String?, js: String?, sourceRegex: String): String?
-fun webViewGetOverrideUrl(
-    html: String?,
-    url: String?,
-    js: String?,
-    overrideUrlRegex: String
-): String?
+
 fun un7zFile(zipPath: String): String 
 fun unrarFile(zipPath: String): String
 fun unArchiveFile(zipPath: String): String

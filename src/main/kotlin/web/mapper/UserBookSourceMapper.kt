@@ -12,10 +12,10 @@ interface UserBookSourceMapper : BaseMapper<UserBookSource> {
     @Select("SELECT * FROM user_book_source WHERE book_source_url = #{bookSourceUrl} and userid = #{userid} LIMIT 1")
     fun getBookSource(@Param("bookSourceUrl") bookSourceUrl: String,@Param("userid") userid: String): UserBookSource?
 
-    @Select("SELECT * FROM user_book_source WHERE enabled= #{enabled} and userid = #{userid} order by sourceorder asc")
+    @Select("SELECT * FROM user_book_source WHERE enabled= #{enabled} and userid = #{userid} order by sourceorder ,book_source_url asc")
     fun getBookSourcelist(@Param("enabled") enabled: Boolean,@Param("userid") userid: String): List<UserBookSource>?
 
-    @Select("SELECT * FROM user_book_source  WHERE userid = #{userid} order by sourceorder asc")
+    @Select("SELECT * FROM user_book_source  WHERE userid = #{userid} order by sourceorder ,book_source_url asc")
     fun getallBookSourcelist(@Param("userid") userid: String): List<UserBookSource>?
 
     @Update("UPDATE user_book_source set book_source_group= #{group} WHERE id = #{id}")

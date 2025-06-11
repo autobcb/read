@@ -10,10 +10,10 @@ interface BookSourceMapper : BaseMapper<BookSource> {
     @Select("SELECT * FROM book_source WHERE book_source_url = #{bookSourceUrl}  LIMIT 1")
     fun getBookSource(@Param("bookSourceUrl") bookSourceUrl: String): BookSource?
 
-    @Select("SELECT * FROM book_source WHERE enabled= #{enabled} order by sourceorder asc")
+    @Select("SELECT * FROM book_source WHERE enabled= #{enabled} order by sourceorder  ,book_source_url asc")
     fun getBookSourcelist(@Param("enabled") enabled: Boolean): List<BookSource>?
 
-    @Select("SELECT * FROM book_source  order by sourceorder asc")
+    @Select("SELECT * FROM book_source  order by sourceorder ,book_source_url asc")
     fun getallBookSourcelist(): List<BookSource>?
 
     @Update("UPDATE book_source set book_source_group= #{group} WHERE book_source_url = #{bookSourceUrl}")

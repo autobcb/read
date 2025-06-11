@@ -58,7 +58,6 @@ suspend fun getChapterList(webBook: WBook,book: Book):List<BookChapter>{
         re=webBook.getChapterList(book)
     }.onFailure {
         if(it is ConcurrentException){
-            println("getlist并发原因？？？？${it.message}")
             val randomNumber = Random.nextInt(1000, 500).toLong()
             delay(randomNumber)
             return getChapterList(webBook,book)
@@ -74,7 +73,6 @@ suspend fun  getbook(webBook:WBook, url:String):Book{
         book=webBook.getBookInfo(url,canReName = true)
     }.onFailure {
         if(it is ConcurrentException){
-            println("getlist并发原因？？？？${it.message}")
             val randomNumber = Random.nextInt(1000, 500).toLong()
             delay(randomNumber)
             return getbook(webBook,url)

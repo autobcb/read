@@ -1,5 +1,6 @@
 package web.cron
 
+import book.model.BookSource
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.joinAll
@@ -12,7 +13,7 @@ import org.slf4j.LoggerFactory
 import web.util.mapper.mapper
 import web.util.read.updatebook
 
-@Scheduled(fixedRate = 1000 * 60*30)
+@Scheduled(fixedRate = 1000 * 60*60)
 class BookJob: Runnable {
     @Inject(value = "\${admin.cron:true}", autoRefreshed=true)
     var cron:Boolean=true
@@ -36,7 +37,7 @@ class BookJob: Runnable {
             val booklist = mapper.get().booklistService.booklistMapper.selectList(QueryWrapper())
             booklist.forEach {
                 runCatching {
-                    if(it.origin != "loc_book"){
+                    if(it.origin != "loc_book" && it.latestChapterTime?:0 > System.currentTimeMillis() - 7*24*60*60*1000){
                         val user = mapper.get().usersService.getUser(it.userid)
                         if (user != null) {
                             val source = if(user.source == 2){
@@ -45,16 +46,20 @@ class BookJob: Runnable {
                                 mapper.get().bookSourceService.getBookSource(it.origin?:"")?.toBaseSource()
                             }
                             if (source != null ) {
-                                val book=it
-                                launch{
-                                    semaphore.acquire()
-                                    logger.info("更新${book.name}")
-                                    runCatching {  updatebook(book, source,book.userid?:"admin") }
-                                    logger.info("完成更新${book.name}")
-                                    semaphore.release()
-                                }.let {
-                                    jobs.add(it)
+                                val s=BookSource.fromJson(source.json).getOrNull()?: BookSource()
+                                if(s.phonehttp != true){
+                                    val book=it
+                                    launch{
+                                        semaphore.acquire()
+                                        logger.info("更新${book.name}")
+                                        runCatching {  updatebook(book, source,book.userid?:"admin") }
+                                        logger.info("完成更新${book.name}")
+                                        semaphore.release()
+                                    }.let {
+                                        jobs.add(it)
+                                    }
                                 }
+
                             }
                         }
 

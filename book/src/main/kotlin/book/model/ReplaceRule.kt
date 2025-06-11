@@ -66,7 +66,7 @@ data class ReplaceRule(
             try {
                 Pattern.compile(pattern)
             } catch (ex: PatternSyntaxException) {
-                 println("正则语法错误或不支持：${ex.localizedMessage}")
+                 //println("正则语法错误或不支持：${ex.localizedMessage}")
                 return false
             }
             // Pattern.compile测试通过，但是部分情况下会替换超时，报错，一般发生在修改表达式时漏删了

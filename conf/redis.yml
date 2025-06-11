@@ -1,0 +1,9 @@
+#如果需要把缓存从内存缓存改为 redis 请将 conf 文件中的 cache 按以下参数配置 ，此文件只是示例 修改此文件无效
+cache:
+  driverType: "redis" #驱动类型
+  keyHeader: "read" #默认为 read ，可不配置
+  defSeconds: 600 #默认为 30，可不配置
+  server: "localhost:6379"
+  db: 0 #默认为 0，可不配置
+  idleConnectionTimeout: 10000
+  connectTimeout: 10000

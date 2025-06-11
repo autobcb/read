@@ -55,6 +55,11 @@ open class RssSourceService {
         return rssSourceMapper.changeEnabled(source_url, enabled)
     }
 
+    fun changegroup( bookSourceUrl: String?, group: String?):Int{
+        cleancache()
+        return rssSourceMapper.changegroup(bookSourceUrl?:"", group?:"")
+    }
+
     fun cleancache(){
         cache.remove(getalllistkey())
         cache.remove(getlistkey())

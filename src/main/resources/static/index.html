@@ -30,9 +30,66 @@
   <link rel="icon" type="image/png" href="favicon.png"/>
 
   <title>read</title>
+  <!-- Loading indicator -->
+  <style>
+    .container{
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex: auto;
+        flex-direction: column;
+    }
+    .indicator{
+        width: 100px;
+        height: 100px;
+        margin-bottom: 15px;
+    }
+    .progress-bar {
+        width: 100px;
+        background-color: #f3f3f3;
+        border-radius: 4px;
+    }
+    @keyframes progress {
+        0% { width: 50%; }
+        100% { width: 100%; }
+    }
+    .progress-bar-fill {
+        display: block;
+        height: 5px;
+        background-color: #46494b;
+        border-radius: 4px;
+        transition: width 0.2s ease-in;
+        animation: progress 5s ease-in-out forwards;
+    }
+  </style>
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
+<div id="loading_indicator" class="container">
+  <img class="indicator" src="/icons/app_icon.png"/>
+  <div class="progress-bar">
+    <div class="progress-bar-fill" style="width: 50%;"></div>
+  </div>
+</div>
+<script>
+  window.addEventListener('load', function(ev) {
+      var loading = document.getElementById('loading_indicator');
+      _flutter.loader.loadEntrypoint({
+          serviceWorker: {
+              serviceWorkerVersion: serviceWorkerVersion,
+          },
+          onEntrypointLoaded: async function(engineInitializer) {
+              let appRunner = await engineInitializer.initializeEngine();
+              await appRunner.runApp();
+              window.setTimeout(function () {
+                  loading.remove();
+              }, 200);
+          }
+      });
+  });
+</script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
