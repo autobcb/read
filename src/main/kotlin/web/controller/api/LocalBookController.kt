@@ -45,6 +45,8 @@ open class LocalBookController:BaseController() {
         kotlin.runCatching {
             f1= URLDecoder.decode( f1, "UTF-8" )
         }
+        val unifiedPath = f1.replace("\\", "/")
+        f1= unifiedPath.substringAfterLast('/')
         val  uploadDir = getlocalpath(user.username?:"")
         val ufile= File(uploadDir)
         if(!ufile.exists()){ufile.mkdirs()}

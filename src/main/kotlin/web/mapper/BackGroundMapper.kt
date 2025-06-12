@@ -11,6 +11,6 @@ interface BackGroundMapper : BaseMapper<BackGround>{
     @Delete("Delete  FROM back_ground WHERE userid = #{id}")
     fun delUserGround(@Param("id") id: String): Int
 
-    @Select("SELECT * FROM back_ground WHERE userid = #{id} ")
+    @Select("SELECT * FROM back_ground WHERE userid = #{id} order by name asc ")
     fun getlistbyuserid(@Param("id") id: String ): List<BackGround>
 }

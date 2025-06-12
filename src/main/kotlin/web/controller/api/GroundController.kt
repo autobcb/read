@@ -16,6 +16,7 @@ import web.model.BackGround
 import web.response.JsonResponse
 import web.response.NOT_BANK
 import web.util.hash.Md5
+import java.net.URLDecoder
 
 
 @Controller
@@ -67,9 +68,15 @@ open class GroundController:BaseController() {
         if (file.isEmpty) {
             throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         }
+        var f1=file.name
+        kotlin.runCatching {
+            f1= URLDecoder.decode( f1, "UTF-8" )
+        }
+        val unifiedPath = f1.replace("\\", "/")
+        f1= unifiedPath.substringAfterLast('/')
         getuserbytocken(accessToken)
         val cb=file.contentAsBytes
-        val valueFile = FileUtils.createFileIfNotExist(groundDir,file.name)
+        val valueFile = FileUtils.createFileIfNotExist(groundDir,f1)
         valueFile.writeBytes(cb)
         JsonResponse(true)
     }
