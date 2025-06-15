@@ -53,6 +53,7 @@ class CookieStore(val userid:String) : CookieManager {
     }
 
     fun loadRequest(request: Request): Request {
+        //println("loadRequest")
         var url = request.url.toString()
         val pos = url.indexOf('?')
         if (pos != -1) {
@@ -64,6 +65,7 @@ class CookieStore(val userid:String) : CookieManager {
 
         val newCookie = mergeCookies(requestCookie, cookie) ?: return request
         kotlin.runCatching {
+            //println("loading cookie $newCookie")
             return request.newBuilder()
                 .header("Cookie", newCookie)
                 .build()
@@ -98,6 +100,7 @@ class CookieStore(val userid:String) : CookieManager {
 
     private fun saveCookiesFromHeaders(url: HttpUrl, headers: Headers) {
         val cookies = Cookie.parseAll(url, headers)
+        println(cookies)
         var url=url.toString()
         val pos = url.indexOf('?')
         if (pos != -1) {

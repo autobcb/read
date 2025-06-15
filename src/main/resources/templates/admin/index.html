@@ -39,6 +39,7 @@
           <th lay-data="{field:'allowUpTxt', title:'txt',templet: '#allowUpTxt'}"></th>
           <th lay-data="{field:'AllowCache', title:'缓存',templet: '#AllowCache'}"></th>
           <th lay-data="{field:'AllowImg', title:'图片解密',templet: '#AllowImg'}"></th>
+          <th lay-data="{field:'Allowcheck', title:'检验书源',templet: '#Allowcheck'}"></th>
           <th lay-data="{field:'comment', title:'备注'}"></th>
           <th lay-data="{field:'updatetime', title:'更新时间', width:200}"></th>
           <th lay-data="{field:'createtime', title:'添加时间'  , width:200}"></th>
@@ -60,6 +61,16 @@
   <span class="layui-badge layui-bg-cyan">独立</span>
   {{#  } }}
 </script>
+
+
+<script type="text/html" id="Allowcheck">
+  {{#  if(!d.Allowcheck){ }}
+  <span class="layui-badge layui-bg-gray">不允许</span>
+  {{#  } else { }}
+  <span class="layui-badge layui-bg-blue">允许</span>
+  {{#  } }}
+</script>
+
 
 <script type="text/html" id="AllowImg">
   {{#  if(!d.AllowImg){ }}
@@ -182,7 +193,7 @@
         layer.open({
           type: 2,
           title: false,
-          area: ['830px', '560px'],
+          area: ['830px', '700px'],
           content: ['/admin/adduser?id='+data.id,"no"] //这里content是一个URL，如果你不想让iframe出现滚动条，你还可以content: ['http://sentsin.com', 'no']
         });
       }else  if (obj.event === 'del') {
@@ -208,7 +219,7 @@
       layer.open({
         type: 2,
         title: false,
-        area: ['830px', '560px'],
+        area: ['830px', '700px'],
         content: ['/admin/adduser',"no"] //这里content是一个URL，如果你不想让iframe出现滚动条，你还可以content: ['http://sentsin.com', 'no']
       });
 

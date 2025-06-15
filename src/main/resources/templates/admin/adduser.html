@@ -59,6 +59,15 @@
             </div>
         </div>
         <div class="layui-form-item">
+            <label class="layui-form-label">书源检验</label>
+            <div class="layui-input-block">
+                <select name="Allowcheck" lay-filter="al5">
+                    <option value="1">是</option>
+                    <option value="0">否</option>
+                </select>
+            </div>
+        </div>
+        <div class="layui-form-item">
             <label class="layui-form-label">书源</label>
             <div class="layui-input-block">
                 <select name="source" lay-filter="al3">
@@ -104,7 +113,7 @@
 
         if(oid == null || oid == "null"){
             oid = ""
-            var data={"AllowCache":0,"AllowUpTxt":0,"AllowImg":0}
+            var data={"AllowCache":0,"AllowUpTxt":0,"AllowImg":0,"Allowcheck":0}
             form.val("formTest",data);
         }
         if ( oid != ""){
@@ -121,6 +130,11 @@
                         data.data.AllowImg = 1
                     }else {
                         data.data.AllowImg = 0
+                    }
+                    if(data.data.Allowcheck){
+                        data.data.Allowcheck = 1
+                    }else {
+                        data.data.Allowcheck = 0
                     }
 
                     if(data.data.AllowCache){

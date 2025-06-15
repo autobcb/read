@@ -6,6 +6,7 @@ import book.model.Book
 import book.model.BookSource
 import book.model.SearchBook
 import book.util.*
+import book.util.help.CacheManager
 import book.util.help.CookieStore
 import book.webBook.WBook
 import com.google.gson.Gson
@@ -58,6 +59,9 @@ open class BookController:BaseController() {
     @Inject(value = "\${admin.cron:true}", autoRefreshed=true)
     var cron:Boolean=true
 
+    @Inject(value = "\${user.timeout:0}", autoRefreshed=true)
+    var timeout: Int= 0
+
     fun search(accessToken:String?, bookSourceUrl:String?, page:Int?, key:String?,type:Int)= runBlocking{
         val (user,source)=getsourceuser(accessToken,bookSourceUrl)
         if(!source.enabled)  throw DataThrowable().data(JsonResponse(false,"source error"))
@@ -78,12 +82,12 @@ open class BookController:BaseController() {
         }.onFailure {
             it.printStackTrace()
             App.log("搜索出错:"+it.message,accessToken!!)
-            if (type ==1 &&( it is SocketTimeoutException  || it is SocketException || (it.message?.contains("timeout"))?:false )) {
+            if (timeout > 0 && type ==1 &&( it is SocketTimeoutException  || it is SocketException || (it.message?.contains("timeout"))?:false )) {
                 val md5=Md5(source.json)
                 var num=  cache.getOrStore(md5, Int::class.java,600) {
                     0
                 }
-                if(num > 2){
+                if(num > timeout){
                     if(user.source == 2){
                         userBookSourceService.changeEnabled(source.bookSourceUrl,user.id!!,false)
                     }else{
@@ -476,6 +480,14 @@ open class BookController:BaseController() {
         JsonResponse(true)
     }
 
+    @CacheRemove(tags = "search\${accessToken}")
+    @Mapping("/cleancaches")
+    open fun cleancaches( accessToken:String?)=run{
+        val user=getuserbytocken(accessToken)
+        CacheManager(user.id!!).clear()
+        JsonResponse(true)
+    }
+
 
     @Mapping("/noCookies")
     open fun noCookies( accessToken:String?,id:String?)=run{
@@ -502,7 +514,11 @@ open class BookController:BaseController() {
         if(name == "全部"  || bookGroupService.getGroupbyName(user.id!!,name) != null) {
             throw DataThrowable().data(JsonResponse(isSuccess = false, errorMsg = GROUPIS))
         }
-        bookGroupService.bookGroupMapper.insert(BookGroup().create(user.id!!,name))
+        if(name == "未分组"){
+            bookGroupService.bookGroupMapper.insert(BookGroup().create(user.id!!,""))
+        }else{
+            bookGroupService.bookGroupMapper.insert(BookGroup().create(user.id!!,name))
+        }
         bookGroupService.cleancache(user.id)
         JsonResponse(true)
     }

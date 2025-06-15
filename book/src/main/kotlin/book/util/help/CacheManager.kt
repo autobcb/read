@@ -6,6 +6,7 @@ import book.util.FileUtils
 import book.util.MyCache
 import book.webBook.analyzeRule.QueryTTF
 import com.google.gson.Gson
+import java.io.File
 import java.io.FileNotFoundException
 import java.security.MessageDigest
 
@@ -41,6 +42,13 @@ class CacheManager(val userid:String) {
 
     private val ruleDataDir = FileUtils.createFolderIfNotExist(appCtx.externalFiles, "cache")
     private val cahceData = FileUtils.createFolderIfNotExist(ruleDataDir, "cache",userid)
+
+    fun clear(){
+        if(cahceData.exists()){
+            cahceData.deleteRecursively()
+        }
+        cahceData.mkdirs()
+    }
 
 
     private fun setcache(_key:String,value:String){

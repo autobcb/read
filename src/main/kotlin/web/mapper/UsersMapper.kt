@@ -31,7 +31,7 @@ interface  UsersMapper : BaseMapper<Users> {
             "<if test=\"user.password != null\">" +
             "password = #{user.password}," +
             "</if> " +
-            "allow_up_txt = #{user.AllowUpTxt} ,allow_img = #{user.AllowImg} , comment = #{user.comment}  ,allow_cache = #{user.AllowCache} ,source  = #{user.source} " +
+            "allowcheck = #{user.Allowcheck} ,allow_up_txt = #{user.AllowUpTxt} ,allow_img = #{user.AllowImg} , comment = #{user.comment}  ,allow_cache = #{user.AllowCache} ,source  = #{user.source} " +
             "WHERE id = #{user.id}</script>")
     fun updateinfo(@Param("user") user: Users):Int
 

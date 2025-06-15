@@ -6,6 +6,7 @@ import book.util.GSON
 import book.util.fromJsonArray
 import org.noear.solon.annotation.Body
 import org.noear.solon.annotation.Controller
+import org.noear.solon.annotation.Inject
 import org.noear.solon.annotation.Mapping
 import org.noear.solon.core.util.DataThrowable
 import org.noear.solon.data.annotation.CacheRemove
@@ -19,7 +20,9 @@ import java.util.Date
 @Mapping(routepath)
 @CrossOrigin(origins = "*")
 open class SourceController:BaseController() {
-    
+
+    @Inject(value = "\${user.maxsource:0}", autoRefreshed=true)
+    var maxsource: Int= 0
     
     @Mapping("/getcansource")
     open fun getcansource( accessToken:String?)=run{
@@ -36,6 +39,13 @@ open class SourceController:BaseController() {
         var insert = 0
         var update = 0
         val bookSourcelist= BookSource.fromJsonArray(content).getOrNull()
+
+        if(user.source == 2 && maxsource > 0){
+            val list= userBookSourceService.getallBookSourcelist(user.id)?:listOf()
+            if(list.size > maxsource){
+                throw DataThrowable().data(JsonResponse(false, MAX_ERROR))
+            }
+        }
 
         bookSourcelist?.forEach {
             addorupdate(it,user).let {  (ins,ups)->
@@ -54,6 +64,12 @@ open class SourceController:BaseController() {
         var list= listOf<String>()
         if(urls.isNotEmpty()){
             list=GSON.fromJsonArray<String>(urls).getOrNull()?:listOf()
+        }
+        if(user.source == 2 && maxsource > 0){
+            val list= userBookSourceService.getallBookSourcelist(user.id)?:listOf()
+            if(list.size > maxsource){
+                throw DataThrowable().data(JsonResponse(false, MAX_ERROR))
+            }
         }
         val bookSourcelist= BookSource.fromJsonArray(source).getOrNull()
         bookSourcelist?.forEach {
@@ -81,6 +97,12 @@ open class SourceController:BaseController() {
         var insert = 0
         var update = 0
         val booksource  = BookSource.fromJson(content).getOrNull()?: BookSource()
+        if(user.source == 2 && maxsource > 0){
+            val list= userBookSourceService.getallBookSourcelist(user.id)?:listOf()
+            if(list.size > maxsource){
+                throw DataThrowable().data(JsonResponse(false, MAX_ERROR))
+            }
+        }
         if (booksource.bookSourceName.isNotEmpty())
             addorupdate(booksource, user ).let {  (ins,ups)->
                 insert += ins
@@ -99,6 +121,12 @@ open class SourceController:BaseController() {
         if(user.source == 2){
             val bookSource= userBookSourceService.getBookSource(id,user.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
             val sources = userBookSourceService.getallBookSourcelist(user.id!!)
+            if(maxsource > 0){
+                val list= sources?:listOf()
+                if(list.size > maxsource){
+                    throw DataThrowable().data(JsonResponse(false, MAX_ERROR))
+                }
+            }
             var order=1
             for( it in sources!!){
                 if(it.bookSourceUrl == bookSource.bookSourceUrl){
@@ -134,7 +162,12 @@ open class SourceController:BaseController() {
         if(user.source == 2){
             val bookSource= userBookSourceService.getBookSource(id,user.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
             val sources = userBookSourceService.getallBookSourcelist(user.id!!)
-
+            if(maxsource > 0){
+                val list= sources?:listOf()
+                if(list.size > maxsource){
+                    throw DataThrowable().data(JsonResponse(false, MAX_ERROR))
+                }
+            }
             for( it in sources!!){
                 if(it.bookSourceUrl == bookSource.bookSourceUrl){
                     userBookSourceService.changeorder(it.id?:"",user.id, sources.size-1)
@@ -185,6 +218,12 @@ open class SourceController:BaseController() {
         var order=ids.size
         if(user.source == 2){
             val sources = userBookSourceService.getallBookSourcelist(user.id!!)
+            if(maxsource > 0){
+                val list= sources?:listOf()
+                if(list.size > maxsource){
+                    throw DataThrowable().data(JsonResponse(false, MAX_ERROR))
+                }
+            }
             for( it in sources!!){
                 if(!ids.contains(it.bookSourceUrl)){
                     userBookSourceService.changeorder(it.id?:"",user.id, order)
@@ -227,6 +266,12 @@ open class SourceController:BaseController() {
         var order=0
         if(user.source == 2){
             val sources = userBookSourceService.getallBookSourcelist(user.id!!)
+            if(maxsource > 0){
+                val list= sources?:listOf()
+                if(list.size > maxsource){
+                    throw DataThrowable().data(JsonResponse(false, MAX_ERROR))
+                }
+            }
             for( it in sources!!){
                 if(!ids.contains(it.bookSourceUrl)){
                     userBookSourceService.changeorder(it.id?:"",user.id, order)
@@ -353,6 +398,12 @@ open class SourceController:BaseController() {
         }!!
         if(source.bookSourceUrl.isEmpty()) throw DataThrowable().data(JsonResponse(false, SOURCE_URL_ERROR))
         if(user.source == 2){
+            if(maxsource > 0){
+                val list= userBookSourceService.getallBookSourcelist(user.id)?:listOf()
+                if(list.size > maxsource){
+                    throw DataThrowable().data(JsonResponse(false, MAX_ERROR))
+                }
+            }
             val bookSource= web.model.UserBookSource().jsontomodel(source,user.id!!)
             bookSource.sourceorder=9999
             if(content.id  != null && content.id!!.isNotEmpty()){

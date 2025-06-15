@@ -39,6 +39,10 @@ import java.util.*
 open class RssController :BaseController() {
 
 
+    @Inject(value = "\${user.maxsource:0}", autoRefreshed=true)
+    var maxsource: Int= 0
+
+
     @Inject
     lateinit var rssSourceService: RssSourceService
 
@@ -48,8 +52,9 @@ open class RssController :BaseController() {
 
     @Inject
     lateinit var cacheService: CacheService
-    
 
+    @Inject(value = "\${user.timeout:0}", autoRefreshed=true)
+    var timeout: Int= 0
 
     @Mapping("/getRssSourcess")
     fun  getRssSourcess(accessToken: String?) =run{
@@ -135,6 +140,12 @@ open class RssController :BaseController() {
         if(source.sourceUrl.isEmpty()) throw DataThrowable().data(JsonResponse(false, SOURCE_URL_ERROR))
         if(user.source == 2){
             val rsssource= UserRssSource().jsontomodel(source,user.id!!)
+            if(maxsource > 0){
+                val list= userRssSourceService.getallSourcelist(user.id)
+                if(list.size > maxsource){
+                    throw DataThrowable().data(JsonResponse(false, MAX_ERROR))
+                }
+            }
             rsssource.sourceorder=9999
             if(content.id  != null && content.id!!.isNotEmpty()){
                 val bs=
@@ -185,6 +196,11 @@ open class RssController :BaseController() {
         if(user.source == 2){
             val rsssource= userRssSourceService.getRssSource(id,user.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
             val sources = userRssSourceService.getallSourcelist(user.id!!)
+            if(maxsource > 0){
+                if(sources.size > maxsource){
+                    throw DataThrowable().data(JsonResponse(false, MAX_ERROR))
+                }
+            }
             for( it in sources){
                 if(it.sourceUrl == rsssource.sourceUrl){
                     userRssSourceService.changeorder(it.id?:"",user.id, 0)
@@ -217,6 +233,11 @@ open class RssController :BaseController() {
         var order=0
         if(user.source == 2){
             val sources = userRssSourceService.getallSourcelist(user.id!!)
+            if(maxsource > 0){
+                if(sources.size > maxsource){
+                    throw DataThrowable().data(JsonResponse(false, MAX_ERROR))
+                }
+            }
             for( it in sources){
                 if(!ids.contains(it.sourceUrl)){
                     userRssSourceService.changeorder(it.id?:"",user.id, order)
@@ -257,6 +278,11 @@ open class RssController :BaseController() {
         var order=ids.size
         if(user.source == 2){
             val sources = userRssSourceService.getallSourcelist(user.id!!)
+            if(maxsource > 0){
+                if(sources.size > maxsource){
+                    throw DataThrowable().data(JsonResponse(false, MAX_ERROR))
+                }
+            }
             for( it in sources){
                 if(!ids.contains(it.sourceUrl)){
                     userRssSourceService.changeorder(it.id?:"",user.id, order)
@@ -290,8 +316,8 @@ open class RssController :BaseController() {
         JsonResponse(true)
     }
 
-    @Mapping("/bottomSource")
-    fun bottomSource( accessToken:String?, id: String?)= run{
+    @Mapping("/bottomRssSource")
+    fun bottomRssSource( accessToken:String?, id: String?)= run{
         val user=getsourceuser(accessToken)
         if (id.isNullOrBlank()){
             throw DataThrowable().data(JsonResponse(false, NOT_BANK))
@@ -300,6 +326,11 @@ open class RssController :BaseController() {
         if(user.source == 2){
             val rsssource= userRssSourceService.getRssSource(id,user.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
             val sources = userRssSourceService.getallSourcelist(user.id!!)
+            if(maxsource > 0){
+                if(sources.size > maxsource){
+                    throw DataThrowable().data(JsonResponse(false, MAX_ERROR))
+                }
+            }
             for( it in sources){
                 if(it.sourceUrl == rsssource.sourceUrl){
                     userRssSourceService.changeorder(it.id?:"",user.id, sources.size-1)
@@ -516,6 +547,12 @@ open class RssController :BaseController() {
         if(urls.isNotEmpty()){
             list= GSON.fromJsonArray<String>(urls).getOrNull()?:listOf()
         }
+        if(user.source == 2 && maxsource > 0){
+            val list= userRssSourceService.getallSourcelist(user.id)
+            if(list.size > maxsource){
+                throw DataThrowable().data(JsonResponse(false, MAX_ERROR))
+            }
+        }
         val rssSourcelist= RssSource.fromJsonArray(source)
         rssSourcelist.forEach {
             if(list.isNotEmpty()){
@@ -601,12 +638,12 @@ open class RssController :BaseController() {
                 "header" to GSON.toJson(header),
             ))
         }.onFailure {
-            if ( it is SocketTimeoutException  || it is SocketException || (it.message?.contains("timeout"))?:false) {
+            if ( timeout > 0 && it is SocketTimeoutException  || it is SocketException || (it.message?.contains("timeout"))?:false) {
                 val md5=Md5(rss.json?:"")
                 var num=  cacheService.getOrStore(md5, Int::class.java,600) {
                     0
                 }
-                if(num > 2){
+                if(num > timeout){
                     if(user.source == 2){
                         userRssSourceService.changeEnabled(id,user.id!!,false)
                     }else{
@@ -674,12 +711,12 @@ open class RssController :BaseController() {
             }
             return@runBlocking JsonResponse(true).Data(list)
         }.onFailure {
-            if ( it is SocketTimeoutException  || it is SocketException || (it.message?.contains("timeout"))?:false) {
+            if (timeout > 0 &&  it is SocketTimeoutException  || it is SocketException || (it.message?.contains("timeout"))?:false) {
                 val md5=Md5(rss.json?:"")
                 var num=  cacheService.getOrStore(md5, Int::class.java,600) {
                     0
                 }
-                if(num > 2){
+                if(num > timeout){
                     if(user.source == 2){
                         userRssSourceService.changeEnabled(id,user.id!!,false)
                     }else{

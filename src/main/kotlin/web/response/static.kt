@@ -44,6 +44,8 @@ val USER_NOT="用户不存在"
 
 val NOT_IS="不存在"
 
+val MAX_ERROR="书源或者订阅源超出最大数量"
+
 val USE_ERROE="错误使用"
 
 val COOKIE_IS="cookie已存在，请删除后重新添加"

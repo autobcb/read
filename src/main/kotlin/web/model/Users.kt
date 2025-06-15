@@ -57,6 +57,7 @@ class Users {
 
     var AllowImg: Boolean? = null
 
+    var Allowcheck: Boolean? = null
 
     var comment: String? = null
 

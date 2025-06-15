@@ -76,6 +76,14 @@ class SourceCheckDebug: BaseDebug() {
             socket.close()
             return@runBlocking
         }
+        if(user.Allowcheck != true){
+            socket.send(Gson().toJson(ErrorMsg().apply {
+                url="无权限"
+                msg="close"
+            }))
+            socket.close()
+            return@runBlocking
+        }
         val checkid: String = socket.param("checkid")
         if (checkid.isBlank()) {
             socket.close()

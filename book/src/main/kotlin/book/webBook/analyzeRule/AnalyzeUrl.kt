@@ -96,6 +96,7 @@ class AnalyzeUrl(
                 proxy = headerMap["proxy"]
                 headerMap.remove("proxy")
             }
+
         }
         initUrl()
         domain = NetworkUtils.getSubDomain(source?.getKey() ?: url)
@@ -332,7 +333,7 @@ class AnalyzeUrl(
             }
         }
         if (enabledCookieJar) {
-             source?.getcookieJarHeaderid()?:""
+            headerMap[cookieJarHeader] = source?.getcookieJarHeaderid()?:""
         } else {
             headerMap.remove(cookieJarHeader)
         }
