@@ -33,7 +33,9 @@ fun hash(algorithm: String, srcStr: String): String {
 
 }
 
-val memoryLruCache:MyCache = MyCache(50)
+val memoryLruCache:MyCache = MyCache(100)
+
+//val cache:MyCache = MyCache(100)
 
 @Suppress("unused")
 class CacheManager(val userid:String) {
@@ -48,17 +50,28 @@ class CacheManager(val userid:String) {
             cahceData.deleteRecursively()
         }
         cahceData.mkdirs()
+       // cache.clear()
     }
 
 
     private fun setcache(_key:String,value:String){
         val key= Md5(_key)
-        val valueFile = FileUtils.createFileIfNotExist(cahceData, "$key.txt")
-        valueFile.writeText(value)
+        if(value.isEmpty()) {
+            //cache.remove("$userid,_$key")
+            val valueFile = FileUtils.createFileIfNotExist(cahceData, "$key.txt")
+            valueFile.delete()
+        }else{
+            //cache.add("$userid,_$key",value)
+            val valueFile = FileUtils.createFileIfNotExist(cahceData, "$key.txt")
+            valueFile.writeText(value)
+        }
     }
 
     private fun getcache(_key:String):String?{
         val key= Md5(_key)
+        /*if(cache.contains("$userid,_$key")){
+            return cache.get("$userid,_$key").toString()
+        }*/
         try {
             val valueFile = FileUtils.createFileIfNotExist(cahceData, "$key.txt")
             val content = valueFile.readText()
@@ -95,16 +108,16 @@ class CacheManager(val userid:String) {
     }
 
     fun putMemory(key: String, value: Any) {
-        memoryLruCache.add(key, value)
+        memoryLruCache.add("${userid}_$key", value)
     }
 
     //从内存中获取数据 使用lruCache
     fun getFromMemory(key: String): Any? {
-        return memoryLruCache.get(key)
+        return memoryLruCache.get("${userid}_$key")
     }
 
     fun deleteMemory(key: String) {
-        memoryLruCache.remove(key)
+        memoryLruCache.remove("${userid}_$key")
     }
 
     fun get(key: String): String? {
@@ -168,6 +181,7 @@ class CacheManager(val userid:String) {
 
     fun delete(_key: String) {
         val key= Md5(_key)
+        //cache.remove("$userid,_$key")
         kotlin.runCatching {
             FileUtils.createFileIfNotExist(cahceData, "$key.txt").let {
                 if(it.exists()) it.delete()

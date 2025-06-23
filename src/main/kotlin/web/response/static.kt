@@ -79,3 +79,5 @@ val CACHE_ERROR="最多5个缓存任务"
 val CODE_CHECK_ERROR= "验证码错误"
 
 val NAME_ERROR="名字重复"
+
+val MARK_IS="书签已存在"

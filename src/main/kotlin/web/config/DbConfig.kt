@@ -20,7 +20,7 @@ open class DbConfig {
         private val models= arrayOf(Booklist::class.java,BookSource::class.java
          ,Usertocken::class.java,Code::class.java,Users::class.java,BookGroup::class.java,BookCache::class.java
             ,UserBookSource::class.java,ReplaceRule::class.java,HttpTts::class.java,UserRssSource::class.java, BackGround::class.java,RssSource::class.java,
-           )
+            Item::class.java,Bookmark::class.java)
     }
 
     @Bean

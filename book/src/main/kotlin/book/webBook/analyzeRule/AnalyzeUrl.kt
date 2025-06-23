@@ -351,6 +351,7 @@ class AnalyzeUrl(
             return StrResponse(url, StringUtils.byteToHexString(getByteArrayAwait()))
         }
         logger.info("ajaxurl:$urlNoQuery,type:$type")
+        //logger.info("header:${GSON.toJson(headerMap)}")
         var strResponse: StrResponse
         concurrentRateLimiter.withLimit{
             setCookie()

@@ -7,6 +7,7 @@ import book.model.BookSource
 import book.util.*
 import book.webBook.WBook
 import book.webBook.analyzeRule.AnalyzeRule
+import book.webBook.analyzeRule.AnalyzeUrl
 import book.webBook.exception.ConcurrentException
 import book.webBook.exception.RegexTimeoutException
 import book.webBook.localBook.LocalBook
@@ -345,7 +346,7 @@ open class ReadController : BaseController() {
 
 
     @Mapping("/saveBookProgress")
-    open fun saveBookProgress(accessToken: String?, pos: Double?, url: String?, index: Int?) = runBlocking {
+    open fun saveBookProgress(accessToken: String?, pos: Double?, url: String?, title: String?, index: Int?) = runBlocking {
         val user = getuserbytocken(accessToken)
         val book = booklistService.getbook(user.id!!, url.also {
             if (it == null) throw DataThrowable().data(JsonResponse(false, NOT_BANK))
@@ -372,11 +373,15 @@ open class ReadController : BaseController() {
             )
         } else {
             val source = getsource(book.origin!!,user)
-            val list: List<BookChapter> =
-                getChapterListbycache(url!!,user.id!!) ?: getlist(url, source!!, user.id!!, accessToken ?: "")
+            var t=title
+            if(t.isNullOrBlank()){
+                val list: List<BookChapter> =
+                    getChapterListbycache(url!!,user.id!!) ?: getlist(url, source!!, user.id!!, accessToken ?: "")
+                t=list[index ?: 0].title
+            }
             booklistService.updatepos(
                 book.id!!,user.id,
-                list[index ?: 0].title,
+                t,
                 index ?: 0,
                 pos ?: 0.0,
                 System.currentTimeMillis(),
@@ -421,7 +426,7 @@ open class ReadController : BaseController() {
         val webBook = WBook(source!!.json , user.id!!, accessToken, false)
         var new: Book? = null
         runCatching {
-            new = webBook.getBookInfo(newUrl ?: "", canReName = true)
+            new = webBook.getBookInfo(newUrl ?: "", canReName = true).also {   setBookbycache(newUrl?:"",it,user.id!!) }
         }.onFailure {
             webBook.searchBook(book.name ?: " ", 1).forEach {
                 if (it.bookUrl == newUrl) {
@@ -489,7 +494,7 @@ open class ReadController : BaseController() {
         s?.userid=user.id
         var loginUi=s?.loginUi
         if(!loginUi.isNullOrEmpty()){
-            kotlin.runCatching {
+            runCatching {
                 val r=GSON.fromJsonArray<Any>(loginUi).getOrNull()
                 loginUi= GSON.toJson(r)
             }
@@ -518,7 +523,7 @@ open class ReadController : BaseController() {
             s?.userid=user.id
             var loginUi=s?.loginUi
             if(!loginUi.isNullOrEmpty()){
-                kotlin.runCatching {
+                runCatching {
                     val r=GSON.fromJsonArray<Any>(loginUi).getOrNull()
                     loginUi= GSON.toJson(r)
                 }
@@ -549,6 +554,20 @@ open class ReadController : BaseController() {
         booksource?.userid=user.id
         booksource?.usertocken=accessToken
         JsonResponse(true).Data(mapOf("checkKeyWord" to booksource?.ruleSearch?.checkKeyWord,"found" to booksource?.exploreKinds((need == "1")), "loginUrl" to booksource?.loginUrl, "loginUi" to booksource?.loginUi))
+    }
+
+    @Mapping("/getopenurl")
+    fun  getopenurl(accessToken: String?, bookSourceUrl: String?, url: String?) = run{
+        val (user,source)=getsourceuser(accessToken,bookSourceUrl)
+        val s= BookSource.fromJson(source.json).getOrNull()!!
+        s.usertocken=accessToken
+        s.userid=user.id
+        val analyzeUrl = AnalyzeUrl(
+            url?:"", source = s,
+            debugLog = null
+        )
+        println(url)
+        JsonResponse(true).Data(analyzeUrl.url)
     }
 
 
@@ -676,7 +695,7 @@ open class ReadController : BaseController() {
         bookSource.userid = user.id
         bookSource.usertocken = accessToken
         bookSource.putLoginInfo(info ?: "{}")
-        kotlin.runCatching { bookSource.login() }
+         runCatching { bookSource.login() }
         JsonResponse(true)
     }
 
@@ -688,7 +707,7 @@ open class ReadController : BaseController() {
         val bookSource = BookSource.fromJson(source.json).getOrNull()!!
         bookSource.userid = user.id
         bookSource.usertocken = accessToken
-        kotlin.runCatching {
+        runCatching {
             bookSource.runaction(action)
         }.onFailure { e ->
            logger.info("$action JavaScript error", e)

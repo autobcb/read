@@ -12,6 +12,8 @@ import org.noear.solon.core.util.DataThrowable
 import org.noear.solon.data.annotation.Tran
 import org.noear.solon.data.tran.TranPolicy
 import web.mapper.BackGroundMapper
+import web.mapper.BookmarkMapper
+import web.mapper.ItemMapper
 import web.model.Users
 import web.response.*
 import web.service.*
@@ -50,6 +52,14 @@ open class UserController {
     @Db("db")
     @Inject
     lateinit var backGroundMapper: BackGroundMapper
+
+    @Db("db")
+    @Inject
+    lateinit var itemMapper: ItemMapper
+
+    @Db("db")
+    @Inject
+    lateinit var bookmarkMapper: BookmarkMapper
 
     @Post
     @Mapping("/adduser")
@@ -135,5 +145,7 @@ open class UserController {
         userBookSourceService.delUserSource(id)
         replaceRuleService.delUserrule(id)
         backGroundMapper.delUserGround(id)
+        itemMapper.delUserItem(id)
+        bookmarkMapper.delUserBookmar(id)
     }
 }

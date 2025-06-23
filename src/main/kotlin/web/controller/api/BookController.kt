@@ -11,6 +11,7 @@ import book.util.help.CookieStore
 import book.webBook.WBook
 import com.google.gson.Gson
 import kotlinx.coroutines.runBlocking
+import org.apache.ibatis.solon.annotation.Db
 import org.noear.solon.annotation.*
 import org.noear.solon.core.util.DataThrowable
 import org.noear.solon.data.annotation.Cache
@@ -18,11 +19,16 @@ import org.noear.solon.data.annotation.CacheRemove
 import org.noear.solon.data.annotation.Tran
 import org.noear.solon.data.cache.CacheService
 import org.noear.solon.web.cors.annotation.CrossOrigin
+import web.controller.api.ReadController.Companion.getBookbycache
 import web.controller.api.ReadController.Companion.setBookbycache
 import web.controller.api.ReadController.Companion.setChapterListbycache
+import web.mapper.BookmarkMapper
+import web.mapper.ItemMapper
 import web.model.BookCache
 import web.model.BookGroup
 import web.model.Booklist
+import web.model.Bookmark
+import web.model.Item
 import web.model.Users
 import web.response.*
 import web.service.BookCacheService
@@ -61,6 +67,83 @@ open class BookController:BaseController() {
 
     @Inject(value = "\${user.timeout:0}", autoRefreshed=true)
     var timeout: Int= 0
+
+    @Db("db")
+    @Inject
+    lateinit var itemMapper: ItemMapper
+
+    @Db("db")
+    @Inject
+    lateinit var bookmarkMapper: BookmarkMapper
+
+    @Mapping("/addbookmark")
+    fun  addbookmark(accessToken:String?, url:String ,name:String, index: Int,pos : Double) = run{
+        if (url.isBlank()) {
+            throw DataThrowable().data(JsonResponse(false,NOT_BANK))
+        }
+        val user=getuserbytocken(accessToken)
+        val book = booklistService.getbook(user.id!!,url)?:throw DataThrowable().data(JsonResponse(false,NO_BOOK))
+        val marks = bookmarkMapper.getbybook(user.id!!,book.bookUrl!!)
+        for ( mark in marks) {
+            if (mark.cindex == index && mark.cpos == pos){
+                throw DataThrowable().data(JsonResponse(false,MARK_IS))
+            }
+        }
+        val bookmark= Bookmark().create(user.id!!,book).apply {
+            cindex=index
+            cpos =pos
+            cname =name
+        }
+        bookmarkMapper.insert(bookmark)
+        JsonResponse(true)
+    }
+
+    @Mapping("/getbookmark")
+    fun  getbookmark(accessToken:String?, url:String) = run{
+        if (url.isBlank()) {
+            throw DataThrowable().data(JsonResponse(false,NOT_BANK))
+        }
+        val user=getuserbytocken(accessToken)
+        val book = booklistService.getbook(user.id!!,url)?:throw DataThrowable().data(JsonResponse(true).Data(listOf<String>()))
+        val marks = bookmarkMapper.getbybook(user.id!!,book.bookUrl!!)
+        JsonResponse(true).Data(marks)
+    }
+
+    @Mapping("/delbookmark")
+    fun  delbookmark(accessToken:String?, id:String) = run{
+        if (id.isBlank()) {
+            throw DataThrowable().data(JsonResponse(false,NOT_BANK))
+        }
+        val user=getuserbytocken(accessToken)
+        val mark = bookmarkMapper.selectById(id)
+        if(mark == null || mark.userid != user.id) {
+            throw DataThrowable().data(JsonResponse(false,NOT_IS))
+        }
+        bookmarkMapper.deleteById(id)
+        JsonResponse(true)
+    }
+
+    @Mapping("/getitem")
+    fun  getitem(accessToken:String?, name:String?) = run{
+        if (name.isNullOrBlank()) {
+            throw DataThrowable().data(JsonResponse(false,NOT_BANK))
+        }
+        val user=getuserbytocken(accessToken)
+        val item = itemMapper.getbyname(user.id!!,name)
+        JsonResponse(true).Data(item?.value)
+    }
+
+    @Mapping("/setitem")
+    fun  setitem(accessToken:String?, name:String?, value:String?) = run{
+        if (name.isNullOrBlank() || value == null) {
+            throw DataThrowable().data(JsonResponse(false,NOT_BANK))
+        }
+        val user=getuserbytocken(accessToken)
+        val item = Item().create(user.id!!,name)
+        item.value = value
+        itemMapper.insertOrUpdate(item)
+        JsonResponse(true)
+    }
 
     fun search(accessToken:String?, bookSourceUrl:String?, page:Int?, key:String?,type:Int)= runBlocking{
         val (user,source)=getsourceuser(accessToken,bookSourceUrl)
@@ -149,7 +232,7 @@ open class BookController:BaseController() {
         val booktolist=Booklist.tobooklist(book,user.id!!)
         var new: Book? = null
         runCatching {
-            new = webBook.getBookInfo(book.bookUrl, canReName = true)
+            new = getBookbycache(book.bookUrl,user.id!!)?:(webBook.getBookInfo(book.bookUrl, canReName = true)).also {   setBookbycache(book.bookUrl,it,user.id!!) }
         }.onFailure {
             return@runBlocking JsonResponse(false,BOOKSEARCHERROR)
         }

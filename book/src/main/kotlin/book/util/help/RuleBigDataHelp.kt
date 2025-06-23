@@ -3,6 +3,7 @@ package book.util.help
 import book.appCtx
 import book.util.FileUtils
 import book.util.MD5Utils
+import book.util.MyCache
 import book.util.getFile
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.withContext
@@ -14,15 +15,17 @@ object RuleBigDataHelp {
     private val bookData = FileUtils.createFolderIfNotExist(ruleDataDir, "book")
     private val rssData = FileUtils.createFolderIfNotExist(ruleDataDir, "rss")
     private val sourceData = FileUtils.createFolderIfNotExist(ruleDataDir, "source")
-
+    val sourceCache:MyCache = MyCache(100)
 
     fun putSourceVariable(sourcekey: String,userid :String, key: String, value: String?) {
         if(userid.isEmpty()) return
         val md5SourceKey = MD5Utils.md5Encode(sourcekey)
         val md5Key = MD5Utils.md5Encode(key)
         if (value == null) {
+            sourceCache.remove("$sourcekey$md5Key$userid$key")
             FileUtils.delete(FileUtils.getPath(sourceData,userid, md5SourceKey, "$md5Key.txt"), true)
         } else {
+            sourceCache.add("$sourcekey$md5Key$userid$key",value)
             val valueFile = FileUtils.createFileIfNotExist(sourceData,userid, md5SourceKey, "$md5Key.txt")
             valueFile.writeText(value)
             val bookUrlFile = File(FileUtils.getPath(sourceData,userid, md5SourceKey, "sourcekey.txt"))
@@ -36,6 +39,10 @@ object RuleBigDataHelp {
         if(userid.isEmpty()) return null
         val md5SourceKey = MD5Utils.md5Encode(sourcekey)
         val md5Key = MD5Utils.md5Encode(key)
+        val c=sourceCache.get("$sourcekey$md5Key$userid$key")
+        if(c != null && c.toString().isNotEmpty()){
+            return c.toString()
+        }
         val file = File(FileUtils.getPath(sourceData,userid, md5SourceKey, "$md5Key.txt"))
         if (file.exists()) {
             return file.readText()

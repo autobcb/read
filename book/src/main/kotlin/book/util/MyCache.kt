@@ -9,6 +9,13 @@ class MyCache(val num:Int) {
     private val  map:HashMap<String,Any> = hashMapOf()
     private val  mutex = Mutex()
 
+    fun clear()= runBlocking{
+        mutex.withLock {
+            keys.clear()
+            map.clear()
+        }
+    }
+
     fun add(key:String, value:Any)= runBlocking{
         mutex.withLock {
             if(keys.contains(key)){
@@ -24,6 +31,14 @@ class MyCache(val num:Int) {
                 }
             }
         }
+    }
+
+    fun contains(key:String)= runBlocking{
+        var z=false;
+        mutex.withLock {
+            z=keys.contains(key)
+        }
+        z
     }
 
     fun remove(key:String)= runBlocking{
