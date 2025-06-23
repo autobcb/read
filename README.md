@@ -43,10 +43,7 @@ java.headusePhone(urlStr: String, headers: Map<String, String>) //用法和java.
 java.postusePhone(urlStr: String, body: String, headers: Map<String, String>) //用法和java.post一致，但此函数会使用代理功能
 ````
 
-# 开发中   
-同步自定义主题。   
-书签功能   
-设置备份   
+# 开发中  
 和开源阅读进度同步   
 
 # 书源权限
@@ -90,7 +87,7 @@ docker run -tid  -e TZ=Asia/Shanghai --name read  -v /root/read:/app -p 8080:808
 /api/接口版本号/ws
 /api/接口版本号/debug
 /api/接口版本号/rssdebug
-
+/api/接口版本号/checkdebug
 
 # 已知问题
 RSA加密，RSA加密安卓端和JAVA端加密标准不同，所以有可能安卓版本轻阅读能解密的web版本不能解密，如果安卓端能解密的web不行请修改代码
