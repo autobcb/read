@@ -29,9 +29,9 @@ import java.util.*
 import kotlin.collections.HashMap
 
 
-class AnalyzeRule(
+open class AnalyzeRule(
     var ruleData: RuleDataInterface? =null,
-    override  var debugLog: DebugLog?,
+    override  var debugLog: DebugLog?=null,
     private val source: BaseSource? = null
 ):JsExtensions {
 
@@ -271,7 +271,6 @@ class AnalyzeRule(
                 putRule(sourceRule.putMap)
                 sourceRule.makeUpRule(result)
                 result = if (sourceRule.getParamSize() > 1) {
-                    // get {{}}
                     sourceRule.rule
                 } else {
                     // 键值直接访问
@@ -307,7 +306,7 @@ class AnalyzeRule(
         }
         if (result == null) result = ""
         val resultStr = result.toString()
-        val str = if (unescape && resultStr.indexOf('&') > -1) {
+        var str = if (unescape && resultStr.indexOf('&') > -1) {
             StringEscapeUtils.unescapeHtml4(resultStr)
         } else {
             resultStr
@@ -319,10 +318,38 @@ class AnalyzeRule(
                 NetworkUtils.getAbsoluteURL(redirectUrl, str)
             }
         }
+        if(isUnicodeEscaped(str)){
+            str=unescapeUnicode(str)
+        }
         return str
     }
 
+    fun isUnicodeEscaped(input: String): Boolean {
+        val pattern = """\\u[0-9a-fA-F]{4}""".toRegex()
+        return pattern.containsMatchIn(input)
+    }
 
+    fun unescapeUnicode(input: String): String {
+        val sb = StringBuilder()
+        var i = 0
+        while (i < input.length) {
+            if (input[i] == '\\' && i + 5 < input.length && input[i + 1] == 'u') {
+                val hex = input.substring(i + 2, i + 6)
+                try {
+                    val charCode = hex.toInt(16)
+                    sb.append(charCode.toChar())
+                    i += 6
+                } catch (e: NumberFormatException) {
+                    sb.append(input[i])
+                    i++
+                }
+            } else {
+                sb.append(input[i])
+                i++
+            }
+        }
+        return sb.toString()
+    }
 
     /**
      * 获取Element
@@ -370,21 +397,18 @@ class AnalyzeRule(
             result = content
             for (sourceRule in ruleList) {
                 putRule(sourceRule.putMap)
-                result?.let {
-                    result = when (sourceRule.mode) {
-                        Mode.Regex -> AnalyzeByRegex.getElements(
-                            result.toString(),
-                            sourceRule.rule.splitNotBlank("&&")
-                        )
+                result ?: continue
+                val rule = sourceRule.rule
+                result = when (sourceRule.mode) {
+                    Mode.Regex -> AnalyzeByRegex.getElements(
+                        result.toString(),
+                        rule.splitNotBlank("&&")
+                    )
 
-                        Mode.Js -> evalJS(sourceRule.rule, result)
-                        Mode.Json -> getAnalyzeByJSonPath(it).getList(sourceRule.rule)
-                        Mode.XPath -> getAnalyzeByXPath(it).getElements(sourceRule.rule)
-                        else -> getAnalyzeByJSoup(it).getElements(sourceRule.rule)
-                    }
-//                    if (sourceRule.replaceRegex.isNotEmpty()) {
-//                        result = replaceRegex(result.toString(), sourceRule)
-//                    }
+                    Mode.Js -> evalJS(rule, result)
+                    Mode.Json -> getAnalyzeByJSonPath(result).getList(rule)
+                    Mode.XPath -> getAnalyzeByXPath(result).getElements(rule)
+                    else -> getAnalyzeByJSoup(result).getElements(rule)
                 }
             }
         }
@@ -672,6 +696,7 @@ class AnalyzeRule(
                 replaceFirst = true
             }
         }
+
 
         private fun isRule(ruleStr: String): Boolean {
             return ruleStr.startsWith('@') //js首个字符不可能是@，除非是装饰器，所以@开头规定为规则

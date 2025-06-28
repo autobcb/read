@@ -6,6 +6,13 @@ data class RowUi(
     var style: FlexChildStyle? = null
 ) {
 
+    override fun toString(): String {
+        val hashCode = this.hashCode()
+        val hexHash = Integer.toHexString(hashCode)
+        val s="io.legado.app.data.entities.RowUi@"+hexHash
+        return s
+    }
+
     @Suppress("ConstPropertyName")
     object Type {
 

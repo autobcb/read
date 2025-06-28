@@ -34,6 +34,7 @@ import web.util.BigDataHelp
 import web.util.SslUtils
 import web.util.read.BookContent
 import web.util.read.getlist
+import web.util.svg.svg2PNG
 import java.net.HttpURLConnection
 import java.net.URI
 import kotlin.coroutines.cancellation.CancellationException
@@ -546,7 +547,6 @@ open class ReadController : BaseController() {
     }
 
 
-    //@Cache(key = "ExploreUrl:\${bookSourceUrl},\${accessToken}", tags = "search\${accessToken}", seconds = 600)
     @Mapping("/getBookSourcesExploreUrl")
     open fun getBookSourcesExploreUrl(accessToken: String?, bookSourceUrl: String?,need: String?) = runBlocking {
         val (user,source)=getsourceuser(accessToken,bookSourceUrl)
@@ -570,10 +570,18 @@ open class ReadController : BaseController() {
         JsonResponse(true).Data(analyzeUrl.url)
     }
 
+    @Mapping("/svgtopng")
+    open fun svgtopng(ctx: Context, accessToken: String?, svg: String?){
+        val user=getuserbytocken(accessToken)
+        if (svg.isNullOrBlank()) throw DataThrowable().data(JsonResponse(false, NOT_BANK))
+        svg2PNG(svg,ctx.outputStream())
+        ctx.close()
+    }
+
 
     @Mapping("/imageDecode")
     open fun imageDecode(ctx: Context, accessToken: String?, bookSourceUrl: String?, @Param("book")  ibook: String?, url: String?, header: String?) = runBlocking {
-        //logger.info("imageDecode:$url")
+        logger.info("imageDecode:$url")
         val (user,source)=getsourceuser(accessToken,bookSourceUrl)
         if(user.AllowImg != true){
             App.toast("没有权限进行图片解密",accessToken?:"")
@@ -615,7 +623,17 @@ open class ReadController : BaseController() {
                 }.onFailure {
                     it.printStackTrace()
                     App.log("图片解密失败:${it.message}",accessToken!!)
-                    JsonResponse(isSuccess = false,errorMsg ="解密失败")
+                    runCatching {
+                        connection.inputStream.use { i->
+                            val b = ByteArray(4096)
+                            var len: Int
+                            while ((i.read(b).also { len = it }) != -1) {
+                                ctx.outputStream().write(b, 0, len)
+                            }
+                        }
+                    }.onFailure {
+                        JsonResponse(isSuccess = false,errorMsg ="解密失败")
+                    }
                 }
             } else {
                 connection.inputStream.use { i->

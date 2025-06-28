@@ -35,7 +35,7 @@ fun hash(algorithm: String, srcStr: String): String {
 
 val memoryLruCache:MyCache = MyCache(100)
 
-//val cache:MyCache = MyCache(100)
+val cache:MyCache = MyCache(100)
 
 @Suppress("unused")
 class CacheManager(val userid:String) {
@@ -57,11 +57,11 @@ class CacheManager(val userid:String) {
     private fun setcache(_key:String,value:String){
         val key= Md5(_key)
         if(value.isEmpty()) {
-            //cache.remove("$userid,_$key")
+            cache.remove("$userid,_$key")
             val valueFile = FileUtils.createFileIfNotExist(cahceData, "$key.txt")
             valueFile.delete()
         }else{
-            //cache.add("$userid,_$key",value)
+            cache.add("$userid,_$key",value)
             val valueFile = FileUtils.createFileIfNotExist(cahceData, "$key.txt")
             valueFile.writeText(value)
         }
@@ -69,9 +69,9 @@ class CacheManager(val userid:String) {
 
     private fun getcache(_key:String):String?{
         val key= Md5(_key)
-        /*if(cache.contains("$userid,_$key")){
+        if(cache.contains("$userid,_$key")){
             return cache.get("$userid,_$key").toString()
-        }*/
+        }
         try {
             val valueFile = FileUtils.createFileIfNotExist(cahceData, "$key.txt")
             val content = valueFile.readText()
@@ -86,7 +86,7 @@ class CacheManager(val userid:String) {
      */
     @JvmOverloads
     fun put(key: String, value: Any, saveTime: Int = 0) {
-       // println("put:$key")
+        //println("putcache:$key")
         val deadline =
             if (saveTime == 0) 0 else System.currentTimeMillis() + saveTime * 1000
         when (value) {
@@ -102,6 +102,7 @@ class CacheManager(val userid:String) {
             else -> {
                 //println("put else:$key")
                 val cache = Cache(key, value.toString(), deadline)
+                //putMemory(key, cache.value?:"")
                 setcache(key, Gson().toJson(cache))
             }
         }
@@ -122,7 +123,9 @@ class CacheManager(val userid:String) {
 
     fun get(key: String): String? {
        // println("getkey: $key")
+
         val v=getcache(key)
+       // println("v:$v")
         var re:String?= null
         runCatching {
             if (v != null && v.isNotBlank()) {
@@ -132,11 +135,18 @@ class CacheManager(val userid:String) {
                 }
             }
         }
-        //if(re == null){
-            //println("get cache error,key:$key")
-        //}
         if(re == "undefined"){
-            return null
+            re = null
+        }
+        if(re == null){
+            if(key.contains("_")){
+                val s= key.split("_")
+                if(s.size == 3){
+                    return  RuleBigDataHelp.getSourceVariable(s[1],userid,"getv_${s[2]}")
+                }else if(s.size == 2){
+                    return RuleBigDataHelp.getSourceVariable(s[1],userid,s[0])
+                }
+            }
         }
         //println(re)
         return re
@@ -181,7 +191,7 @@ class CacheManager(val userid:String) {
 
     fun delete(_key: String) {
         val key= Md5(_key)
-        //cache.remove("$userid,_$key")
+        cache.remove("$userid,_$key")
         kotlin.runCatching {
             FileUtils.createFileIfNotExist(cahceData, "$key.txt").let {
                 if(it.exists()) it.delete()

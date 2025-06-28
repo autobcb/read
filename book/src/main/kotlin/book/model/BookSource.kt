@@ -259,4 +259,11 @@ class BookSource(
         }
         return true
     }
+
+    override fun toString(): String {
+        val hashCode = this.hashCode()
+        val hexHash = Integer.toHexString(hashCode)
+        val s="io.legado.app.data.entities.BookSource@"+hexHash
+        return s
+    }
 }

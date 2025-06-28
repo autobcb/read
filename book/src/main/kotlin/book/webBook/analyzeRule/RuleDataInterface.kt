@@ -8,7 +8,6 @@ interface RuleDataInterface {
     var userid: String
 
     fun putVariable(key: String, value: String?): Boolean {
-        //println("putVariable key: $key value: $value")
         val keyExist = variableMap.contains(key)
         return when {
             value == null -> {

@@ -18,7 +18,10 @@ object RuleBigDataHelp {
     val sourceCache:MyCache = MyCache(100)
 
     fun putSourceVariable(sourcekey: String,userid :String, key: String, value: String?) {
-        if(userid.isEmpty()) return
+        if(userid.isEmpty()) {
+            //println("putSourceVariable but userid is empty")
+            return
+        }
         val md5SourceKey = MD5Utils.md5Encode(sourcekey)
         val md5Key = MD5Utils.md5Encode(key)
         if (value == null) {
@@ -36,7 +39,10 @@ object RuleBigDataHelp {
     }
 
     fun getSourceVariable(sourcekey: String,userid :String, key: String?): String? {
-        if(userid.isEmpty()) return null
+        if(userid.isEmpty()) {
+            //println("getSourceVariable but userid is empty")
+            return null
+        }
         val md5SourceKey = MD5Utils.md5Encode(sourcekey)
         val md5Key = MD5Utils.md5Encode(key)
         val c=sourceCache.get("$sourcekey$md5Key$userid$key")
@@ -51,7 +57,10 @@ object RuleBigDataHelp {
     }
 
     fun putBookVariable(bookUrl: String,userid :String, key: String, value: String?) {
-        if(userid.isEmpty() || bookUrl.isEmpty()) return
+        if(userid.isEmpty() || bookUrl.isEmpty()) {
+            //println("putBookVariable but userid is empty $key->$value")
+            return
+        }
         val md5BookUrl = MD5Utils.md5Encode(bookUrl)
         //println("putBookVariable $bookUrl,$userid,$key,$value,$md5BookUrl")
         val md5Key = MD5Utils.md5Encode(key)
@@ -68,7 +77,10 @@ object RuleBigDataHelp {
     }
 
     fun getBookVariable(bookUrl: String,userid :String, key: String?): String? {
-        if(userid.isEmpty() || bookUrl.isEmpty()) return null
+        if(userid.isEmpty() || bookUrl.isEmpty()) {
+           // println("getBookVariable but userid is empty")
+            return null
+        }
         val md5BookUrl = MD5Utils.md5Encode(bookUrl)
         val md5Key = MD5Utils.md5Encode(key)
         val file = File(FileUtils.getPath(bookData,userid, md5BookUrl, "$md5Key.txt"))
@@ -80,7 +92,10 @@ object RuleBigDataHelp {
 
 
     fun putChapterVariable(bookUrl: String,userid :String, chapterUrl: String, key: String, value: String?) {
-        if(userid.isEmpty() || bookUrl.isEmpty()) return
+        if(userid.isEmpty() || bookUrl.isEmpty())  {
+           // println("putChapterVariable but userid is empty")
+            return
+        }
         val md5BookUrl = MD5Utils.md5Encode(bookUrl)
         val md5ChapterUrl = MD5Utils.md5Encode(chapterUrl)
         val md5Key = MD5Utils.md5Encode(key)
@@ -98,7 +113,10 @@ object RuleBigDataHelp {
     }
 
     fun getChapterVariable(bookUrl: String,userid :String, chapterUrl: String, key: String): String? {
-        if(userid.isEmpty() || bookUrl.isEmpty()) return null
+        if(userid.isEmpty() || bookUrl.isEmpty())  {
+           // println("getChapterVariable but userid is empty")
+            return null
+        }
         val md5BookUrl = MD5Utils.md5Encode(bookUrl)
         val md5ChapterUrl = MD5Utils.md5Encode(chapterUrl)
         val md5Key = MD5Utils.md5Encode(key)

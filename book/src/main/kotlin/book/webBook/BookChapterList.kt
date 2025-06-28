@@ -4,11 +4,17 @@ import book.model.Book
 import book.model.BookChapter
 import book.model.BookSource
 import book.model.rule.TocRule
+import book.util.GSON
 import book.util.TextUtils
+import book.util.fromJsonArray
+import book.util.fromJsonObject
+import book.util.isJson
+import book.util.isJsonObject
 import book.util.isTrue
 import book.webBook.analyzeRule.AnalyzeRule
 import book.webBook.analyzeRule.AnalyzeUrl
 import book.webBook.exception.TocEmptyException
+import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext

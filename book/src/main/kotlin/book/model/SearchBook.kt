@@ -30,6 +30,12 @@ data class SearchBook(
     override var userid: String = ""
 ) : BaseBook {
     var imageDecode: Boolean = false
+    override fun toString(): String {
+        val hashCode = this.hashCode()
+        val hexHash = Integer.toHexString(hashCode)
+        val s="io.legado.app.data.entities.SearchBook@"+hexHash
+        return s
+    }
 
 
 

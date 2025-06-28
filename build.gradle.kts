@@ -88,6 +88,8 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.1.0")
 
+    implementation("org.apache.xmlgraphics:fop:2.11")
+    implementation("org.apache.xmlgraphics:batik-all:1.19")
 
     compileOnly("org.projectlombok:lombok")
 }

@@ -3,6 +3,7 @@ package book.webBook.analyzeRule
 import book.util.Base64
 import book.util.MD5Utils
 import book.util.crypto.AsymmetricCrypto
+import book.util.replace
 import cn.hutool.crypto.asymmetric.Sign
 import cn.hutool.crypto.digest.DigestUtil
 import cn.hutool.crypto.digest.HMac
@@ -17,7 +18,6 @@ import cn.hutool.crypto.symmetric.SymmetricCrypto
 interface JsEncodeUtils {
 
     fun md5Encode(str: String): String {
-       // println("md5Encode:$str")
         return MD5Utils.md5Encode(str)
     }
 
@@ -124,7 +124,8 @@ interface JsEncodeUtils {
     }
 
     fun getjs(js:String):String{
-        return  js.replace("io.legado.app.help.http.StrResponse","book.util.http.StrResponse")
+        return  js.replace("io.legado.app.help.http.StrResponse","book.util.http.StrResponse").
+        replace("io.legado.app.model.analyzeRule","book.webBook.analyzeRule")
     }
 
     /**

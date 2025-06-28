@@ -44,6 +44,8 @@ interface BaseSource : JsExtensions {
         return this
     }
 
+
+
     fun getLoginJs(): String? {
         val loginJs = loginUrl
         return when {
@@ -251,5 +253,6 @@ interface BaseSource : JsExtensions {
             it.printOnDebug()
         }.getOrNull()
     }
+
 
 }

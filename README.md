@@ -94,6 +94,11 @@ RSA加密，RSA加密安卓端和JAVA端加密标准不同，所以有可能安�
 ````
 Cipher.getInstance("RSA",BouncyCastleProvider());
 ````
+如果svg图片中文显示为方框请在docker或者服务器安装中文字体
+````
+sudo apt install fonts-wqy-microhei fonts-wqy-zenhei xfonts-wqy
+````
+
 web端如果想要和安卓端解密一样一定要修改代码，BouncyCastleProvider在org.bouncycastle.jce.provider.BouncyCastleProvider
 示范一个完整版的RSA解码，这段代码在已测试通过的书源中摘抄出来的
 ````

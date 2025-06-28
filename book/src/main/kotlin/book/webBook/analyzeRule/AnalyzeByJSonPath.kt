@@ -39,24 +39,18 @@ class AnalyzeByJSonPath(json: Any) {
             result = ruleAnalyzes.innerRule("{$.") { getString(it) } //替换所有{$.rule...}
 
             if (result.isEmpty()) { //st为空，表明无成功替换的内嵌规则
-
                 try {
-
                     val ob = ctx.read<Any>(rule)
                     result = if (ob is List<*>) {
                         ob.joinToString("\n")
                     } else {
                         ob.toString()
                     }
-
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
-
             }
-
             return result
-
         } else {
             val textList = arrayListOf<String>()
             for (rl in rules) {
@@ -79,21 +73,13 @@ class AnalyzeByJSonPath(json: Any) {
         val rules = ruleAnalyzes.splitRule("&&", "||", "%%")
 
         if (rules.size == 1) {
-
             ruleAnalyzes.reSetPos() //将pos重置为0，复用解析器
-
             val st = ruleAnalyzes.innerRule("{$.") { getString(it) } //替换所有{$.rule...}
-
             if (st.isEmpty()) { //st为空，表明无成功替换的内嵌规则
-
                 try {
-
-                    val obj = ctx.read<Any>(rule) //kotlin的Any型返回值不包含null ，删除赘余 ?: return result
-
+                    val obj = ctx.read<Any>(rule)
                     if (obj is List<*>) {
-
                         for (o in obj) result.add(o.toString())
-
                     } else {
                         result.add(obj.toString())
                     }
@@ -155,7 +141,7 @@ class AnalyzeByJSonPath(json: Any) {
             val results = ArrayList<ArrayList<*>>()
             for (rl in rules) {
                 val temp = getList(rl)
-                if (temp != null && temp.isNotEmpty()) {
+                if (!temp.isNullOrEmpty()) {
                     results.add(temp)
                     if (temp.isNotEmpty() && ruleAnalyzes.elementsType == "||") {
                         break

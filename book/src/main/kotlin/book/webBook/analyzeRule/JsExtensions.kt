@@ -326,6 +326,7 @@ interface JsExtensions: JsEncodeUtils  {
      * @return 下载的文件相对路径
      */
     fun downloadFile(url: String): String {
+        logger.info("downloadFile$url")
         val analyzeUrl = AnalyzeUrl(url, source = getSource(),debugLog = debugLog)
         val type = UrlUtil.getSuffix(url, analyzeUrl.type)
         val path = FileUtils.getPath(
@@ -348,6 +349,7 @@ interface JsExtensions: JsEncodeUtils  {
      * @return 相对路径
      */
     fun downloadFile(content: String, url: String): String {
+        logger.info("downloadFile$url")
         val type = AnalyzeUrl(url, source = getSource(), debugLog = debugLog).type
             ?: return ""
         val path = FileUtils.getPath(

@@ -51,7 +51,12 @@ data class Book(
 
 
 
-
+    override fun toString(): String {
+        val hashCode = this.hashCode()
+        val hexHash = Integer.toHexString(hashCode)
+        val s="io.legado.app.data.entities.Book@"+hexHash
+        return s
+    }
 
     companion object {
         const val hTag = 2L
