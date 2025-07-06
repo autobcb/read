@@ -7,6 +7,7 @@ import book.util.GSON
 import book.util.MD5Utils
 import book.util.fromJsonArray
 import book.util.fromJsonObject
+import book.util.isTrue
 import book.webBook.rss.Rss
 import book.webBook.sortUrls
 import kotlinx.coroutines.runBlocking
@@ -107,6 +108,34 @@ open class RssController :BaseController() {
             )
         }
         JsonResponse(true).Data(mapOf("sources" to list, "can" to (user.source != 0) ))
+    }
+
+    @Mapping("/rssshouldOverrideUrlLoading")
+    fun rssshouldOverrideUrlLoading(accessToken:String?,id: String?,url: String?) = runBlocking{
+        val user=getsourceuser(accessToken)
+        if (id.isNullOrBlank() || url.isNullOrBlank()) {
+            throw DataThrowable().data(JsonResponse(false, NOT_BANK))
+        }
+        val rss= if(user.source == 2){
+            userRssSourceService.getRssSource(id,user.id!!)?.toBaseSource()
+        }else{
+            rssSourceService.getRssSource(id)?.toBaseSource()
+        } ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+        val rssSource=RssSource.fromJson(rss.json?:"")
+        rssSource.userid=user.id
+        rssSource.usertocken=accessToken
+        val js = rssSource.shouldOverrideUrlLoading
+        if (!js.isNullOrBlank()) {
+            val t = System.currentTimeMillis()
+            val result = rssSource.shouldOverrideUrlLoading(js,url)
+            if (System.currentTimeMillis() - t > 300) {
+                App.log("${rssSource.getTag()}: url跳转拦截js执行耗时过长",accessToken!!)
+            }
+            if (!result.isTrue()) {
+               return@runBlocking JsonResponse(false)
+            }
+        }
+        JsonResponse(true)
     }
 
     @Mapping("/getRssSources")
@@ -635,6 +664,9 @@ open class RssController :BaseController() {
                 "js" to rssSource.injectJs,
                 "loginUi" to loginUi,
                 "loginUrl" to rssSource.loginUrl,
+                "contentBlacklist" to rssSource.contentBlacklist,
+                "contentWhitelist" to rssSource.contentWhitelist,
+                "shouldOverrideUrlLoading" to rssSource.shouldOverrideUrlLoading,
                 "header" to GSON.toJson(header),
             ))
         }.onFailure {

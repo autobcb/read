@@ -50,7 +50,7 @@ class CacheManager(val userid:String) {
             cahceData.deleteRecursively()
         }
         cahceData.mkdirs()
-       // cache.clear()
+        cache.clear()
     }
 
 
@@ -181,7 +181,9 @@ class CacheManager(val userid:String) {
     }
 
     fun putFile(key: String, value: String, saveTime: Int = 0) {
-        val cache = Cache(key, value, saveTime.toLong())
+        val deadline =
+            if (saveTime == 0) 0 else System.currentTimeMillis() + saveTime * 1000
+        val cache = Cache(key, value, deadline)
         setcache(key, Gson().toJson(cache))
     }
 

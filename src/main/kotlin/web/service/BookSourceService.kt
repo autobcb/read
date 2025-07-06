@@ -31,6 +31,10 @@ open class BookSourceService {
         return booksSourceMapper.getBookSource(bookSourceUrl)
     }
 
+    fun getBookSourcelike( bookSourceUrl: String): BookSource?{
+        return booksSourceMapper.getBookSourcelike(bookSourceUrl)
+    }
+
     fun getBookSourcelist( enabled: Boolean): List<BookSource>?{
         val t= object : TypeToken<List<BookSource>>() {}.type
         return cache.getOrStore(getlistkey(enabled), t,600) {

@@ -4,25 +4,13 @@ package book.webBook
 
 import book.app.App
 import book.model.*
-import book.util.AppPattern.JS_PATTERN
-import book.util.help.cookieJarHeader
-import book.util.http.ConcurrentRateLimiter
-import book.util.http.SSLHelper
 import book.util.http.StrResponse
-import book.util.printOnDebug
 import book.webBook.analyzeRule.AnalyzeUrl
 import book.webBook.exception.NoStackTraceException
-import com.script.ScriptException
 import okhttp3.Response
-import org.jsoup.Connection
-import org.jsoup.Jsoup
-import org.mozilla.javascript.WrappedException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.InputStream
-import java.net.ConnectException
-import java.net.SocketTimeoutException
-import kotlin.coroutines.cancellation.CancellationException
 
 private val logger: Logger = LoggerFactory.getLogger(WBook::class.java)
 
@@ -65,6 +53,7 @@ class WBook (val bookSource: BookSource, val debugLog: Boolean = true, var debug
                 headerMapF = bookSource.getHeaderMap(true),debugLog = debugger
             )
             var res = analyzeUrl.getStrResponseAwait()
+            println(res.body)
 
             bookSource.loginCheckJs?.let { checkJs ->
                 if (checkJs.isNotBlank()) {

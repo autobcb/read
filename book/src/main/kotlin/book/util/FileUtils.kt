@@ -102,9 +102,14 @@ object FileUtils {
         file.delete()
     }
 
-    val downDir = createFolderIfNotExist(appCtx.externalFiles, "down")
+    fun getdownDir(userid: String): File {
+        val downDir = createFolderIfNotExist(appCtx.externalFiles, "down",userid)
+        return downDir
+    }
 
-    fun getCachePath(): String {
+
+    fun getCachePath(userid: String): String {
+        val downDir = createFolderIfNotExist(appCtx.externalFiles, "down",userid)
         return downDir.path
     }
 

@@ -58,5 +58,12 @@ object App  {
 
     }
 
+    var searchBook= fun (key :String, sourceurl:String?,tocken:String){
+
+    }
+
+    var addBook= fun (bookurl:String?,tocken:String){
+
+    }
 }
 

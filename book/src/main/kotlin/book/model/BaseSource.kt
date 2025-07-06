@@ -7,6 +7,7 @@ import book.util.help.CookieStore
 import book.util.help.RuleBigDataHelp
 import book.webBook.DebugLog
 import book.webBook.analyzeRule.JsExtensions
+import book.webBook.analyzeRule.RssJsExtensions
 import com.script.ScriptBindings
 import com.script.buildScriptBindings
 import com.script.rhino.RhinoScriptEngine
@@ -182,6 +183,18 @@ interface BaseSource : JsExtensions {
         evalJS(js) {
             put("result", getLoginInfoMap()?: mapOf<String,String>())
         }
+    }
+
+    fun shouldOverrideUrlLoading(js:String ,url: String): String? {
+        val result =runCatching {
+           evalJS(js) {
+                put("java", RssJsExtensions(source = getSource()))
+                put("url", url)
+            }.toString()
+        }.onFailure {
+            App.log("${getTag()}: url跳转拦截js出错:${it.message}",usertocken?:"")
+        }.getOrNull()
+        return  result
     }
 
     /**

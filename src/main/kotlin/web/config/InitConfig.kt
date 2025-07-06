@@ -190,6 +190,36 @@ class InitConfig {
                 )))
             }
         }
+
+        App.searchBook = fun (key :String, sourceurl:String?,tocken:String)  = runBlocking {
+            if(key.isEmpty()){
+                App.toast("调用searchBook时关键词不能为空",tocken)
+                return@runBlocking
+            }
+            val socket=ApiWebSocket.get(tocken)
+            if(socket!=null ){
+                logger.info("searchBook:$key")
+                socket.send(Gson().toJson(WebMessage(
+                    msg = "searchBook", url = sourceurl?:"", title = key ,
+                    id = ""
+                )))
+            }
+        }
+
+        App.addBook = fun (bookurl:String?,tocken:String)  = runBlocking {
+            if(bookurl.isNullOrBlank()){
+                App.toast("调用addBook时bookurl不能为空",tocken)
+                return@runBlocking
+            }
+            val socket=ApiWebSocket.get(tocken)
+            if(socket!=null ){
+                logger.info("addBook:$bookurl")
+                socket.send(Gson().toJson(WebMessage(
+                    msg = "addBook", url = bookurl, title = "" ,
+                    id = ""
+                )))
+            }
+        }
     }
 
 

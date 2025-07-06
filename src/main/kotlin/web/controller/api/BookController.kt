@@ -220,6 +220,28 @@ open class BookController:BaseController() {
     }
 
 
+    @Mapping("/urlsaveBook")
+    open fun urlsaveBook( accessToken:String?,url: String) = runBlocking{
+        if(url.isBlank() ){
+            throw DataThrowable().data(JsonResponse(false,NOT_BANK))
+        }
+        val user=getuserbytocken(accessToken)
+        var domain=NetworkUtils.getSubDomain(url)
+        var source= if(user.source == 2){
+            userBookSourceService.getBookSourcelike(domain,user.id!!)?.toBaseSource()
+        }else{
+            bookSourceService.getBookSourcelike(domain)?.toBaseSource()
+        }?: throw DataThrowable().data(JsonResponse(false, NOT_SOURCE))
+        val webBook = WBook(source.json, user.id!!, accessToken, false)
+        runCatching{
+            val book=webBook.getBookInfo(url)
+            return@runBlocking  JsonResponse(true).Data(book)
+        }.onFailure {
+            return@runBlocking  JsonResponse(false,it.message?:"获取失败")
+        }
+    }
+
+
     @Mapping("/saveBook")
     open fun saveBook( accessToken:String?,book: SearchBook,useReplaceRule: Int) = runBlocking{
         with(book){
@@ -350,7 +372,7 @@ open class BookController:BaseController() {
         JsonResponse(true,SUCCESS).Data(book)
     }
 
-    @Cache(key = "getBookinfo:\${accessToken},\${book.bookUrl},\${book.name},\${book.author}", tags = "search\${accessToken}", seconds = 600)
+    @Cache(key = "getBookinfo:\${accessToken},\${book.bookUrl},\${book.name},\${book.author}", tags = "search\${accessToken}", seconds = 300)
     @Mapping("/getBookinfo")
     open fun getBookinfo( accessToken:String?, book: SearchBook?) = runBlocking{
         val user=getuserbytocken(accessToken)

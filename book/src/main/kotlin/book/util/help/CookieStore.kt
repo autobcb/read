@@ -3,6 +3,7 @@ package book.util.help
 
 
 import book.util.GSON
+import book.util.MyCache
 import book.util.NetworkUtils
 import book.util.TextUtils
 import jdk.internal.vm.vector.VectorSupport.store
@@ -14,7 +15,7 @@ import java.io.File
 import java.net.IDN
 import java.net.URI
 
-
+val cookiecache:MyCache = MyCache(100)
 // TODO 处理cookie
 class CookieStore(val userid:String) : CookieManager {
     companion object{
@@ -50,6 +51,7 @@ class CookieStore(val userid:String) : CookieManager {
             file.deleteRecursively()
         }
         checkfile(mycookiepath)
+        cookiecache.clear()
     }
 
     fun loadRequest(request: Request): Request {
@@ -100,7 +102,7 @@ class CookieStore(val userid:String) : CookieManager {
 
     private fun saveCookiesFromHeaders(url: HttpUrl, headers: Headers) {
         val cookies = Cookie.parseAll(url, headers)
-        println(cookies)
+       // println(cookies)
         var url=url.toString()
         val pos = url.indexOf('?')
         if (pos != -1) {
@@ -126,6 +128,7 @@ class CookieStore(val userid:String) : CookieManager {
     override fun setCookie(url: String, cookie: String?) {
         logger.info("setCookie url:$url，cookie:$cookie")
         val key=getkey(url)
+        cookiecache.add("${userid}_$key",cookie?:"")
         File("$mycookiepath/$key").writeText(cookie?:"")
     }
 
@@ -182,6 +185,9 @@ class CookieStore(val userid:String) : CookieManager {
 
     private fun getcookie(url: String):String {
         val key=getkey(url)
+        if(cookiecache.contains("${userid}_$key")){
+            return cookiecache.get("${userid}_$key").toString()
+        }
         logger.info("cookie url:$key")
         var ck=""
         runCatching {
@@ -221,6 +227,7 @@ class CookieStore(val userid:String) : CookieManager {
         if (file.exists()) {
             file.delete()
         }
+        cookiecache.remove("${userid}_$key")
     }
 
     override fun cookieToMap(cookie: String): MutableMap<String, String> {

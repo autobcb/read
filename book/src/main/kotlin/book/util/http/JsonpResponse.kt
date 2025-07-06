@@ -1,7 +1,9 @@
 package book.util.http
 
 import book.util.Base64
+import com.google.gson.Gson
 import org.jsoup.Connection
+import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import java.io.BufferedInputStream
 import java.net.URL
@@ -199,21 +201,29 @@ data class  MyResponse (
     var statusMessage:String="",
 ){
     fun  tojsonresponse():JsonpResponse{
-        var response=JsonpResponse()
+        val response=JsonpResponse()
         response.url=url
         response.method=method
         response.headers=headers
         val mybody=Base64.decode(body,Base64.DEFAULT)
-        var contentType=response.contentType()
+        val contentType=response.contentType()
         var encoding = "utf-8"
-        if (contentType != null && contentType.contains("charset=")) {
-            contentType.let {
-                if (it.contains("charset=")) {
-                    encoding = it.split("charset=")[1]
-                        .trim()
-                        .lowercase()
+        if (contentType != null ) {
+            if( contentType.contains("charset=")){
+                contentType.let {
+                    if (it.contains("charset=")) {
+                        encoding = it.split("charset=")[1]
+                            .trim()
+                            .lowercase()
+                    }
                 }
+            }else if( contentType.contains("html")){
+                var str=String(mybody)
+               if (str.contains("gb2312") || str.contains("GB2312") || str.contains("GBK") || str.contains("gbk")) {
+                   encoding = "gbk"
+               }
             }
+
         }
         response.body=text(mybody,encoding)
 
@@ -223,6 +233,7 @@ data class  MyResponse (
     }
 
     fun text(responseBytes: ByteArray ,charsetName: String? ): String {
+       // print(String(responseBytes, Charset.forName(charsetName)))
         if(charsetName?.lowercase() == "gb2312".lowercase()) {
             return String(responseBytes,  Charset.forName("gbk"))
         }

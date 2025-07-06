@@ -10,6 +10,9 @@ interface BookSourceMapper : BaseMapper<BookSource> {
     @Select("SELECT * FROM book_source WHERE book_source_url = #{bookSourceUrl}  LIMIT 1")
     fun getBookSource(@Param("bookSourceUrl") bookSourceUrl: String): BookSource?
 
+    @Select("SELECT * FROM book_source WHERE book_source_url like  concat('%',#{bookSourceUrl},'%') order by sourceorder  ,book_source_url asc  LIMIT 1")
+    fun getBookSourcelike(@Param("bookSourceUrl") bookSourceUrl: String): BookSource?
+
     @Select("SELECT * FROM book_source WHERE enabled= #{enabled} order by sourceorder  ,book_source_url asc")
     fun getBookSourcelist(@Param("enabled") enabled: Boolean): List<BookSource>?
 

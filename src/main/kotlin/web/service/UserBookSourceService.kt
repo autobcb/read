@@ -32,6 +32,11 @@ open class UserBookSourceService {
         return userBookSourceMapper.getBookSource( bookSourceUrl,userid)
     }
 
+    fun getBookSourcelike(bookSourceUrl: String?, userid: String?): UserBookSource?{
+        if(userid.isNullOrBlank() || bookSourceUrl.isNullOrBlank()) return null
+        return userBookSourceMapper.getBookSourcelike( bookSourceUrl,userid)
+    }
+
     fun getBookSourcelist( enabled: Boolean, userid: String?): List<UserBookSource>?{
         if(userid.isNullOrBlank()) return listOf()
         val t= object : TypeToken<List<UserBookSource>>() {}.type

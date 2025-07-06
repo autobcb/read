@@ -1,6 +1,7 @@
 package book.webBook.analyzeRule
 
 import book.app.App
+import book.appCtx
 import book.model.BaseSource
 import book.util.*
 import book.util.AppConst.dateFormat
@@ -209,14 +210,18 @@ interface JsExtensions: JsEncodeUtils  {
      */
     fun importScript(path: String): String {
         logger.info("importScript:$path")
-        val result = when {
-            path.startsWith("http") -> cacheFile(path) ?: ""
-            path.startsWith("/storage") -> FileUtils.readText(path)
-            else -> readTxtFile(path)
+        runCatching {
+            val result = when {
+                path.startsWith("http") -> cacheFile(path) ?: ""
+                path.startsWith("/storage") -> FileUtils.readText(path)
+                else -> readTxtFile(path)
+            }
+            //return  File("storage/cache/book/f645b81b-2df2-44b4-bb5a-90e4c11c19bd/2fa4cca5623258e95bb6ad14c99b30f2/content/0.txt").readText()
+            if (result.isBlank()) throw NoStackTraceException("$path 内容获取失败或者为空")
+            //logger.info("importScriptok:$result")
+            return result
         }
-        if (result.isBlank()) throw NoStackTraceException("$path 内容获取失败或者为空")
-        logger.info("importScriptok:$path")
-        return result
+        return ""
     }
 
     /**
@@ -330,7 +335,7 @@ interface JsExtensions: JsEncodeUtils  {
         val analyzeUrl = AnalyzeUrl(url, source = getSource(),debugLog = debugLog)
         val type = UrlUtil.getSuffix(url, analyzeUrl.type)
         val path = FileUtils.getPath(
-            FileUtils.downDir,getSource()?.userid?:"",
+            FileUtils.getdownDir(getSource()?.userid?:""),
             "${MD5Utils.md5Encode16(url)}.${type}"
         )
         val file = File(path).createFileReplace()
@@ -339,7 +344,7 @@ interface JsExtensions: JsEncodeUtils  {
                 iStream.copyTo(oStream)
             }
         }
-        return path.substring(FileUtils.getCachePath().length)
+        return path.substring(FileUtils.getCachePath(getSource()?.userid?:"").length)
     }
 
     /**
@@ -353,7 +358,7 @@ interface JsExtensions: JsEncodeUtils  {
         val type = AnalyzeUrl(url, source = getSource(), debugLog = debugLog).type
             ?: return ""
         val path = FileUtils.getPath(
-            FileUtils.createFolderIfNotExist(FileUtils.getCachePath()),getSource()?.userid?:"",
+            FileUtils.createFolderIfNotExist(FileUtils.getCachePath(getSource()?.userid?:"")),getSource()?.userid?:"",
             "${MD5Utils.md5Encode16(url)}.${type}"
         )
         val file = File(path)
@@ -363,7 +368,7 @@ interface JsExtensions: JsEncodeUtils  {
                 file.writeBytes(it)
             }
         }
-        return path.substring(FileUtils.getCachePath().length)
+        return path.substring(FileUtils.getCachePath(getSource()?.userid?:"").length)
     }
 
 
@@ -719,7 +724,7 @@ interface JsExtensions: JsEncodeUtils  {
      * @return File
      */
     fun getFile(path: String): File {
-        val cachePath = FileUtils.getCachePath()
+        val cachePath = FileUtils.getCachePath(getSource()?.userid?:"")
         val aPath: String = if (path.startsWith(File.separator)) {
             cachePath + path
         } else {
@@ -737,6 +742,32 @@ interface JsExtensions: JsEncodeUtils  {
     }
 
     fun readTxtFile(path: String): String {
+        if(path.contains("book_cache/")){
+            val p=path.split("book_cache/")[1]
+            val s=p.split("/")
+            if(s.size ==2 && s[1].endsWith(".nb")){
+                var s0=s[0]
+                if(s0.length > 16){
+                    s0=s0.substring(s0.length-16,s0.length)
+                }
+                val s2=s[1].split("-")
+                var s1=0
+                if(s2.size == 2){
+                    s1=s2[0].toInt()
+                }
+                val ruleDataDir = FileUtils.createFolderIfNotExist(appCtx.externalFiles, "cache")
+                val bookData = FileUtils.createFolderIfNotExist(ruleDataDir, "book",getSource()?.userid?:"")
+                println(bookData.path)
+                bookData.walk().maxDepth(1).forEach {
+                    if(it.name.contains(s0)){
+                        val valueFile = FileUtils.createFileIfNotExist(it,"content", "$s1.txt")
+                        if(valueFile.exists()){
+                            return valueFile.readText()
+                        }
+                    }
+                }
+            }
+        }
         val file = getFile(path)
         if (file.exists()) {
             val charsetName = EncodingDetect.getEncode(file)
@@ -769,7 +800,7 @@ interface JsExtensions: JsEncodeUtils  {
     fun unzipFile(zipPath: String): String {
         if (zipPath.isEmpty()) return ""
         val unzipPath = FileUtils.getPath(
-            FileUtils.createFolderIfNotExist(FileUtils.getCachePath()),
+            FileUtils.createFolderIfNotExist(FileUtils.getCachePath(getSource()?.userid?:"")),
             FileUtils.getNameExcludeExtension(zipPath)
         )
         FileUtils.deleteFile(unzipPath)
@@ -777,7 +808,7 @@ interface JsExtensions: JsEncodeUtils  {
         val unzipFolder = FileUtils.createFolderIfNotExist(unzipPath)
         ZipUtils.unzipFile(zipFile, unzipFolder)
         FileUtils.deleteFile(zipFile.absolutePath)
-        return unzipPath.substring(FileUtils.getCachePath().length)
+        return unzipPath.substring(FileUtils.getCachePath(getSource()?.userid?:"").length)
     }
 
 
