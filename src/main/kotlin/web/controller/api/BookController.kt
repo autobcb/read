@@ -24,6 +24,7 @@ import web.controller.api.ReadController.Companion.setBookbycache
 import web.controller.api.ReadController.Companion.setChapterListbycache
 import web.mapper.BookmarkMapper
 import web.mapper.ItemMapper
+import web.model.BaseRssSource
 import web.model.BookCache
 import web.model.BookGroup
 import web.model.Booklist
@@ -226,18 +227,41 @@ open class BookController:BaseController() {
             throw DataThrowable().data(JsonResponse(false,NOT_BANK))
         }
         val user=getuserbytocken(accessToken)
-        var domain=NetworkUtils.getSubDomain(url)
-        var source= if(user.source == 2){
-            userBookSourceService.getBookSourcelike(domain,user.id!!)?.toBaseSource()
+        val domain=NetworkUtils.getSubDomain(url)
+        val sources = getBookSourcelist(true,user)
+        var z=false
+        var msg=""
+        sources.forEach {
+            if(it.bookSourceUrl.contains(domain)){
+                z=true
+                runCatching{
+                    val webBook = WBook(it.json, user.id!!, accessToken, false)
+                    val book=webBook.getBookInfo(url)
+                    return@runBlocking  JsonResponse(true).Data(book)
+                }.onFailure {
+                    msg=it.message?:""
+                }
+            }else {
+                val s=BookSource.fromJson(it.json).getOrNull() ?: BookSource()
+                if(!s.bookUrlPattern.isNullOrBlank()){
+                    if(s.bookUrlPattern!!.toRegex().matches(url)){
+                        z=true
+                        runCatching{
+                            val webBook = WBook(it.json, user.id!!, accessToken, false)
+                            val book=webBook.getBookInfo(url)
+                            return@runBlocking  JsonResponse(true).Data(book)
+                        }.onFailure {
+                            msg=it.message?:""
+                        }
+                    }
+                }
+            }
+        }
+        if (z){
+            return@runBlocking  JsonResponse(false,"获取失败:$msg")
         }else{
-            bookSourceService.getBookSourcelike(domain)?.toBaseSource()
-        }?: throw DataThrowable().data(JsonResponse(false, NOT_SOURCE))
-        val webBook = WBook(source.json, user.id!!, accessToken, false)
-        runCatching{
-            val book=webBook.getBookInfo(url)
-            return@runBlocking  JsonResponse(true).Data(book)
-        }.onFailure {
-            return@runBlocking  JsonResponse(false,it.message?:"获取失败")
+            return@runBlocking  JsonResponse(false,"未查询到符合条件都书源")
+
         }
     }
 

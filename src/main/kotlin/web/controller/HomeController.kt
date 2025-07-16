@@ -107,9 +107,13 @@ open class HomeController {
     }
 
     @Mapping("/sendResetCode")
-    fun sendResetCode( email: String?)=run {
-        if (email.isNullOrBlank() )  {
+    fun sendResetCode( username:String? ,email: String?)=run {
+        if (email.isNullOrBlank()  || username.isNullOrBlank() )  {
             throw DataThrowable().data(JsonResponse(isSuccess = false, errorMsg = EMAIL_ERROR))
+        }
+        val user=usersService.getUserByusername(username)?:throw DataThrowable().data(JsonResponse(false,USER_NOT))
+        if(user.email != email){
+            throw DataThrowable().data(JsonResponse(false,EMAIL_CHECK_ERROR))
         }
         val c= getMailCode()
         cacheService.store("code_$email",c,60*10)

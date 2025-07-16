@@ -192,6 +192,7 @@ interface BaseSource : JsExtensions {
                 put("url", url)
             }.toString()
         }.onFailure {
+            it.printStackTrace()
             App.log("${getTag()}: url跳转拦截js出错:${it.message}",usertocken?:"")
         }.getOrNull()
         return  result
@@ -204,7 +205,9 @@ interface BaseSource : JsExtensions {
     fun evalJS(jsStr: String, bindingsConfig: ScriptBindings.() -> Unit = {}): Any? {
         val bindings = buildScriptBindings { bindings ->
             bindings.apply(bindingsConfig)
-            bindings["java"] = this
+            if (!bindings.containsKey("java")){
+                bindings["java"] = this
+            }
             bindings["source"] = this
             bindings["baseUrl"] = getKey()
             bindings["cookie"] =  getCookieManger()

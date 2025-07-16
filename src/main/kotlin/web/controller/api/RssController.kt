@@ -131,7 +131,7 @@ open class RssController :BaseController() {
             if (System.currentTimeMillis() - t > 300) {
                 App.log("${rssSource.getTag()}: url跳转拦截js执行耗时过长",accessToken!!)
             }
-            if (!result.isTrue()) {
+            if (result.isTrue()) {
                return@runBlocking JsonResponse(false)
             }
         }
@@ -638,7 +638,7 @@ open class RssController :BaseController() {
         var type = 0
         var url: String
         var name=""
-        if(rssSource.singleUrl || rssSource.sortUrl.isNullOrBlank()){
+        if(rssSource.singleUrl ){
             type=1
         }
         kotlin.runCatching {
@@ -692,7 +692,7 @@ open class RssController :BaseController() {
         }
     }
 
-    @Cache(key = "getArticles:\${accessToken},\${id},\${page},\${sortUrl},\${sortName}", tags = "rsssearch\${accessToken}", seconds = 600)
+    //@Cache(key = "getArticles:\${accessToken},\${id},\${page},\${sortUrl},\${sortName}", tags = "rsssearch\${accessToken}", seconds = 600)
     @Mapping("/getArticles")
     fun  getArticles(accessToken:String?, id:String,sortUrl :String ,sortName:String,page:Int)= runBlocking{
         val user = getuserbytocken(accessToken)

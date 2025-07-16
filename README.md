@@ -81,6 +81,71 @@ docker run -tid  -e TZ=Asia/Shanghai --name read  -v /root/read:/app -p 8080:808
 ````
  java  -Dhttp.proxyHost=127.0.0.1 -Dhttp.proxyPort=1080 -Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=1080 -jar /app/read.jar
 ````
+# Docker Compose 部署方式（感谢Lin-max1032制作的镜像）
+你也可以使用 docker-compose 更方便地管理和启动服务。请在你的服务器上新建一个 docker-compose.yml 文件，内容如下：
+````
+version: '3.8'
+
+services:
+
+  qread:
+    image: linmax/read:latest
+    container_name: qread
+    restart: unless-stopped
+    ports:
+      - "8080:8080"                     #根据需求设置
+    volumes:
+      - ./appdata:/app
+    environment:
+      TZ: Asia/Shanghai                 #设置时区为上海
+
+      # =========== 数据库设置 ===========
+      DB_TYPE: sqlite                   #设置为mysql时数据库设置生效，设置为sqlite时数据库设置不生效
+      DB_JDBCURL: jdbc:mysql://127.0.0.1:3306/数据库名?characterEncoding=UTF-8&allowMultiQueries=true&serverTimezone=UTC
+      DB_USERNAME: 用户名
+      DB_PASSWORD: 密码
+
+      # =========== admin 用户设置 ===========
+      ADMIN_USERNAME: admin             #后台管理员账户
+      ADMIN_PASSWORD: adminadmin        #后台管理员密码
+      #ADMIN_CODE: myadmincode          # 可选：如果需要 code 参数
+
+      # =========== user 设置 ===========
+      USER_ALLOWUPTXT: "false"          #是否允许上传txt 允许 true 不允许 false
+      USER_ALLOWCACHE: "false"          #是否允许添加缓存 允许 true 不允许 false
+      USER_ALLOWIMG: "false"            #是否使用图片解密 允许 true 不允许 false
+      USER_ALLOWCHECK: "false"          #是否允许检验书源 允许 true 不允许 false
+      USER_SOURCE: "0"                  # 0: 不允许修改书源, 1: 允许后台修改, 2: 独立书源
+      USER_MAXSOURCE: "0"               # 最大书源数量，0 表示不限制
+      USER_TIMEOUT: "0"                 #10分钟内除发多少次timeout禁用书源 0 为不限制
+
+      #===========  SMTP 邮件设置 ===========
+      #SMTP_HOST:                       #smtp邮箱host
+      #SMTP_PROTOCOLS: TLSv1.2          #通讯协议
+      #SMTP_PORT:                       #端口
+      #SMTP_ACCOUNT:                    #邮箱账号
+      #SMTP_PASSWORD:                   #邮箱密码，部分邮箱是安全码
+      #SMTP_PERSONAL:                   #发送人的昵称
+      #SMTP_CODESUBJECT: 验证码          #验证码邮件的主题
+      # =========== 默认设置 ===========
+      #DEFAULT_TTS:                     #默认tts链接
+      #DEFAULT_RULE:                    #默认净化链接
+      # =========== HTTP 线程设置 ===========
+      SERVER_HTTP_CORETHREADS: x5       #默认线程
+      SERVER_HTTP_MAXTHREADS: x10       #最大线程
+      # =========== 启动命令（必填：二选一）===========
+      JAVA_CMD: java -jar /app/read.jar  #不使用代理启动
+      #JAVA_CMD:  java  -Dhttp.proxyHost=127.0.0.1 -Dhttp.proxyPort=1080 -Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=1080 -jar /app/read.jar       #使用代理启动
+````
+使用步骤     
+安装 docker-compose（大多数新版本 Docker 已自带）。    
+将上面的内容保存为 docker-compose.yml。   
+在该目录下执行：   
+docker-compose up -d   
+查看日志：   
+docker-compose logs -f   
+停止服务：   
+docker-compose down
 
 # 反向代理
 如果需要使用nginx反向代理后端必须要注意websocket配置，目前websocket有两个：
