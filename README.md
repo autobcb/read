@@ -43,8 +43,8 @@ java.headusePhone(urlStr: String, headers: Map<String, String>) //用法和java.
 java.postusePhone(urlStr: String, body: String, headers: Map<String, String>) //用法和java.post一致，但此函数会使用代理功能
 ````
 
-# 开发中  
-和开源阅读进度同步   
+# 与开源阅读进度同步   
+https://github.com/autobcb/qreadwebdav
 
 # 书源权限
 书源可以直接调用java代码，所以给予书源权限时一定要小心！
