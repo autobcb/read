@@ -1,6 +1,7 @@
 package web.model
 
 import book.model.Book
+import book.model.BookSource
 import book.model.SearchBook
 import com.baomidou.mybatisplus.annotation.TableId
 import org.dromara.autotable.annotation.*
@@ -97,6 +98,13 @@ class Booklist {
         return this
     }
 
+    fun needimageDecode(source: BookSource?){
+        if(source != null && source.hasimageDecode() ){
+            this.imageDecode=true
+        }else{
+            this.imageDecode=false
+        }
+    }
    companion object{
        fun tobooklist(book: SearchBook, id:String):Booklist{
            var bookList = Booklist().create()
@@ -117,6 +125,8 @@ class Booklist {
            bookList.userid=id
            return bookList
        }
+
+
 
        fun tobooklist(book: Book, id:String):Booklist{
            var bookList = Booklist().create()

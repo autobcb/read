@@ -35,6 +35,7 @@ class InitConfig {
     fun cookieinit() {
         checkfile()
         App.startBrowserAwait=fun (urlStr: String, title: String, tocken:String, header:String):StrResponse = runBlocking{
+            if(urlStr.isBlank())  return@runBlocking  StrResponse(urlStr,"")
             val socket=ApiWebSocket.get(tocken)
             if(socket!=null){
                 val id= UUID.randomUUID().toString()
@@ -49,6 +50,7 @@ class InitConfig {
         }
 
         App.webview=fun (html: String?, url: String?, js: String?, tocken:String, header:String,urlregex:String,overrideUrlRegex:String):StrResponse = runBlocking{
+            if(url.isNullOrBlank() && html.isNullOrBlank())  return@runBlocking  StrResponse(url?:"","")
             val socket=ApiWebSocket.get(tocken)
             if(socket!=null){
                 val id= UUID.randomUUID().toString()
@@ -59,6 +61,7 @@ class InitConfig {
             return@runBlocking  StrResponse(url?:"","")
         }
         App.webviewbody=fun (html: String?, url: String?, js: String?, tocken:String, header:String, body:String,urlregex:String,overrideUrlRegex:String):StrResponse = runBlocking{
+            if(url.isNullOrBlank() && html.isNullOrBlank())  return@runBlocking  StrResponse(url?:"","")
             val socket=ApiWebSocket.get(tocken)
             if(socket!=null){
                 val id= UUID.randomUUID().toString()
@@ -220,6 +223,18 @@ class InitConfig {
                 )))
             }
         }
+
+       App.noticy = fun (str:String,id:String,tocken:String){
+           val socket=ApiWebSocket.get(tocken)
+           if(socket!=null ){
+               socket.send(Gson().toJson(WebMessage(
+                   msg = "noticy", url = id, title = str ,
+                   id = ""
+               )))
+           }
+       }
+
+
     }
 
 

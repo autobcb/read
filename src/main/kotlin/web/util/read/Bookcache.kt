@@ -2,7 +2,6 @@ package web.util.read
 
 import book.model.Book
 import book.webBook.WBook
-import book.webBook.exception.ConcurrentException
 import book.webBook.localBook.LocalBook
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
@@ -10,11 +9,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import org.slf4j.LoggerFactory
 import web.controller.api.ReadController.Companion.getBookContentbycache
-import web.controller.api.ReadController.Companion.getBookbycache
 import web.controller.api.ReadController.Companion.getChapterListbycache
-import web.controller.api.ReadController.Companion.setBookContentbycache
-import web.controller.api.ReadController.Companion.setBookbycache
-import web.controller.api.ReadController.Companion.setChapterListbycache
 import web.model.BaseSource
 import web.model.BookCache
 import web.model.Users
@@ -81,9 +76,7 @@ object Bookcache {
         logger.info("缓存开始${book.name}")
         var chapterlist= getChapterListbycache(book.bookUrl?:" ",user.id!!)
         if(chapterlist == null){
-            chapterlist= getlist(book.bookUrl?:" ",source!!,user.id!!,"").also{
-                setChapterListbycache(book.bookUrl?:" ",it,user.id!!)
-            }
+            chapterlist= getlist(book.bookUrl?:" ",source!!,user,"")
         }
         for(i in 0..<(cache.totalChapterNum ?: 0)){
             val x=i
@@ -122,12 +115,10 @@ object Bookcache {
                         val url=book.bookUrl?:" "
                         var chapterlist = getChapterListbycache(url,user.id!!)
                         if (chapterlist == null) {
-                            chapterlist = getlist(url).also {
-                                setChapterListbycache(url, it,user.id!!)
-                            }
+                            chapterlist = getlist(url)
                         }
                         val b = Book.initLocalBook(url, url, "")
-                        re= LocalBook.getContent(b, chapterlist[x]).toString().also { setBookContentbycache(url,it,x,user.id!!) }
+                        re= LocalBook.getContent(b, chapterlist[x]).toString()
                     }
                 }
             }
@@ -157,33 +148,12 @@ object Bookcache {
     private suspend fun getBookContent(accessToken:String, user: Users, source: BaseSource, url:String, index:Int):String {
         var chapterlist= getChapterListbycache(url,user.id!!)
         if(chapterlist == null){
-            chapterlist= getlist(url,source,user.id!!,accessToken).also{
-                setChapterListbycache(url,it,user.id!!)
-            }
+            chapterlist= getlist(url,source,user,accessToken)
         }
         val webBook = WBook(source.json,user.id!!,accessToken, false)
-        val book= getBookbycache(url,user.id!!).let {
-            it ?: getbook(webBook, url)!!.also { book -> setBookbycache(url,book,user.id!!) }
-        }
-        val systembook=mapper.get().booklistService.getbook(user.id!!,url)
-        if(systembook!=null){
-            book.durChapterIndex=systembook.durChapterIndex?:0
-        }
+        val book = getbook(accessToken,user,source,url)
         val nexturl=if(index+1 < chapterlist.size) chapterlist[index+1].url else ""
-        return webBook.getBookContent(book,chapterlist[index],nexturl).also { setBookContentbycache(url,it,index,user.id!!) }
+        return webBook.getBookContent(book,chapterlist[index],nexturl)
     }
 
-    private fun getbook(webBook: WBook, url:String): Book?= runBlocking{
-        var book: Book?=null
-        runCatching {
-            book= webBook.getBookInfo(url,canReName = true)
-        }.onFailure {
-            if(it is ConcurrentException){
-                logger.info("getbook 并发原因？？？？")
-                delay(1000)
-                book=getbook(webBook,url)
-            }
-        }
-        book
-    }
 }

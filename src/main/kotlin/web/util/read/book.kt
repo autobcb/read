@@ -12,11 +12,13 @@ import web.controller.api.ReadController.Companion.getBookbycache
 import web.controller.api.ReadController.Companion.setBookbycache
 import web.model.BaseSource
 import web.model.Booklist
+import web.model.Users
 import web.util.mapper.mapper
 import kotlin.random.Random
 
-fun updatebook(book: Booklist, source: BaseSource,userid:String) = runBlocking{
-    val list= getlist(book.bookUrl!! ,source,userid,"")
+fun updatebook(book: Booklist, source: BaseSource,user: Users) = runBlocking{
+    val userid=user.id!!
+    val list= getlist(book.bookUrl!! ,source,user,"")
     if (list.isNotEmpty()){
         val lastCheckTime=System.currentTimeMillis()
         val lastCheckCount=list.size
@@ -44,40 +46,11 @@ fun getlist(url:String):List<BookChapter>{
     return  chapters
 }
 
-suspend fun getlist(url:String, source: BaseSource,userid:String,accessToken :String):List<BookChapter>{
-    val webBook = WBook(source.json,userid,accessToken, false)
-    val book= getBookbycache(url,userid).let {
-        it ?: getbook(webBook,url).also { it1 -> setBookbycache(url,it1,userid) }
-    }
-    return getChapterList(webBook,book)
+fun getlist(url:String, source: BaseSource,user: Users,accessToken :String):List<BookChapter>{
+    return BookCatalog.getChapterlist(accessToken,user,source,url)
 }
 
-suspend fun getChapterList(webBook: WBook,book: Book):List<BookChapter>{
-    var re:List<BookChapter> = listOf()
-    runCatching {
-        re=webBook.getChapterList(book)
-    }.onFailure {
-        if(it is ConcurrentException){
-            val randomNumber = Random.nextInt(1000, 500).toLong()
-            delay(randomNumber)
-            return getChapterList(webBook,book)
-        }
-        throw it
-    }
-    return re
-}
-
-suspend fun  getbook(webBook:WBook, url:String):Book{
-    var book: Book?=null
-    runCatching {
-        book=webBook.getBookInfo(url,canReName = true)
-    }.onFailure {
-        if(it is ConcurrentException){
-            val randomNumber = Random.nextInt(1000, 500).toLong()
-            delay(randomNumber)
-            return getbook(webBook,url)
-        }
-        throw it
-    }
-    return book!!
+fun getbook(accessToken: String, user: Users, source: BaseSource, url: String): Book{
+    val book = (getBookbycache(url,user.id!!)?: BookInfo.getbookinfo(accessToken,user,source,url))?: throw Exception("书本获取失败")
+    return book
 }

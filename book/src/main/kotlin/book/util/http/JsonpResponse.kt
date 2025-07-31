@@ -226,7 +226,7 @@ data class  MyResponse (
 
         }
         response.body=text(mybody,encoding)
-
+       // println(response.body)
         response.statusCode=statusCode
         response.statusMessage=statusMessage
         return response

@@ -3,10 +3,8 @@ package book.util.help
 
 
 import book.util.GSON
-import book.util.MyCache
 import book.util.NetworkUtils
 import book.util.TextUtils
-import jdk.internal.vm.vector.VectorSupport.store
 import okhttp3.*
 import org.jsoup.Connection
 import org.slf4j.Logger
@@ -15,11 +13,11 @@ import java.io.File
 import java.net.IDN
 import java.net.URI
 
-val cookiecache:MyCache = MyCache(100)
+
 // TODO 处理cookie
 class CookieStore(val userid:String) : CookieManager {
     companion object{
-        val Stores:HashMap<String,CookieStore> = HashMap();
+        val Stores:HashMap<String,CookieStore> = HashMap()
     }
     private val logger: Logger = LoggerFactory.getLogger(CookieStore::class.java)
 
@@ -51,7 +49,6 @@ class CookieStore(val userid:String) : CookieManager {
             file.deleteRecursively()
         }
         checkfile(mycookiepath)
-        cookiecache.clear()
     }
 
     fun loadRequest(request: Request): Request {
@@ -128,7 +125,6 @@ class CookieStore(val userid:String) : CookieManager {
     override fun setCookie(url: String, cookie: String?) {
         logger.info("setCookie url:$url，cookie:$cookie")
         val key=getkey(url)
-        cookiecache.add("${userid}_$key",cookie?:"")
         File("$mycookiepath/$key").writeText(cookie?:"")
     }
 
@@ -185,9 +181,6 @@ class CookieStore(val userid:String) : CookieManager {
 
     private fun getcookie(url: String):String {
         val key=getkey(url)
-        if(cookiecache.contains("${userid}_$key")){
-            return cookiecache.get("${userid}_$key").toString()
-        }
         logger.info("cookie url:$key")
         var ck=""
         runCatching {
@@ -211,7 +204,7 @@ class CookieStore(val userid:String) : CookieManager {
     }
 
     fun removeCookie(url: String,key: String) {
-        var ck=getcookie(url)
+        val ck=getcookie(url)
         if(ck.isEmpty()){
             return
         }
@@ -227,7 +220,6 @@ class CookieStore(val userid:String) : CookieManager {
         if (file.exists()) {
             file.delete()
         }
-        cookiecache.remove("${userid}_$key")
     }
 
     override fun cookieToMap(cookie: String): MutableMap<String, String> {
@@ -256,14 +248,14 @@ class CookieStore(val userid:String) : CookieManager {
             return null
         }
         val builder = StringBuilder()
-        var isadd=false;
+        var isadd=false
         for (key in cookieMap.keys) {
             val value = cookieMap[key]
             if(key.trim() == "path"){
                 continue
             }
             if (value?.isNotBlank() == true) {
-                isadd=true;
+                isadd=true
                 builder.append(key)
                     .append("=")
                     .append(value)
@@ -277,8 +269,7 @@ class CookieStore(val userid:String) : CookieManager {
     override fun toString(): String {
         val hashCode = this.hashCode()
         val hexHash = Integer.toHexString(hashCode)
-        val s="io.legado.app.help.http.CookieStore@"+hexHash
-        return s
+        return "io.legado.app.help.http.CookieStore@$hexHash"
     }
 
 }

@@ -18,10 +18,12 @@ import cn.hutool.crypto.symmetric.SymmetricCrypto
 interface JsEncodeUtils {
 
     fun md5Encode(str: String): String {
+       // println("md5Encode $str")
         return MD5Utils.md5Encode(str)
     }
 
     fun md5Encode16(str: String): String {
+       // println("md5Encode16 $str")
         return MD5Utils.md5Encode16(str)
     }
 

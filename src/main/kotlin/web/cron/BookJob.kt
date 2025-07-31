@@ -52,7 +52,10 @@ class BookJob: Runnable {
                                     launch{
                                         semaphore.acquire()
                                         logger.info("更新${book.name}")
-                                        runCatching {  updatebook(book, source,book.userid?:"admin") }
+                                        runCatching {
+                                            val user = mapper.get().usersService.getUser(book.userid?:"admin")
+                                            updatebook(book, source,user!!)
+                                        }
                                         logger.info("完成更新${book.name}")
                                         semaphore.release()
                                     }.let {

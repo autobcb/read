@@ -54,6 +54,10 @@ object App  {
         }
     }
 
+    var noticy = fun  (str: String, md5 : String, tocken:String){
+
+    }
+
     var openurl= fun (url :String, mimeType:String?,tocken:String){
 
     }

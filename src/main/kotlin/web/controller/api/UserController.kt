@@ -3,7 +3,6 @@ package web.controller.api
 import org.noear.solon.annotation.Controller
 import org.noear.solon.annotation.Mapping
 import org.noear.solon.annotation.Path
-import org.noear.solon.core.handle.Context
 import org.noear.solon.core.util.DataThrowable
 import org.noear.solon.data.annotation.Cache
 import org.noear.solon.web.cors.annotation.CrossOrigin

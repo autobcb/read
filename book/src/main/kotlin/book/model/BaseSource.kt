@@ -185,7 +185,7 @@ interface BaseSource : JsExtensions {
         }
     }
 
-    fun shouldOverrideUrlLoading(js:String ,url: String): String? {
+    fun shouldOverrideUrlLoadingdo(js:String ,url: String): String? {
         val result =runCatching {
            evalJS(js) {
                 put("java", RssJsExtensions(source = getSource()))
@@ -231,7 +231,7 @@ interface BaseSource : JsExtensions {
      * 保存数据
      */
     fun put(key: String, value: String): String {
-       // println("sourceput: $key: $value")
+        //println("sourceput: $key: $value")
         RuleBigDataHelp.putSourceVariable(getKey(),userid?:"","getv_${key}",value)
         return value
     }
@@ -240,6 +240,7 @@ interface BaseSource : JsExtensions {
      * 获取保存的数据
      */
     fun get(key: String): String {
+        //println("sourceget: $key")
         return  RuleBigDataHelp.getSourceVariable(getKey(),userid?:"","getv_${key}") ?:""
     }
 

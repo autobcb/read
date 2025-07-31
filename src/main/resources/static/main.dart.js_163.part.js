@@ -2,13 +2,13 @@
 a[b][c]=a[b][c]||[]
 a[b][c].push({p:"main.dart.js_163",e:"beginPart"})})(self,"$__dart_deferred_initializers__","eventLog")
 $__dart_deferred_initializers__.current=function(a,b,c,$){var J,B,C,A={
-c1m(d){var x=J.M(d),w=x.h(d,"title")
+c1r(d){var x=J.M(d),w=x.h(d,"title")
 w=w==null?null:J.S(w)
 if(w==null)w=""
 x=x.h(d,"url")
 x=x==null?null:J.S(x)
 return new A.q5(w,x==null?"":x)},
-c1l(d){var x,w,v=null,u=J.M(d),t=u.h(d,"found")
+c1q(d){var x,w,v=null,u=J.M(d),t=u.h(d,"found")
 t=t==null?v:J.S(t)
 if(t==null)t=""
 x=u.h(d,"loginUrl")
@@ -27,8 +27,8 @@ _.a=d
 _.b=e
 _.c=f
 _.d=g},
-H2(d,e){return A.ch2(d,e)},
-ch2(d,e){var x=0,w=B.i(y.h),v,u,t,s,r,q,p
+H2(d,e){return A.ch3(d,e)},
+ch3(d,e){var x=0,w=B.i(y.h),v,u,t,s,r,q,p
 var $async$H2=B.d(function(f,g){if(f===1)return B.e(g,w)
 while(true)switch(x){case 0:q="ExploreUrl"+d
 x=e!=="1"?3:4
@@ -36,26 +36,26 @@ break
 case 3:x=5
 return B.c(D.je(q),$async$H2)
 case 5:u=g
-if(u!=null&&u.length!==0){v=A.c1l(J.D(C.m.N(0,u),"data"))
+if(u!=null&&u.length!==0){v=A.c1q(J.C(C.m.N(0,u),"data"))
 x=1
 break}case 4:t=y.g
 s=B.R(["bookSourceUrl",d,"need",e],t,t)
 p=C.t
 x=6
-return B.c(F.ch(H.bh("/getBookSourcesExploreUrl"),s),$async$H2)
+return B.c(F.ch(H.bg("/getBookSourcesExploreUrl"),s),$async$H2)
 case 6:u=p.N(0,g)
 r=C.m.N(0,u)
 t=J.M(r)
 x=t.h(r,"isSuccess")?7:9
 break
 case 7:x=10
-return B.c(G.jO(q,u),$async$H2)
-case 10:v=A.c1l(t.h(r,"data"))
+return B.c(G.jP(q,u),$async$H2)
+case 10:v=A.c1q(t.h(r,"data"))
 x=1
 break
 x=8
 break
-case 9:throw B.k(B.az(E.by(t.h(r,"errorMsg"))))
+case 9:throw B.k(B.az(E.bv(t.h(r,"errorMsg"))))
 case 8:case 1:return B.f(v,w)}})
 return B.h($async$H2,w)}},D,E,F,G,H
 J=c[1]
@@ -73,4 +73,4 @@ var z=a.updateTypes([]);(function inheritance(){var x=a.inheritMany
 x(B.w,[A.q5,A.aa5])})()
 var y={h:B.G("aa5"),g:B.G("j")}};
 ((a,b)=>{a[b]=a.current
-a.eventLog.push({p:"main.dart.js_163",e:"endPart",h:b})})($__dart_deferred_initializers__,"/YmwyBL2oPERj7Gnqd48qA9hf6Y=");
+a.eventLog.push({p:"main.dart.js_163",e:"endPart",h:b})})($__dart_deferred_initializers__,"B5XEb+ydrfv18aW8rojXUfQGD/U=");

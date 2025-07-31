@@ -3,6 +3,7 @@ package book.util
 import com.google.gson.*
 import com.google.gson.internal.LinkedTreeMap
 import com.google.gson.reflect.TypeToken
+import com.google.gson.stream.JsonReader
 import com.google.gson.stream.JsonWriter
 import java.io.InputStream
 import java.io.InputStreamReader
@@ -19,6 +20,7 @@ val GSON: Gson by lazy {
             object : TypeToken<Map<String?, Any?>?>() {}.type,
             MapDeserializerDoubleAsIntFix()
         )
+        //.registerTypeAdapter(Lazy::class.java, LazyAdapter<Any>())
         .registerTypeAdapter(Int::class.java, IntJsonDeserializer())
         .disableHtmlEscaping()
         .setPrettyPrinting()
@@ -103,6 +105,24 @@ class IntJsonDeserializer : JsonDeserializer<Int?> {
 
 }
 
+class LazyAdapter<T> : JsonDeserializer<Lazy<T>> {
+    override fun deserialize(
+        json: JsonElement,
+        type: Type,
+        ctx: JsonDeserializationContext
+    ): Lazy<T> {
+        return lazy {
+            when {
+                // 处理ParameterizedType情况
+                type is ParameterizedType -> ctx.deserialize(json, (type as ParameterizedType).actualTypeArguments[0])
+                // 处理原始Class类型
+                type is Class<*> -> ctx.deserialize(json, type)
+                // 兜底处理
+                else -> throw JsonParseException("Unsupported type: ${type.typeName}")
+            }
+        }
+    }
+}
 
 /**
  * 修复Int变为Double的问题

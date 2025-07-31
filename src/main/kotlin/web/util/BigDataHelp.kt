@@ -4,7 +4,10 @@ import book.appCtx
 import book.model.Book
 import book.model.BookChapter
 import book.util.FileUtils
+import book.util.GSON
 import book.util.MD5Utils
+import book.util.MyCache
+import book.util.help.RuleBigDataHelp
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.io.File
@@ -12,6 +15,8 @@ import java.io.File
 object BigDataHelp {
     private val ruleDataDir = FileUtils.createFolderIfNotExist(appCtx.externalFiles, "cache")
     private val bookData = FileUtils.createFolderIfNotExist(ruleDataDir, "book")
+    //val sourceCache:MyCache = MyCache(100)
+
 
     fun putChapterList(bookUrl: String,userid :String, value: List<BookChapter>?) {
         val md5BookUrl = MD5Utils.md5Encode(bookUrl)
@@ -19,8 +24,9 @@ object BigDataHelp {
         if (value == null) {
             FileUtils.delete(FileUtils.getPath(bookData,userid, md5BookUrl, file), true)
         } else {
+            val json= web.util.BookChapter.toBookChapterJson(value)
             val valueFile = FileUtils.createFileIfNotExist(bookData,userid, md5BookUrl, file)
-            valueFile.writeText(Gson().toJson(value))
+            valueFile.writeText(json)
             val bookUrlFile = File(FileUtils.getPath(bookData,userid, md5BookUrl, "bookUrl.txt"))
             if (!bookUrlFile.exists()) {
                 bookUrlFile.writeText(bookUrl)
@@ -35,11 +41,12 @@ object BigDataHelp {
         var list:List<BookChapter>?= null
         if (valueFile.exists()) {
             kotlin.runCatching {
-                val type = object : TypeToken<List<BookChapter>?>() {}.type
-                val l:List<BookChapter>?=Gson().fromJson(valueFile.readText(),type)
-                list = l
+                list = web.util.BookChapter.toBookChapterList(valueFile.readText())
+            }.onFailure {
+                it.printStackTrace()
             }
         }
+
         return list
     }
 
@@ -75,8 +82,9 @@ object BigDataHelp {
         if (value == null) {
             FileUtils.delete(FileUtils.getPath(bookData,userid, md5BookUrl, file), true)
         } else {
+            val json= web.util.Book.toBookJson(value)
             val valueFile = FileUtils.createFileIfNotExist(bookData,userid, md5BookUrl, file)
-            valueFile.writeText(Gson().toJson(value))
+            valueFile.writeText(json)
             val bookUrlFile = File(FileUtils.getPath(bookData,userid, md5BookUrl, "bookUrl.txt"))
             if (!bookUrlFile.exists()) {
                 bookUrlFile.writeText(bookUrl)
@@ -91,9 +99,9 @@ object BigDataHelp {
         var book:Book?= null
         if (valueFile.exists()) {
             kotlin.runCatching {
-                val type = object : TypeToken<Book?>() {}.type
-                val l:Book?=Gson().fromJson(valueFile.readText(),type)
-                book = l
+                book = web.util.Book.toBook(valueFile.readText())
+            }.onFailure {
+                it.printStackTrace()
             }
         }
         return book

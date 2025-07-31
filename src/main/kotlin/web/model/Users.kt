@@ -59,6 +59,16 @@ class Users {
 
     var Allowcheck: Boolean? = null
 
+    var bookmd5 :String? = null
+
+    var sourcemd5 :String? = null
+
+    var rssmd5  :String? = null
+
+    var tssmd5 :String? = null
+
+    var replacemd5 :String? = null
+
     var comment: String? = null
 
     @ONodeAttr(format = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")

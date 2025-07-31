@@ -19,8 +19,8 @@ class CleanAssets : Runnable {
     companion object {
         private var isdo = false
         private val codesfile = FileUtils.createFolderIfNotExist(appCtx.externalFiles, "assets","codes")
-        private val shareJsfile = FileUtils.createFolderIfNotExist(appCtx.externalFiles, "cache","shareJs")
-        private val logsfile = FileUtils.createFolderIfNotExist("logs")
+        //private val shareJsfile = FileUtils.createFolderIfNotExist(appCtx.externalFiles, "cache","shareJs")
+        //private val logsfile = FileUtils.createFolderIfNotExist("logs")
         val logger: Logger = LoggerFactory.getLogger(CleanAssets::class.java)
     }
 

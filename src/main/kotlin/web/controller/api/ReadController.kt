@@ -8,16 +8,13 @@ import book.util.*
 import book.webBook.WBook
 import book.webBook.analyzeRule.AnalyzeRule
 import book.webBook.analyzeRule.AnalyzeUrl
-import book.webBook.exception.ConcurrentException
 import book.webBook.exception.RegexTimeoutException
 import book.webBook.localBook.LocalBook
 import com.google.gson.Gson
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.noear.solon.annotation.*
 import org.noear.solon.core.handle.Context
 import org.noear.solon.core.util.DataThrowable
-import org.noear.solon.data.annotation.Cache
 import org.noear.solon.data.annotation.CacheRemove
 import org.noear.solon.data.cache.CacheService
 import org.noear.solon.web.cors.annotation.CrossOrigin
@@ -33,12 +30,13 @@ import web.service.ReplaceRuleService
 import web.util.BigDataHelp
 import web.util.SslUtils
 import web.util.read.BookContent
+import web.util.read.BookInfo
 import web.util.read.getlist
 import web.util.svg.svg2PNG
 import java.net.HttpURLConnection
 import java.net.URI
 import kotlin.coroutines.cancellation.CancellationException
-import kotlin.random.Random
+
 
 
 @Controller
@@ -144,8 +142,7 @@ open class ReadController : BaseController() {
 
                 else -> {
                     val source = getsource(user ,bookSourceUrl)
-                    getlist(url, source, user.id!!, accessToken ?: "").let {
-                        setChapterListbycache(url, it,user.id!!)
+                    getlist(url, source, user, accessToken ?: "").let {
                         runCatching {
                             val book = booklistService.getbook(user.id!!, url)
                             if(book != null) {
@@ -275,9 +272,12 @@ open class ReadController : BaseController() {
     }
 
     @Mapping("/getChapterListNew")
-    fun getChapterListNew(accessToken: String?, bookSourceUrl: String?, url: String?, bookname: String?,useReplaceRule:Int?) = runBlocking {
+    fun getChapterListNew(accessToken: String?, bookSourceUrl: String?, url: String?, bookname: String?,useReplaceRule:Int?,needRefresh:Int?) = runBlocking {
         if (url == null) throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         val user = getuserbytocken(accessToken)
+        if (needRefresh == 1) {
+            removeChapterListbycache(url,user.id!!)
+        }
         val chapters=getChapterList(accessToken,bookSourceUrl,url,user)
         if(!bookname.isNullOrBlank() && useReplaceRule == 1){
             val rules=replaceRuleService.getrulebybookname(user.id!!,"%$bookname%").filter { it.scopeTitle }
@@ -377,7 +377,7 @@ open class ReadController : BaseController() {
             var t=title
             if(t.isNullOrBlank()){
                 val list: List<BookChapter> =
-                    getChapterListbycache(url!!,user.id!!) ?: getlist(url, source!!, user.id!!, accessToken ?: "")
+                    getChapterListbycache(url!!,user.id!!) ?: getlist(url, source!!, user, accessToken ?: "")
                 t=list[index ?: 0].title
             }
             booklistService.updatepos(
@@ -417,25 +417,26 @@ open class ReadController : BaseController() {
     open fun setBookSource(
         accessToken: String?, bookUrl: String?, newUrl: String?, bookSourceUrl: String?
     ) = runBlocking {
+        if (newUrl.isNullOrBlank()) throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         val user = getuserbytocken(accessToken)
         val book = booklistService.getbook(user.id!!, bookUrl.also {
             if (it == null) throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         }!!).also {
             if (it == null) throw DataThrowable().data(JsonResponse(false, NO_BOOK))
         }!!
-        val source = getsource(bookSourceUrl?:"",user)
-        val webBook = WBook(source!!.json , user.id!!, accessToken, false)
+        val source = getsource(bookSourceUrl?:"",user)?: throw DataThrowable().data(JsonResponse(false, NOT_SOURCE))
         var new: Book? = null
         runCatching {
-            new = webBook.getBookInfo(newUrl ?: "", canReName = true).also {   setBookbycache(newUrl?:"",it,user.id!!) }
+            new = BookInfo.getbookinfo(accessToken!!,user,source,newUrl)
         }.onFailure {
+            val webBook = WBook(source.json , user.id!!, accessToken, false)
             webBook.searchBook(book.name ?: " ", 1).forEach {
                 if (it.bookUrl == newUrl) {
                     new = it.toBook()
                 }
             }
             if (new != null) {
-                booklistService.booklistMapper.updateById(book.bookto(new!!,false))
+                booklistService.booklistMapper.updateById(book.bookto(new,false))
             } else {
                 throw DataThrowable().data(JsonResponse(false, NO_BOOK))
             }
@@ -572,7 +573,7 @@ open class ReadController : BaseController() {
 
     @Mapping("/svgtopng")
     open fun svgtopng(ctx: Context, accessToken: String?, svg: String?){
-        val user=getuserbytocken(accessToken)
+        getuserbytocken(accessToken)
         if (svg.isNullOrBlank()) throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         svg2PNG(svg,ctx.outputStream())
         ctx.close()
@@ -627,7 +628,7 @@ open class ReadController : BaseController() {
                         connection.inputStream.use { i->
                             val b = ByteArray(4096)
                             var len: Int
-                            while ((i.read(b).also { len = it }) != -1) {
+                            while ((i.read(b).also { it -> len = it }) != -1) {
                                 ctx.outputStream().write(b, 0, len)
                             }
                         }
@@ -748,14 +749,7 @@ open class ReadController : BaseController() {
             throw DataThrowable().data(JsonResponse(false, NO_PAY))
         }
         val chapters=getChapterList(accessToken,book.origin,book.bookUrl!!,user)!!
-        val b= getBookbycache(url,user.id!!).let {
-            if(it==null){
-                val webBook = WBook(source.json,user.id!!,accessToken, false)
-                getbook(webBook,url).also { it2 ->setBookbycache(url,it2,user.id!!) }
-            }else{
-                it
-            }
-        }
+        val b= getBookbycache(url,user.id!!)?: BookInfo.getbookinfo(accessToken!!,user,source,url)!!
         val analyzeRule = AnalyzeRule(
             ruleData = b, source = bookSource,
             debugLog = null
@@ -786,19 +780,4 @@ open class ReadController : BaseController() {
         JsonResponse(true)
     }
 
-    private suspend fun  getbook(webBook:WBook, url:String):Book{
-        var book: Book?=null
-        runCatching {
-            book=webBook.getBookInfo(url,canReName = true)
-        }.onFailure {
-            if(it is ConcurrentException){
-                //println("getlist并发原因？？？？${it.message}")
-                val randomNumber = Random.nextInt(1000, 500).toLong()
-                delay(randomNumber)
-                return getbook(webBook,url)
-            }
-            throw it
-        }
-        return book!!
-    }
 }

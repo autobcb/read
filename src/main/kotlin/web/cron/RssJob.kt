@@ -13,7 +13,7 @@ class RssJob: Runnable {
     @Inject(value = "\${admin.cron:true}", autoRefreshed = true)
     var cron: Boolean = true
 
-    private val logger = LoggerFactory.getLogger(RssJob::class.java)
+   // private val logger = LoggerFactory.getLogger(RssJob::class.java)
 
     companion object {
         private var isupdatecron = false

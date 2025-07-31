@@ -127,7 +127,7 @@ open class RssController :BaseController() {
         val js = rssSource.shouldOverrideUrlLoading
         if (!js.isNullOrBlank()) {
             val t = System.currentTimeMillis()
-            val result = rssSource.shouldOverrideUrlLoading(js,url)
+            val result = rssSource.shouldOverrideUrlLoadingdo(js,url)
             if (System.currentTimeMillis() - t > 300) {
                 App.log("${rssSource.getTag()}: url跳转拦截js执行耗时过长",accessToken!!)
             }

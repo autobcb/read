@@ -37,7 +37,7 @@ open class BaseController {
 
     val apiversion = 5
 
-    val appversion="2.18.0"
+    val appversion="2.19.0"
 
 
     fun getuserbytocken(accessToken:String?): Users{

@@ -37,9 +37,9 @@ data class BookChapter(
         return s
     }
 
-
+    @delegate:Transient
     @delegate:Expose(serialize = false, deserialize = false)
-    override val variableMap: HashMap<String, String> by lazy {
+    override  val  variableMap: HashMap<String, String> by lazy {
         GSON.fromJsonObject<HashMap<String, String>>(variable).getOrNull() ?: hashMapOf()
     }
 

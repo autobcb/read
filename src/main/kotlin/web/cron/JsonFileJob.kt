@@ -6,6 +6,7 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.attribute.BasicFileAttributes
 
+@Suppress("unused")
 @Scheduled(fixedRate = 1000 * 60*60*24)
 class JsonFileJob : Runnable{
     val filepath="storage/assets/json"
