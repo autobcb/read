@@ -67,6 +67,8 @@ class Users {
 
     var tssmd5 :String? = null
 
+    var groundmd5 :String? = null
+
     var replacemd5 :String? = null
 
     var comment: String? = null

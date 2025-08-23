@@ -14,8 +14,8 @@ mybatis.db:
     - "web.model"
   mappers:        #支持包名 或 类名 或 xml（.xml结尾）//支持 ** 和 *
     - "web.mapper"
-  configuration:
-    cache-enabled: true  # 开启二级缓存
+  configuration: #扩展配置（要与 MybatisConfiguration 类的属性一一对应）
+    cacheEnabled: true
 mybatis-plus:
   configuration:
     cache-enabled: true  # 开启二级缓存

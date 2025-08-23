@@ -1,8 +1,6 @@
 package web.controller.api
 
 
-
-import book.app.App
 import book.model.Book
 import book.model.BookChapter
 import book.model.BookSource
@@ -24,10 +22,10 @@ import org.noear.solon.net.annotation.ServerEndpoint
 import org.noear.solon.net.websocket.WebSocket
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import web.mapper.BookSourceMapper
+import web.mapper.UserBookSourceMapper
 import web.model.BaseSource
 import web.model.Users
-import web.service.BookSourceService
-import web.service.UserBookSourceService
 import java.io.IOException
 
 @Controller
@@ -35,11 +33,11 @@ import java.io.IOException
 class SourceCheckDebug: BaseDebug() {
 
     @Inject
-    lateinit var bookSourceService: BookSourceService
+    lateinit var bookSourceMapper: BookSourceMapper
 
 
     @Inject
-    lateinit var userBookSourceService: UserBookSourceService
+    lateinit var userBookSourceMapper: UserBookSourceMapper
 
 
     override val logger: Logger = LoggerFactory.getLogger(DebugWebSocket::class.java)
@@ -151,9 +149,9 @@ class SourceCheckDebug: BaseDebug() {
         if (user.source == 0) return@runBlocking
         if(!isopen(checkid)) return@runBlocking
         val source: BaseSource? = if(user.source == 2){
-            userBookSourceService.getBookSource(id,user.id!!)?.toBaseSource()
+            userBookSourceMapper.getBookSource(id,user.id!!)?.toBaseSource()
         }else{
-            bookSourceService.getBookSource(id)?.toBaseSource()
+            bookSourceMapper.getBookSource(id)?.toBaseSource()
         }
         if(source != null){
             kotlin.runCatching {
@@ -162,10 +160,10 @@ class SourceCheckDebug: BaseDebug() {
                 var list:List<SearchBook> = listOf()
                 kotlin.runCatching {
                     val s= BookSource.fromJson(source.json).getOrNull() ?: BookSource()
-                    if(s.ruleSearch == null || s.ruleSearch!!.checkKeyWord.isNullOrEmpty()){
-                        list=webBook.searchBook(key)
+                    list = if(s.ruleSearch == null || s.ruleSearch!!.checkKeyWord.isNullOrEmpty()){
+                        webBook.searchBook(key)
                     }else{
-                        list=webBook.searchBook(s.ruleSearch!!.checkKeyWord!!)
+                        webBook.searchBook(s.ruleSearch!!.checkKeyWord!!)
                     }
                 }.onFailure {
                     getsocket(checkid).send(Gson().toJson(ErrorMsg().apply {
@@ -190,7 +188,7 @@ class SourceCheckDebug: BaseDebug() {
                 var chapters:List<BookChapter> = listOf()
                 kotlin.runCatching {
                     chapters = if(book!=null){
-                        webBook.getChapterList(book!!)
+                        webBook.getChapterList(book)
                     }else{
                         webBook.getChapterList(list[0].toBook())
                     }
@@ -228,7 +226,7 @@ class SourceCheckDebug: BaseDebug() {
                     if(!isopen(checkid)) return@runBlocking
                     kotlin.runCatching {
                         if(book!=null){
-                            webBook.getBookContent(book!!,chapter,nexturl)
+                            webBook.getBookContent(book,chapter,nexturl)
                         }else{
                             webBook.getBookContent(list[0].toBook(),chapter,nexturl)
                         }

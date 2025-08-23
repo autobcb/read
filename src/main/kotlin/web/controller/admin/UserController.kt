@@ -1,6 +1,7 @@
 package web.controller.admin
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper
+import kotlinx.coroutines.runBlocking
 import org.apache.ibatis.solon.annotation.Db
 import org.noear.solon.annotation.Body
 import org.noear.solon.annotation.Controller
@@ -11,12 +12,19 @@ import org.noear.solon.annotation.Post
 import org.noear.solon.core.util.DataThrowable
 import org.noear.solon.data.annotation.Tran
 import org.noear.solon.data.tran.TranPolicy
+import web.controller.api.ApiWebSocket
 import web.mapper.BackGroundMapper
+import web.mapper.BookCacheMapper
+import web.mapper.BookGroupMapper
+import web.mapper.BooklistMapper
 import web.mapper.BookmarkMapper
 import web.mapper.ItemMapper
+import web.mapper.ReplaceRuleMapper
+import web.mapper.UserBookSourceMapper
+import web.mapper.UsersMapper
+import web.mapper.UsertockenMapper
 import web.model.Users
 import web.response.*
-import web.service.*
 import web.util.page.PageByAjax
 
 @Controller
@@ -24,30 +32,30 @@ import web.util.page.PageByAjax
 open class UserController {
 
     @Inject
-    lateinit var usersService: UsersService
+    lateinit var usersMapper: UsersMapper
 
 
     @Inject
-    lateinit var booklistService: BooklistService
+    lateinit var booklistMapper: BooklistMapper
 
 
     @Inject
-    lateinit var bookGroupService: BookGroupService
+    lateinit var bookGroupMapper: BookGroupMapper
 
 
     @Inject
-    lateinit var usertockenService: UsertockenService
+    lateinit var usertockenMapper: UsertockenMapper
 
 
     @Inject
-    lateinit var bookCacheService: BookCacheService
+    lateinit var bookCacheMapper: BookCacheMapper
 
     @Inject
-    lateinit var userBookSourceService: UserBookSourceService
+    lateinit var userBookSourceMapper: UserBookSourceMapper
 
 
     @Inject
-    lateinit var replaceRuleService: ReplaceRuleService
+    lateinit var replaceRuleMapper: ReplaceRuleMapper
 
     @Db("db")
     @Inject
@@ -63,27 +71,27 @@ open class UserController {
 
     @Post
     @Mapping("/adduser")
-    fun adduser( user: Users) = run{
+    fun adduser( user: Users) = runBlocking{
         val (checkok,msg)=user.Check()
         if (!checkok) {
             throw DataThrowable().data(JsonResponse(isSuccess = false, errorMsg = msg))
         }
         if (user.id.isNullOrBlank()){
-            if(usersService.getUserByusername(user.username?:"") != null) {
+            if(usersMapper.getUserByusername(user.username?:"") != null) {
                 throw DataThrowable().data(JsonResponse(isSuccess = false, errorMsg = USER_IS))
             }
             //新增用户
-            usersService.usersMapper.insert(user.create())
+            usersMapper.insert(user.create())
         }else{
-            usersService.getUser(user.id!!).also {
+            usersMapper.getUser(user.id!!).also {
                 if ( it == null ){ throw DataThrowable().data(JsonResponse(isSuccess = false, errorMsg = USER_NOT)) }
                 if(!it.username.equals(user.username)){ user.username = it.username }
             }
             //更新用户数据
             user.update().run {
-                usersService.updateinfo(this)
+                usersMapper.updateinfo(this)
             }
-
+            ApiWebSocket.colseByuserid(user.id!!)
         }
         JsonResponse(true)
     }
@@ -93,7 +101,7 @@ open class UserController {
         if (id.isNullOrBlank()){
             throw DataThrowable().data(JsonResponse(isSuccess = false, errorMsg = NOT_BANK))
         }
-        val user= usersService.getUser(id) ?: throw DataThrowable().data(JsonResponse(isSuccess = false, errorMsg = USER_NOT))
+        val user= usersMapper.getUser(id) ?: throw DataThrowable().data(JsonResponse(isSuccess = false, errorMsg = USER_NOT))
         user.password=null
         JsonResponse(true).Data(user)
     }
@@ -105,7 +113,7 @@ open class UserController {
         if(!where.isNullOrBlank()){
             queryWrapper.like("code",where).or().like("username",where).or().like("email",where).or().like("phone",where)
         }
-        PageByAjax(usersService.usersMapper,queryWrapper,page,limit,order).also {
+        PageByAjax(usersMapper,queryWrapper,page,limit,order).also {
             (it.data as List<Users>).forEach{
                 it.password = ""
             }
@@ -113,22 +121,24 @@ open class UserController {
     }
 
     @Mapping("/deluser")
-    fun deluser(id: String?) = run{
+    fun deluser(id: String?) = runBlocking{
         if (id.isNullOrBlank()){
             throw DataThrowable().data(JsonResponse(isSuccess = false, errorMsg = NOT_BANK))
         }
-        usersService.getUser(id) ?: throw DataThrowable().data(JsonResponse(isSuccess = false, errorMsg = USER_NOT))
+        usersMapper.getUser(id) ?: throw DataThrowable().data(JsonResponse(isSuccess = false, errorMsg = USER_NOT))
         deluserbyid(id)
+        ApiWebSocket.colseByuserid(id)
         JsonResponse(true)
     }
 
     @Mapping("/delusers")
-    fun delusers(@Body ids:List<String>?) = run{
+    fun delusers(@Body ids:List<String>?) = runBlocking{
         ids?.forEach { id-> runCatching {
             if (id.isNotBlank()){
-                val user=usersService.getUser(id)
+                val user=usersMapper.getUser(id)
                 if (user != null){
                     deluserbyid(id)
+                    ApiWebSocket.colseByuserid(id)
                 }
             }
         } }
@@ -137,13 +147,13 @@ open class UserController {
 
     @Tran(policy = TranPolicy.requires_new)
     fun deluserbyid(id:String) = run{
-        usersService.usersMapper.deleteById(id)
-        booklistService.delUserbooks(id)
-        bookGroupService.delUsergroup(id)
-        usertockenService.delUsertockens(id)
-        bookCacheService.delUserCache(id)
-        userBookSourceService.delUserSource(id)
-        replaceRuleService.delUserrule(id)
+        usersMapper.deleteById(id)
+        booklistMapper.delUserbooks(id)
+        bookGroupMapper.delUsergroup(id)
+        usertockenMapper.delUsertockens(id)
+        bookCacheMapper.delUserCache(id)
+        userBookSourceMapper.delUserSource(id)
+        replaceRuleMapper.delUserrule(id)
         backGroundMapper.delUserGround(id)
         itemMapper.delUserItem(id)
         bookmarkMapper.delUserBookmar(id)

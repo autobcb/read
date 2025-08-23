@@ -1,8 +1,9 @@
 package web.controller.api
 
+import book.appCtx
 import book.model.Book
+import book.util.FileUtils
 import book.webBook.localBook.LocalBook
-import org.apache.ibatis.solon.annotation.Db
 import org.noear.solon.annotation.Controller
 import org.noear.solon.annotation.Inject
 import org.noear.solon.annotation.Mapping
@@ -12,8 +13,8 @@ import org.noear.solon.web.cors.annotation.CrossOrigin
 import web.mapper.BooklistMapper
 import web.model.Booklist
 import web.response.*
-import web.service.BooklistService
 import web.util.cache.getlocalpath
+import web.util.hash.Md5
 import java.io.File
 import java.net.URLDecoder
 import kotlin.concurrent.thread
@@ -23,9 +24,10 @@ import kotlin.concurrent.thread
 @CrossOrigin(origins = "*")
 open class LocalBookController:BaseController() {
 
+    private val imagesDir = FileUtils.createFolderIfNotExist(appCtx.externalFiles, "assets","images")
 
     @Inject
-    lateinit var booklistService: BooklistService
+    lateinit var booklistMapper: BooklistMapper
 
 
     @Mapping("/importBookPreview")
@@ -56,12 +58,12 @@ open class LocalBookController:BaseController() {
         val book = Book.initLocalBook(localpath, localpath, "")
         val chapters = LocalBook.getChapterList(book)
         val booklist= Booklist().create().bookto(book)
-        booklistService.getbook(user.id!!,book.bookUrl)?.let {
+        booklistMapper.getbook(user.id!!,book.bookUrl)?.let {
            // booklist.durChapterTime=it.durChapterTime
             booklist.durChapterTitle=it.durChapterTitle
             booklist.durChapterPos=it.durChapterPos
             booklist.durChapterIndex=it.durChapterIndex
-            booklistService.booklistMapper.deleteById(it.id)
+            booklistMapper.deleteById(it.id)
         }
         booklist.originName="本地"
         booklist.userid=user.id
@@ -70,14 +72,27 @@ open class LocalBookController:BaseController() {
         booklist.totalChapterNum=chapters.size
         booklist.latestChapterTitle=chapters[chapters.size-1].title
         booklist.latestChapterTime=System.currentTimeMillis()
-        booklistService.booklistMapper.insert(booklist)
-        booklistService.cleancache(user.id)
+        booklistMapper.insert(booklist)
+        web.notification.Book.sendNotification(user)
         thread {
             ReadController.removeChapterListbycache(book.bookUrl,user.id!!)
             ReadController.removeallBookContentbycache(book.bookUrl,user.id!!)
             ReadController.setChapterListbycache(book.bookUrl,chapters,user.id!!)
         }
         return@run JsonResponse(true,SUCCESS).Data(mapOf("books" to book,"chapters" to chapters))
+    }
+
+    @Mapping("/uploadimage")
+    open fun  uploadimage(accessToken:String?, file: UploadedFile?)= run{
+        if(file == null) throw DataThrowable().data(JsonResponse(false, NOT_BANK))
+        if (file.isEmpty) {
+            throw DataThrowable().data(JsonResponse(false, NOT_BANK))
+        }
+        val fb=file.contentAsBytes;
+        val f1="${Md5(fb)}.png"
+        val valueFile = FileUtils.createFileIfNotExist(imagesDir,f1)
+        valueFile.writeBytes(fb)
+        JsonResponse(true).Data("http//assets/images/"+f1)
     }
 
 }

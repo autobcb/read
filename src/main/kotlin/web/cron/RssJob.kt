@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper
 import kotlinx.coroutines.runBlocking
 import org.noear.solon.annotation.Inject
 import org.noear.solon.scheduling.annotation.Scheduled
-import org.slf4j.LoggerFactory
 import web.util.mapper.mapper
 
 @Scheduled(fixedRate = 1000 * 60*60)
@@ -26,15 +25,15 @@ class RssJob: Runnable {
         if (isupdatecron) {
             return@runBlocking
         }
-        val users=mapper.get().usersService.usersMapper.selectList(QueryWrapper())
+        val users=mapper.get().usersMapper.selectList(QueryWrapper())
         for (user in users) {
             if (user.source == 2) {
                 runCatching {
-                    val sources=mapper.get().userRssSourceService.getallSourcelist(user.id!!)
+                    val sources=mapper.get().userRssSourceMapper.getallSourcelist(user.id!!)
                     if( sources.isNotEmpty()) {
                         var order =0
                         for (source in sources) {
-                            if(source.sourceorder != order) mapper.get().userRssSourceService.changeorder(source.id?:"",user.id!!,order)
+                            if(source.sourceorder != order) mapper.get().userRssSourceMapper.changeorder(source.id?:"",order)
                             order++
                         }
                     }
@@ -42,11 +41,11 @@ class RssJob: Runnable {
             }
         }
 
-        val sources=mapper.get().rssSourceService.getallSourcelist()
+        val sources=mapper.get().rssSourceMapper.getallSourcelist()
         if(sources != null && sources.isNotEmpty()) {
             var order =0
             for (source in sources) {
-                if(source.sourceorder != order) mapper.get().rssSourceService.changeorder(source.sourceUrl,order)
+                if(source.sourceorder != order) mapper.get().rssSourceMapper.changeorder(source.sourceUrl,order)
                 order++
             }
         }

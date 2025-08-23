@@ -7,10 +7,9 @@ solon.dataSources:
 admin:
   username: "admin"
   password: "adminadmin"
-  #code: "接口的code参数" //如果需要使用获取邀请码参数请修改这个参数，重启生效
+  code: "" #需要填写app管理后台生成的密钥
 user:
   allowuptxt: false  #是否允许上传txt 允许 true 不允许 false
-  allowcache: false  #是否允许添加缓存 允许 true 不允许 false
   allowimg: false  #是否使用图片解密 允许 true 不允许 false
   allowcheck: false  #是否允许检验书源 允许 true 不允许 false
   source: 0  #0为不允许修改书源，1为允许修改后台书源，2独立书源

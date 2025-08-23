@@ -16,8 +16,8 @@ interface ReplaceRuleMapper: BaseMapper<ReplaceRule> {
     @Select("SELECT * FROM replace_rule  WHERE userid = #{userid} and name = #{name}")
     fun getrulebyname(@Param("userid") userid: String,@Param("name") name: String): List<ReplaceRule>
 
-    @Select("SELECT * FROM replace_rule  WHERE is_enabled= true and userid = #{userid} and (scope like #{name} or scope = '' or scope is null) and exclude_scope not like #{name} ")
-    fun getrulebybookname(@Param("userid") userid: String,@Param("name") name: String): List<ReplaceRule>
+    @Select("SELECT * FROM replace_rule  WHERE is_enabled= true and userid = #{userid} and (scope = #{url} or scope like #{name} or scope = '' or scope is null) and exclude_scope not like #{name} ")
+    fun getrulebybookname(@Param("userid") userid: String,@Param("name") name: String,@Param("url") url: String): List<ReplaceRule>
 
     @Select("SELECT * FROM replace_rule  WHERE userid = #{userid} order by ruleorder,name asc")
     fun getallrule(@Param("userid") userid: String): List<ReplaceRule>

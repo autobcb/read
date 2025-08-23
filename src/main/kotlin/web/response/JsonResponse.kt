@@ -13,3 +13,23 @@ class JsonResponse (val isSuccess:Boolean, val errorMsg:String){
         return this
     }
 }
+
+
+class QJsonResponse (val code: Int, var msg:String){
+
+
+    var data:Any? = null
+
+    constructor(isSuccess:Boolean):this(if (isSuccess)0 else -1, msg = if (isSuccess) SUCCESS else "")
+
+
+    fun Data(data:Any?) : QJsonResponse {
+        this.data = data
+        return this
+    }
+
+    fun Msg(msg:String) : QJsonResponse {
+        this.msg = msg
+        return this
+    }
+}

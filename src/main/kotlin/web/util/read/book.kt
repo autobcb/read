@@ -2,19 +2,14 @@ package web.util.read
 
 import book.model.Book
 import book.model.BookChapter
-import book.webBook.WBook
-import book.webBook.exception.ConcurrentException
 import book.webBook.localBook.LocalBook
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import web.controller.api.ReadController
 import web.controller.api.ReadController.Companion.getBookbycache
-import web.controller.api.ReadController.Companion.setBookbycache
 import web.model.BaseSource
 import web.model.Booklist
 import web.model.Users
 import web.util.mapper.mapper
-import kotlin.random.Random
 
 fun updatebook(book: Booklist, source: BaseSource,user: Users) = runBlocking{
     val userid=user.id!!
@@ -28,14 +23,14 @@ fun updatebook(book: Booklist, source: BaseSource,user: Users) = runBlocking{
             val latestChapterTime=System.currentTimeMillis()
             ReadController.removeChapterListbycache(book.bookUrl?:"",userid)
             ReadController.setChapterListbycache(book.bookUrl?:"",list,userid)
-            mapper.get().booklistService.updatetime(book.id!!,userid,latestChapterTitle,latestChapterTime,lastCheckTime,lastCheckCount, totalChapterNum )
-            mapper.get().bookCacheService.getCache(book.userid!!,book.id!!).let {
+            mapper.get().booklistMapper.updatetime(book.id!!,latestChapterTitle,latestChapterTime,lastCheckTime,lastCheckCount, totalChapterNum )
+            mapper.get().bookCacheMapper.getCache(book.userid!!,book.id!!).let {
                 if(it!=null){
-                    mapper.get().bookCacheService.updatetime(it.id!!,userid,totalChapterNum)
+                    mapper.get().bookCacheMapper.updatetime(it.id!!,totalChapterNum)
                 }
             }
         }else{
-            mapper.get().booklistService.updatetimefail(book.id!!,userid,lastCheckTime,lastCheckCount)
+            mapper.get().booklistMapper.updatetimefail(book.id!!,lastCheckTime,lastCheckCount)
         }
     }
 }

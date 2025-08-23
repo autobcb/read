@@ -10,9 +10,9 @@ import org.noear.solon.net.annotation.ServerEndpoint
 import org.noear.solon.net.websocket.WebSocket
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import web.mapper.RssSourceMapper
+import web.mapper.UserRssSourceMapper
 import web.response.JsonResponse
-import web.service.RssSourceService
-import web.service.UserRssSourceService
 import java.io.IOException
 
 @Controller
@@ -21,11 +21,11 @@ class RssDebugWebSocket : BaseDebug() {
 
 
     @Inject
-    lateinit var rssSourceService: RssSourceService
+    lateinit var rssSourceMapper: RssSourceMapper
 
 
     @Inject
-    lateinit var userRssSourceService: UserRssSourceService
+    lateinit var userRssSourceMapper: UserRssSourceMapper
 
     override  val logger:Logger= LoggerFactory.getLogger(RssDebugWebSocket::class.java)
 
@@ -49,9 +49,9 @@ class RssDebugWebSocket : BaseDebug() {
             return@runBlocking
         }
         val rss=if(user.source == 2){
-            userRssSourceService.getRssSource(msg.url?:"",user.id!!)?.toBaseSource()
+            userRssSourceMapper.getRssSource(msg.url?:"",user.id!!)?.toBaseSource()
         }else{
-            rssSourceService.getRssSource(msg.url?:"")?.toBaseSource()
+            rssSourceMapper.getRssSource(msg.url?:"")?.toBaseSource()
         }
         if (rss == null){
             socket.send("event: error\n")

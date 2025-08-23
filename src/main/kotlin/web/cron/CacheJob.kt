@@ -20,6 +20,7 @@ class CacheJob: Runnable {
 
 
     override fun run() {
+        return;
         if(!cron){
            return
         }
@@ -29,7 +30,7 @@ class CacheJob: Runnable {
 
         isupdatebookcron = true
         logger.info("Cache job started")
-        val caches = mapper.get().bookCacheService.bookCacheMapper.selectList(QueryWrapper())
+        val caches = mapper.get().bookCacheMapper.selectList(QueryWrapper())
         for (cache in caches) {
             Bookcache.addcache(cache)
         }

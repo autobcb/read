@@ -4,12 +4,10 @@ import book.app.App
 import book.webBook.WBook
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.slf4j.LoggerFactory
-import web.controller.api.ReadController.Companion.getBookbycache
 import web.controller.api.ReadController.Companion.getChapterListbycache
 import web.controller.api.ReadController.Companion.setBookContentbycache
 import web.model.BaseSource
@@ -52,14 +50,14 @@ object  BookContent {
     }
 
     private suspend fun getBookContent(accessToken:String,user: Users, source:BaseSource, url:String, index:Int):String {
-        var chapterlist= getChapterListbycache(url,user.id!!)
-        if(chapterlist == null){
+        var (chapterlist,_)= getChapterListbycache(url,user.id!!)
+        if(chapterlist == null || index >= chapterlist.size ){
             chapterlist= getlist(url,source,user,accessToken)
         }
         val webBook = WBook(source.json,user.id!!,accessToken, false)
         val book = getbook(accessToken,user,source,url)
 
-        val systembook=mapper.get().booklistService.getbook(user.id!!,url)
+        val systembook=mapper.get().booklistMapper.getbook(user.id!!,url)
         if(systembook!=null){
             book.durChapterIndex=systembook.durChapterIndex?:0
         }else{

@@ -36,6 +36,49 @@ interface  UsersMapper : BaseMapper<Users> {
     fun updateinfo(@Param("user") user: Users):Int
 
 
+    @Update("UPDATE users set tssmd5 = #{tssmd5}   WHERE id = #{id}")
+    fun updatettsmd5(@Param("id") id: String,@Param("tssmd5") tssmd5: String): Int
+
+    @Update("UPDATE users set replacemd5 = #{replacemd5}   WHERE id = #{id}")
+    fun updatereplacemd5(@Param("id") id: String,@Param("replacemd5") replacemd5: String): Int
+
+    @Update("UPDATE users set bookmd5 = #{bookmd5}   WHERE id = #{id}")
+    fun updatebookmd5(@Param("id") id: String,@Param("bookmd5") bookmd5: String): Int
+
+    @Update("UPDATE users set sourcemd5 = #{sourcemd5}   WHERE id = #{id} ")
+    fun updatesourcemd5(@Param("id") id: String,@Param("sourcemd5") sourcemd5: String): Int
+
+    @Update("UPDATE users set rssmd5 = #{rssmd5}   WHERE id = #{id} ")
+    fun updaterssmd5(@Param("id") id: String,@Param("rssmd5") rssmd5: String): Int
+
+    @Update("UPDATE users set groundmd5 = #{groundmd5}   WHERE id = #{id} ")
+    fun updategroundmd5(@Param("id") id: String,@Param("groundmd5") groundmd5: String): Int
+
+    @Update("UPDATE users set sourcemd5 = #{sourcemd5}   WHERE source != 2")
+    fun updatesourcemd52(@Param("sourcemd5") sourcemd5: String): Int
+
+    @Update("UPDATE users set rssmd5 = #{rssmd5}   WHERE   source != 2 ")
+    fun updaterssmd52(@Param("rssmd5") rssmd5: String): Int
+
+    @Select("SELECT * FROM users WHERE   source != 2 ")
+    fun getSourceUser(): List<Users>
+
     @Delete("DROP TABLE users")
     fun Drop(): Int
+
+
+    @Update("UPDATE users set source = #{source}   WHERE  id = #{id} ")
+    fun updatesource(@Param("id") id: String, @Param("source") source: Int): Int
+
+
+    @Update("UPDATE users set allow_up_txt = #{allow_up_txt}   WHERE  id = #{id} ")
+    fun updateallow_up_txt(@Param("id") id: String, @Param("allow_up_txt") allow_up_txt: Boolean): Int
+
+
+    @Update("UPDATE users set allow_img = #{allow_img}   WHERE  id = #{id} ")
+    fun updateallow_img(@Param("id") id: String, @Param("allow_img") allow_img: Boolean): Int
+
+
+    @Update("UPDATE users set allowcheck = #{allowcheck}   WHERE  id = #{id} ")
+    fun updateallowcheck(@Param("id") id: String, @Param("allowcheck") allowcheck: Boolean): Int
 }

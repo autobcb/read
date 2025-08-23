@@ -20,13 +20,14 @@ import org.noear.solon.data.cache.CacheService
 import org.noear.solon.web.cors.annotation.CrossOrigin
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import web.mapper.BookCacheMapper
+import web.mapper.BooklistMapper
+import web.mapper.ReplaceRuleMapper
 import web.model.BaseSource
 import web.model.ReplaceRule
 import web.model.Users
+import web.notification.Read
 import web.response.*
-import web.service.BookCacheService
-import web.service.BooklistService
-import web.service.ReplaceRuleService
 import web.util.BigDataHelp
 import web.util.SslUtils
 import web.util.read.BookContent
@@ -46,33 +47,34 @@ open class ReadController : BaseController() {
 
     
     @Inject
-    lateinit var booklistService: BooklistService
+    lateinit var booklistMapper: BooklistMapper
 
     @Inject
-    lateinit var bookCacheService: BookCacheService
+    lateinit var bookCacheMapper: BookCacheMapper
 
     @Inject
     lateinit var cacheService: CacheService
 
    
     @Inject
-    lateinit var replaceRuleService: ReplaceRuleService
+    lateinit var replaceRuleMapper: ReplaceRuleMapper
 
 
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(BaseController::class.java)
 
-        fun getChapterListbycache(url: String,userid:String): List<BookChapter>? {
-            var re: List<BookChapter>? = BigDataHelp.getChapterList(url,userid)
+        fun getChapterListbycache(url: String,userid:String): Pair<List<BookChapter>?, Boolean> {
+            val re: List<BookChapter>? = BigDataHelp.getChapterList(url,userid)
+            var istimeout=false
             if (!re.isNullOrEmpty()) {
                 logger.info("检测到目录缓存：${url}")
                 val lastCheckTime= re[0].lastCheckTime?:0
                 if(System.currentTimeMillis() - lastCheckTime > 24*60*60*1000){
                     logger.info("目录缓存过期：${url}")
-                    re=null
+                    istimeout=true
                 }
             }
-            return re
+            return Pair(re,istimeout)
         }
 
         fun removeChapterListbycache(url: String,userid:String) {
@@ -127,9 +129,10 @@ open class ReadController : BaseController() {
     }
 
     private  fun getChapterList(accessToken: String?, bookSourceUrl: String?, url: String,user: Users) = runBlocking {
-        getChapterListbycache(url,user.id!!)?.let {
+        val (old,istimeout)=getChapterListbycache(url,user.id!!)
+        if(!istimeout && !old.isNullOrEmpty()){
             logger.info("目录缓存使用成功")
-            return@runBlocking it
+            return@runBlocking old
         }
         logger.info("书本：${url}，查询目录")
         var chapters:List<BookChapter>?=null
@@ -144,7 +147,7 @@ open class ReadController : BaseController() {
                     val source = getsource(user ,bookSourceUrl)
                     getlist(url, source, user, accessToken ?: "").let {
                         runCatching {
-                            val book = booklistService.getbook(user.id!!, url)
+                            val book = booklistMapper.getbook(user.id!!, url)
                             if(book != null) {
                                 val lastCheckTime=System.currentTimeMillis()
                                 val lastCheckCount=it.size
@@ -152,14 +155,14 @@ open class ReadController : BaseController() {
                                     val totalChapterNum=it.size
                                     val latestChapterTitle=it[it.size-1].title
                                     val latestChapterTime=System.currentTimeMillis()
-                                    booklistService.updatetime(book.id!!,user.id,latestChapterTitle,latestChapterTime,lastCheckTime,lastCheckCount, totalChapterNum )
-                                    bookCacheService.getCache(book.userid!!,book.id!!).let {it1->
+                                    booklistMapper.updatetime(book.id!!,latestChapterTitle,latestChapterTime,lastCheckTime,lastCheckCount, totalChapterNum )
+                                    bookCacheMapper.getCache(book.userid!!,book.id!!).let {it1->
                                         if(it1!=null){
-                                            bookCacheService.updatetime(it1.id!!,user.id,totalChapterNum)
+                                            bookCacheMapper.updatetime(it1.id!!,totalChapterNum)
                                         }
                                     }
                                 }else{
-                                    booklistService.updatetimefail(book.id!!,user.id,lastCheckTime,lastCheckCount)
+                                    booklistMapper.updatetimefail(book.id!!,lastCheckTime,lastCheckCount)
                                 }
                             }
                         }
@@ -169,6 +172,9 @@ open class ReadController : BaseController() {
             }
         }.getOrElse {
             App.log("目录加载出错:"+it.message,accessToken!!)
+            if(!old.isNullOrEmpty()){
+                return@runBlocking old
+            }
             throw DataThrowable().data(JsonResponse(false, it.message?:"目录加载出错"))
         }
         chapters
@@ -194,7 +200,7 @@ open class ReadController : BaseController() {
         logger.info("书本：${url}，查询：${index}")
         when {
             bookSourceUrl == "loc_book" -> {
-                var chapterlist = getChapterListbycache(url,user.id!!)
+                var (chapterlist,_) = getChapterListbycache(url,user.id!!)
                 if (chapterlist == null) {
                     chapterlist = getlist(url).also {
                         setChapterListbycache(url, it,user.id!!)
@@ -234,7 +240,9 @@ open class ReadController : BaseController() {
         var re=getBookContent(accessToken,bookSourceUrl,url,index,type,user)
         val  effectiveReplaceRules:MutableList<ReplaceRule> = mutableListOf()
         if(type == 0 && !bookname.isNullOrBlank() && useReplaceRule == 1 ){
-            val rules=replaceRuleService.getrulebybookname(user.id!!,"%$bookname%").filter { it.scopeContent }
+            val rules=replaceRuleMapper.getrulebybookname(user.id!!,"%$bookname%",bookSourceUrl?:"").filter {
+                it.scopeContent && (it.excludeScope == null || it.excludeScope == "" || (!it.excludeScope!!.contains(bookname) &&  !it.excludeScope!!.contains(bookSourceUrl?:"111")))
+            }
             logger.info("获取到${rules.size}条规则")
             re = re.lines().joinToString("\n") { it.trim() }
             rules.forEach {item ->
@@ -256,7 +264,7 @@ open class ReadController : BaseController() {
                         re = tmp
                     }
                 } catch (e: RegexTimeoutException) {
-                    replaceRuleService.changeEnabled(item.id!!,user.id,false)
+                    replaceRuleMapper.changeEnabled(item.id!!,false)
                     logger.info(e.message)
                     App.log("替换净化:"+e.message,accessToken!!)
                 } catch (_: CancellationException) {
@@ -280,7 +288,9 @@ open class ReadController : BaseController() {
         }
         val chapters=getChapterList(accessToken,bookSourceUrl,url,user)
         if(!bookname.isNullOrBlank() && useReplaceRule == 1){
-            val rules=replaceRuleService.getrulebybookname(user.id!!,"%$bookname%").filter { it.scopeTitle }
+            val rules=replaceRuleMapper.getrulebybookname(user.id!!,"%$bookname%",bookSourceUrl?:"").filter {
+                it.scopeTitle && (it.excludeScope == null || it.excludeScope == "" || (!it.excludeScope!!.contains(bookname) &&  !it.excludeScope!!.contains(bookSourceUrl?:"111")))
+            }
             if(rules.isNotEmpty()){
                 chapters?.forEach{
                     rules.forEach {item ->
@@ -299,7 +309,7 @@ open class ReadController : BaseController() {
                                     it.title = tmp
                                 }
                             } catch (e: RegexTimeoutException) {
-                                replaceRuleService.changeEnabled(item.id!!,user.id,false)
+                                replaceRuleMapper.changeEnabled(item.id!!,false)
                                 logger.info(e.message)
                                 App.log("替换净化:"+e.message,accessToken!!)
                             } catch (_: CancellationException) {
@@ -333,12 +343,11 @@ open class ReadController : BaseController() {
         removeBookcache(url,user.id!!)
         removeChapterListbycache(url,user.id!!)
         removeallBookContentbycache(url,user.id!!)
-        val booktolist=booklistService.getbook(user.id!!,url)
+        val booktolist=booklistMapper.getbook(user.id!!,url)
         if(booktolist != null){
-            bookCacheService.getCache(user.id!!,booktolist.id!!).also {
+            bookCacheMapper.getCache(user.id!!,booktolist.id!!).also {
                 if(it != null){
-                    bookCacheService.bookCacheMapper.deleteById(it.id)
-                    bookCacheService.cleancache(user.id)
+                    bookCacheMapper.deleteById(it.id)
                 }
             }
         }
@@ -349,9 +358,7 @@ open class ReadController : BaseController() {
     @Mapping("/saveBookProgress")
     open fun saveBookProgress(accessToken: String?, pos: Double?, url: String?, title: String?, index: Int?) = runBlocking {
         val user = getuserbytocken(accessToken)
-        val book = booklistService.getbook(user.id!!, url.also {
-            if (it == null) throw DataThrowable().data(JsonResponse(false, NOT_BANK))
-        }!!).also {
+        val book = booklistMapper.getbook(user.id!!, url?:throw DataThrowable().data(JsonResponse(false, NOT_BANK))).also {
             if (it == null) {
                 //println("添加阅读进度到内存${url}")
                 cacheService.store("indexuerid:${user.id},bookurl:${url}",index,10*30)
@@ -363,9 +370,15 @@ open class ReadController : BaseController() {
         s.add((index ?: 0).toString())
         read = s.joinToString(",")
         if (book.origin == "loc_book") {
-            val list: List<BookChapter> = getChapterListbycache(url!!,user.id!!) ?: getlist(url)
-            booklistService.updatepos(
-                book.id!!,user.id,
+            val list: List<BookChapter> = getChapterListbycache(url!!,user.id!!).let {
+                if (it.first == null){
+                    getlist(url)
+                }else{
+                    it.first!!
+                }
+            }
+            booklistMapper.updatepos(
+                book.id!!,
                 list[index ?: 0].title,
                 index ?: 0,
                 pos ?: 0.0,
@@ -376,12 +389,17 @@ open class ReadController : BaseController() {
             val source = getsource(book.origin!!,user)
             var t=title
             if(t.isNullOrBlank()){
-                val list: List<BookChapter> =
-                    getChapterListbycache(url!!,user.id!!) ?: getlist(url, source!!, user, accessToken ?: "")
+                val list: List<BookChapter> = getChapterListbycache(url!!,user.id!!).let {
+                    if (it.first == null){
+                        getlist(url, source!!, user, accessToken ?: "")
+                    } else {
+                        it.first!!
+                    }
+                }
                 t=list[index ?: 0].title
             }
-            booklistService.updatepos(
-                book.id!!,user.id,
+            booklistMapper.updatepos(
+                book.id!!,
                 t,
                 index ?: 0,
                 pos ?: 0.0,
@@ -389,6 +407,8 @@ open class ReadController : BaseController() {
                 read
             )
         }
+       // Companion.logger.info("read push")
+        Read.sendNotification(user,accessToken!!,url)
         JsonResponse(true)
     }
 
@@ -396,7 +416,7 @@ open class ReadController : BaseController() {
     @Mapping("/getBookread")
     fun getBookread(accessToken: String?, url: String?) = runBlocking {
         val user = getuserbytocken(accessToken)
-        val book = booklistService.getbook(user.id!!, url.also {
+        val book = booklistMapper.getbook(user.id!!, url.also {
             if (it == null) throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         }!!).also {
             if (it == null) throw DataThrowable().data(JsonResponse(false, NO_BOOK))
@@ -419,7 +439,7 @@ open class ReadController : BaseController() {
     ) = runBlocking {
         if (newUrl.isNullOrBlank()) throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         val user = getuserbytocken(accessToken)
-        val book = booklistService.getbook(user.id!!, bookUrl.also {
+        val book = booklistMapper.getbook(user.id!!, bookUrl.also {
             if (it == null) throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         }!!).also {
             if (it == null) throw DataThrowable().data(JsonResponse(false, NO_BOOK))
@@ -436,18 +456,17 @@ open class ReadController : BaseController() {
                 }
             }
             if (new != null) {
-                booklistService.booklistMapper.updateById(book.bookto(new,false))
+                booklistMapper.updateById(book.bookto(new,false))
             } else {
                 throw DataThrowable().data(JsonResponse(false, NO_BOOK))
             }
         }.onSuccess {
-            booklistService.booklistMapper.updateById(book.bookto(new!!,false))
+            booklistMapper.updateById(book.bookto(new!!,false))
         }
-        booklistService.cleancache(user.id)
-        bookCacheService.getCache(user.id!!,book.id!!).also {
+        web.notification.Book.sendNotification(user)
+        bookCacheMapper.getCache(user.id!!,book.id!!).also {
             if(it != null){
-                bookCacheService.bookCacheMapper.deleteById(it.id)
-                bookCacheService.cleancache(user.id)
+                bookCacheMapper.deleteById(it.id)
             }
         }
         JsonResponse(true).Data(book)
@@ -462,7 +481,7 @@ open class ReadController : BaseController() {
            throw DataThrowable().data(JsonResponse(false,NEED_LOGIN))
        }
         val user = getuserbytocken(accessToken)
-        val book = booklistService.getbooklistbyuserid(user.id!!)
+        val book = booklistMapper.getbooklistbyuserid(user.id!!)
         book?.forEach {
             if (it.customCoverUrl != null && it.customCoverUrl!!.isNotBlank()) {
                 it.coverUrl = it.customCoverUrl
@@ -487,9 +506,9 @@ open class ReadController : BaseController() {
     fun  getSourcesloginui(accessToken: String?, url: String) = run {
         val user = getuserbytocken(accessToken)
         val source :BaseSource =if(user.source == 2){
-            userBookSourceService.getBookSource(url,user.id)?.toBaseSource()
+            user.id?.let {  userBookSourceMapper.getBookSource(url,it) }?.toBaseSource()
         }else{
-            bookSourceService.getBookSource(url)?.toBaseSource()
+            bookSourceMapper.getBookSource(url)?.toBaseSource()
         }?: throw DataThrowable().data(JsonResponse(false, NOT_SOURCE))
         val s=BookSource.fromJson(source.json).getOrNull()
         s?.usertocken=accessToken
@@ -533,6 +552,7 @@ open class ReadController : BaseController() {
 
             list.add(
                 mapOf(
+                    "checkKeyWord" to s?.ruleSearch?.checkKeyWord,
                     "variableComment" to s?.variableComment,
                     "bookSourceGroup" to it.bookSourceGroup,
                     "loginUrl" to s?.loginUrl,
@@ -567,7 +587,6 @@ open class ReadController : BaseController() {
             url?:"", source = s,
             debugLog = null
         )
-        println(url)
         JsonResponse(true).Data(analyzeUrl.url)
     }
 
@@ -737,7 +756,7 @@ open class ReadController : BaseController() {
     @Mapping("/payAction")
     open fun  payAction(accessToken: String?, url: String?, index: Int) = runBlocking {
         val user = getuserbytocken(accessToken)
-        val book=booklistService.getbook(user.id!!,url?:throw DataThrowable().data(JsonResponse(false, NOT_BANK)))?:
+        val book=booklistMapper.getbook(user.id!!,url?:throw DataThrowable().data(JsonResponse(false, NOT_BANK)))?:
         throw DataThrowable().data(JsonResponse(false, NO_BOOK))
         if(book.origin ==  "loc_book") return@runBlocking JsonResponse(true)
         val source=getsource(book.origin!!,user)?:throw DataThrowable().data(JsonResponse(false, NOT_SOURCE))
@@ -767,7 +786,7 @@ open class ReadController : BaseController() {
     @Mapping("/changebooktype")
     open fun changebooktype(accessToken: String?, bookUrl: String?, type: Int?) = runBlocking {
         val user = getuserbytocken(accessToken)
-        val book = booklistService.getbook(user.id!!, bookUrl.also {
+        val book = booklistMapper.getbook(user.id!!, bookUrl.also {
             if (it == null) throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         }!!).also {
             if (it == null) throw DataThrowable().data(JsonResponse(false, NO_BOOK))
@@ -776,7 +795,8 @@ open class ReadController : BaseController() {
         if (type1 != 0 && type1 != 1 && type1 != 2) {
             type1 = 0
         }
-        booklistService.changetype(book.id!!,user.id,type1)
+        booklistMapper.changetype(book.id!!,type1)
+        web.notification.Book.sendNotification(user)
         JsonResponse(true)
     }
 

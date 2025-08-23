@@ -10,10 +10,10 @@ import org.noear.solon.net.annotation.ServerEndpoint
 import org.noear.solon.net.websocket.WebSocket
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import web.mapper.BookSourceMapper
+import web.mapper.UserBookSourceMapper
 import web.model.BaseSource
 import web.response.JsonResponse
-import web.service.BookSourceService
-import web.service.UserBookSourceService
 import java.io.IOException
 
 @Controller
@@ -23,11 +23,11 @@ open  class DebugWebSocket : BaseDebug() {
 
 
     @Inject
-    lateinit var bookSourceService: BookSourceService
+    lateinit var bookSourceMapper: BookSourceMapper
 
 
     @Inject
-    lateinit var userBookSourceService: UserBookSourceService
+    lateinit var userBookSourceMapper: UserBookSourceMapper
 
 
     override val logger: Logger = LoggerFactory.getLogger(DebugWebSocket::class.java)
@@ -56,9 +56,9 @@ open  class DebugWebSocket : BaseDebug() {
             return@runBlocking
         }
         val bookSource: BaseSource?= if(user.source == 2){
-            userBookSourceService.getBookSource(msg.url!!,user.id!!)?.toBaseSource()
+            userBookSourceMapper.getBookSource(msg.url!!,user.id!!)?.toBaseSource()
         }else{
-            bookSourceService.getBookSource(msg.url!!)?.toBaseSource()
+            bookSourceMapper.getBookSource(msg.url!!)?.toBaseSource()
         }
         if (bookSource == null){
             socket.send("event: error\n")

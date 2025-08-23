@@ -81,3 +81,7 @@ val CODE_CHECK_ERROR= "验证码错误"
 val NAME_ERROR="名字重复"
 
 val MARK_IS="书签已存在"
+
+val TOO_MANY_GROUPS="已超出最大分组数量"
+
+val EMAIL_CONT_ERROR="您的邮箱已超出当日最大发送次数，请24小时后再试"

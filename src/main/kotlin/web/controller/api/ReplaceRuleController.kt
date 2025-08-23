@@ -9,12 +9,16 @@ import org.noear.solon.annotation.Controller
 import org.noear.solon.annotation.Inject
 import org.noear.solon.annotation.Mapping
 import org.noear.solon.core.util.DataThrowable
+import org.noear.solon.data.annotation.Cache
 import org.noear.solon.data.annotation.Tran
+import org.noear.solon.data.cache.CacheService
 import org.noear.solon.web.cors.annotation.CrossOrigin
+import web.mapper.ReplaceRuleMapper
+import web.model.HttpTts
 import web.model.ReplaceRule
 import web.model.Users
 import web.response.*
-import web.service.ReplaceRuleService
+import web.util.hash.Md5
 
 @Controller
 @Mapping(routepath)
@@ -23,16 +27,50 @@ open class ReplaceRuleController:BaseController() {
 
     
     @Inject
-    lateinit var replaceRuleService: ReplaceRuleService
+    lateinit var replaceRuleMapper: ReplaceRuleMapper
+
+
+    @Inject
+    lateinit var cacheService: CacheService
+
 
     @Inject(value = "\${default.rule:}", autoRefreshed=true)
     var rule:String=""
 
+
     @Mapping("/getdefaultrule")
     fun getdefaultrule(accessToken:String?) = run{
+        getuserbytocken(accessToken)
         JsonResponse(true).Data(rule)
     }
 
+
+    @Mapping("/getReplaceRulesPage")
+    fun getReplaceRules(accessToken:String?) = run{
+        val user = getuserbytocken(accessToken)
+        if (user.replacemd5.isNullOrBlank()){
+            user.replacemd5=Md5(System.currentTimeMillis().toString())
+            usersMapper.updatereplacemd5(user.id!!, user.replacemd5!!)
+        }
+        var list:MutableList<ReplaceRule> = mutableListOf()
+        var page = 1
+        replaceRuleMapper.getallrule(user.id!!).forEach {
+            if(list.size >= 50){
+                cacheService.store("getReplaceRulesNew:${accessToken}${user.replacemd5}${page}",JsonResponse(true).Data(list),cachetime)
+                page++
+                list=mutableListOf()
+            }
+            list.add(it)
+        }
+        cacheService.store("getReplaceRulesNew:${accessToken}${user.replacemd5}${page}",JsonResponse(true).Data(list),cachetime)
+        JsonResponse(true).Data(mapOf("page" to page, "md5" to user.replacemd5))
+    }
+
+    @Cache(key = "getReplaceRulesNew:\${accessToken}\${md5}\${page}",  seconds = 60)
+    @Mapping("/getReplaceRulesNew")
+    open fun getBookshelf(accessToken: String?,md5: String?,page: String) = run {
+        JsonResponse(false)
+    }
 
     @Tran
     @Mapping("/addReplaceRule")
@@ -40,53 +78,54 @@ open class ReplaceRuleController:BaseController() {
         val user = getuserbytocken(accessToken)
         if(rule.name.isBlank()) throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         if(rule.id.isNullOrBlank()){
-            replaceRuleService.getrulebyname(user.id!!,rule.name).also {
+            replaceRuleMapper.getrulebyname(user.id!!,rule.name).also {
                 if(it.isNotEmpty()){
                     throw DataThrowable().data(JsonResponse(false, NAME_ERROR))
                 }
             }
             rule.create(user.id!!,rule.name)
             rule.isEnabled = true
-            replaceRuleService.replacementRuleMapper.insert(rule)
+            replaceRuleMapper.insert(rule)
         }else{
-            replaceRuleService.getrulebyname(user.id!!,rule.name).forEach{
+            replaceRuleMapper.getrulebyname(user.id!!,rule.name).forEach{
                 if(it.id != rule.id){
                     throw DataThrowable().data(JsonResponse(false, NAME_ERROR))
                 }
             }
             rule.create(user.id!!,rule.name)
-            replaceRuleService.replacementRuleMapper.deleteById(rule.id)
-            replaceRuleService.replacementRuleMapper.insert(rule)
+            replaceRuleMapper.deleteById(rule.id)
+            replaceRuleMapper.insert(rule)
         }
-        replaceRuleService.cleancache(user.id)
+        web.notification.ReplaceRule.sendNotification(user)
         JsonResponse(true)
     }
 
     @Mapping("/topReplaceRule")
     fun topReplaceRule( accessToken:String?, id: String?)= run{
         val user = getuserbytocken(accessToken)
-        val rule= replaceRuleService.getrule(id?:throw DataThrowable().data(JsonResponse(false, NOT_BANK)) ,user.id!!) ?:
+        val rule= replaceRuleMapper.getrule(id?:throw DataThrowable().data(JsonResponse(false, NOT_BANK)) ,user.id!!) ?:
              throw DataThrowable().data(JsonResponse(false, NOT_IS))
-        val rules=replaceRuleService.getallrule(user.id!!)
+        val rules=replaceRuleMapper.getallrule(user.id!!)
         var order=1
         for( it in rules){
             if(it.id == rule.id){
-                replaceRuleService.changeorder(it.id?:"",user.id, 0)
+                replaceRuleMapper.changeorder(it.id?:"", 0)
             }else{
-                replaceRuleService.changeorder(it.id?:"",user.id, order)
+                replaceRuleMapper.changeorder(it.id?:"", order)
                 order++
             }
         }
+        web.notification.ReplaceRule.sendNotification(user)
         JsonResponse(true)
     }
 
     @Mapping("/delReplaceRule")
     fun delReplaceRule(accessToken:String?,id: String?) = run{
         val user = getuserbytocken(accessToken)
-        val rule= replaceRuleService.getrule(id?:throw DataThrowable().data(JsonResponse(false, NOT_BANK)) ,user.id!!) ?:
+        val rule= replaceRuleMapper.getrule(id?:throw DataThrowable().data(JsonResponse(false, NOT_BANK)) ,user.id!!) ?:
         throw DataThrowable().data(JsonResponse(false, NOT_IS))
-        replaceRuleService.replacementRuleMapper.deleteById(rule.id)
-        replaceRuleService.cleancache(user.id)
+        replaceRuleMapper.deleteById(rule.id)
+        web.notification.ReplaceRule.sendNotification(user)
         JsonResponse(true)
     }
 
@@ -95,21 +134,18 @@ open class ReplaceRuleController:BaseController() {
         val user = getuserbytocken(accessToken)
         ids?.forEach {id->
             if (id.isNotBlank()){
-                replaceRuleService.getrule(id,user.id!!)?.let {
-                   replaceRuleService.replacementRuleMapper.deleteById(id)
-                    replaceRuleService.cleancache(user.id)
-                }
+               runCatching {
+                   replaceRuleMapper.getrule(id,user.id!!)?.let {
+                       replaceRuleMapper.deleteById(id)
+                   }
+               }
             }
         }
+        web.notification.ReplaceRule.sendNotification(user)
         JsonResponse(true)
     }
 
-    @Mapping("/getReplaceRules")
-    fun getReplaceRules(accessToken:String?) = run{
-        val user = getuserbytocken(accessToken)
-        val rules=replaceRuleService.getallrule(user.id!!)
-        JsonResponse(true).Data(rules)
-    }
+
 
     @Mapping("/stopReplaceRules")
     fun stopReplaceRules(accessToken:String?,id: String? ,st: String?)= run{
@@ -117,16 +153,17 @@ open class ReplaceRuleController:BaseController() {
         if (id.isNullOrBlank()){
             throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         }
-        replaceRuleService.getrule(id,user.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+        replaceRuleMapper.getrule(id,user.id!!) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
         when(st){
             "0"->{
-                replaceRuleService.changeEnabled(id,user.id,false)
+                replaceRuleMapper.changeEnabled(id,false)
             }
             "1"->{
-                replaceRuleService.changeEnabled(id,user.id,true)
+                replaceRuleMapper.changeEnabled(id,true)
             }
             else -> throw DataThrowable().data(JsonResponse(false, USE_ERROE))
         }
+        web.notification.ReplaceRule.sendNotification(user)
         JsonResponse(true)
     }
 
@@ -136,10 +173,11 @@ open class ReplaceRuleController:BaseController() {
         ids?.forEach {
             if (it.isNotBlank()){
                 val rule=
-                    replaceRuleService.getrule(it,user.id!!)  ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
-                replaceRuleService.changeEnabled(rule.id!!,user.id,false)
+                    replaceRuleMapper.getrule(it,user.id!!)  ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+                replaceRuleMapper.changeEnabled(rule.id!!,false)
             }
         }
+        web.notification.ReplaceRule.sendNotification(user)
         JsonResponse(true)
     }
 
@@ -149,10 +187,11 @@ open class ReplaceRuleController:BaseController() {
         ids?.forEach {
             if (it.isNotBlank()){
                 val rule=
-                    replaceRuleService.getrule(it,user.id!!)  ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
-                replaceRuleService.changeEnabled(rule.id!!,user.id,true)
+                    replaceRuleMapper.getrule(it,user.id!!)  ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+                replaceRuleMapper.changeEnabled(rule.id!!,true)
             }
         }
+        web.notification.ReplaceRule.sendNotification(user)
         JsonResponse(true)
     }
 
@@ -163,11 +202,14 @@ open class ReplaceRuleController:BaseController() {
         var update = 0
         val rules= GSON.fromJsonArray<ReplaceRule>(content).getOrNull()
         rules?.forEach {
-            addorupdate(it,user).let {  (ins,ups)->
-                insert += ins
-                update += ups
+            runCatching {
+                addorupdate(it,user).let {  (ins,ups)->
+                    insert += ins
+                    update += ups
+                }
             }
         }
+        web.notification.ReplaceRule.sendNotification(user)
         JsonResponse(true,"新增${insert}条规则，更新${update}条规则")
     }
 
@@ -182,6 +224,7 @@ open class ReplaceRuleController:BaseController() {
                 insert += ins
                 update += ups
             }
+        web.notification.ReplaceRule.sendNotification(user)
         JsonResponse(true,"新增${insert}条规则，更新${update}条规则")
     }
 
@@ -191,20 +234,19 @@ open class ReplaceRuleController:BaseController() {
         if(rule.name.isEmpty()){
             return  Pair(insert, update)
         }
-        replaceRuleService.getrulebyname(user.id!!,rule.name).let {
+        replaceRuleMapper.getrulebyname(user.id!!,rule.name).let {
             if (it.isNotEmpty()){
                 val r=it[0]
                 rule.id=r.id
                 rule.userid=r.userid
                 rule.name = r.name
                 rule.ruleorder=r.ruleorder
-                update+=replaceRuleService.replacementRuleMapper.updateById(rule)
+                update+=replaceRuleMapper.updateById(rule)
             }else{
                 rule.create(user.id!!,rule.name)
-                insert+= replaceRuleService.replacementRuleMapper.insert(rule)
+                insert+= replaceRuleMapper.insert(rule)
             }
         }
-        replaceRuleService.cleancache(user.id)
         Pair(insert, update)
     }
 }

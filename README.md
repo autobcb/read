@@ -22,13 +22,29 @@ http://ip:8080/(web阅读)
 web端不支持cookie的保存，不支持webview，漫画或者图片或者听书链接回因资源服务器禁止跨域而无法显示，app版才支持cookie的保存
 
 
-# 推荐书源
-[晴天](https://api.qingtian618.com/)
+# 注意
+所以后端都为用户自行搭建，开发者不提供任何后端。如果需要开通权限请联系后端管理员！
+
+# 打赏
+[ 如果你觉得这个项目帮助到了你，你可以帮作者买一杯果汁表示鼓励 🍹
+](http://app.qread.xyz/pay)
 
 
-# 快捷获取注册码api
-接口地址：/getcode?code=$code。  
-code参数在conf.yml文件中设置
+# 自定义包名
+自定义包名可以免填写后端，将直接使用在后台记录的后端地址，自定义的包名请不要以com.q9uo11开头。修改方法均已测试，请自行研究不提供技术支持。
+
+# 安卓自定义包名
+直接下载mt管理器修改，具体不说了百度一堆
+
+# ios自定义包名
+可以使用轻松签，全能签等，具体不说了百度一堆,[或者可以通过mac电脑修改.](https://blog.csdn.net/jxfcwys/article/details/126937538)
+
+# 鸿蒙自定义包名
+我会将编译好flutter部分的ohos文件夹压缩，你们下载解压后用鸿蒙官方ide(DevEco-Studio)打开,然后再修改entry/src/mian/resources/rawfile/flutter_assets/assets/images/package.txt文件(在txt文件中填写你的自定义包名)，即可编译，由于没有证书编译会失败但会生成未签名版本在entry\build\default\outputs\default文件夹下。
+
+# windows自定义包名
+修改data/flutter_assets/assets/images/package.txt文件(在txt文件中填写你的自定义包名)
+
 
 # 代理
 代理功能为轻阅读独属，开启后可将get post等http请求从服务器发送改为从手机发送（仅支持调用系统函数时，如果书源直接自己调用java类而非自有函数时可能会不支持）。书源页开启的为全局代理，也可以使用下面的函数进行单url代理，

@@ -28,7 +28,7 @@ open class UserController:BaseController() {
         if (username.isNullOrBlank() || password.isNullOrBlank() )  {
             throw DataThrowable().data(JsonResponse(false,NOT_BANK))
         }
-        val user: Users?=usersService.getUserByusername(username)
+        val user: Users?=usersMapper.getUserByusername(username)
         if (user == null || !user.password.equals(passsign( password))) {
             throw DataThrowable().data(JsonResponse(false,PASS_ERROR))
         }
@@ -38,15 +38,15 @@ open class UserController:BaseController() {
             throw DataThrowable().data(JsonResponse(false,"当前后端不支持您的app，请联系管理员更新后端"))
         }
 
-        val tockens=usertockenService.getUsertockens(user.id!!)
+        val tockens=usertockenMapper.getUsertockens(user.id!!)
         //登陆设备超过20个自动登出全部
         if(tockens != null && tockens.size >= 20){
-            usertockenService.delUsertockens(user.id!!)
+            usertockenMapper.delUsertockens(user.id!!)
         }
         val tocken=Usertocken().create()
         tocken.userid=user.id
         tocken.model=model?:""
-        usertockenService.usertockenMapper.insert(tocken)
+        usertockenMapper.insert(tocken)
 
         JsonResponse(true,"success").Data(mapOf("accessToken" to tocken.id))
     }
@@ -72,7 +72,7 @@ open class UserController:BaseController() {
         if (!user.password.equals(passsign( oldpassword))) {
             throw DataThrowable().data(JsonResponse(false,PASS_ERROR))
         }
-        usersService.changepass(user.id!!,passsign( password))
+        usersMapper.changepass(user.id!!,passsign( password))
 
         JsonResponse(true,"success")
     }
@@ -81,7 +81,7 @@ open class UserController:BaseController() {
     fun getalltocken( accessToken:String?) = run {
         val user=getuserbytocken(accessToken)
 
-        val tockens=usertockenService.getUsertockens(user.id!!)
+        val tockens=usertockenMapper.getUsertockens(user.id!!)
 
         JsonResponse(true,"success").Data(tockens)
     }

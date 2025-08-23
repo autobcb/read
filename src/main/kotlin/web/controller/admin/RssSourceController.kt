@@ -6,8 +6,8 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper
 import org.noear.solon.annotation.*
 import org.noear.solon.core.handle.UploadedFile
 import org.noear.solon.core.util.DataThrowable
+import web.mapper.RssSourceMapper
 import web.response.*
-import web.service.RssSourceService
 import web.util.hash.Md5
 import web.util.page.PageByAjax
 import java.io.EOFException
@@ -20,7 +20,7 @@ class RssSourceController {
 
 
     @Inject
-    lateinit var rssSourceService: RssSourceService
+    lateinit var rssSourceMapper: RssSourceMapper
 
     @Get
     @Mapping("/seachrssSource")
@@ -29,7 +29,7 @@ class RssSourceController {
         if(!where.isNullOrBlank()){
             queryWrapper.like("source_url",where).or().like("source_name",where).or().like("source_group",where)
         }
-        PageByAjax(rssSourceService.rssSourceMapper,queryWrapper,page,limit,order)
+        PageByAjax(rssSourceMapper,queryWrapper,page,limit,order)
     }
 
     @Mapping("/delRssSource")
@@ -37,9 +37,9 @@ class RssSourceController {
         if (id.isNullOrBlank()){
             throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         }
-        val rss= rssSourceService.getRssSource(id) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
-        rssSourceService.rssSourceMapper.deleteById(rss.id)
-        rssSourceService.cleancache()
+        val rss= rssSourceMapper.getRssSource(id) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+        rssSourceMapper.deleteById(rss.id)
+        web.notification.RssSource.sendNotification()
         JsonResponse(true)
     }
 
@@ -47,10 +47,10 @@ class RssSourceController {
     fun delRssSources(@Body ids: List<String>?) = run{
         ids?.forEach {id->
             if (id.isNotBlank()){
-                rssSourceService.rssSourceMapper.deleteById(Md5(id))
+                rssSourceMapper.deleteById(Md5(id))
             }
         }
-        rssSourceService.cleancache()
+        web.notification.RssSource.sendNotification()
         JsonResponse(true)
     }
 
@@ -59,16 +59,17 @@ class RssSourceController {
         if (id.isNullOrBlank()){
             throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         }
-        rssSourceService.getRssSource(id) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+        rssSourceMapper.getRssSource(id) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
         when(st){
             "0"->{
-                rssSourceService.changeEnabled(id,false)
+                rssSourceMapper.changeEnabled(id,false)
             }
             "1"->{
-                rssSourceService.changeEnabled(id,true)
+                rssSourceMapper.changeEnabled(id,true)
             }
             else -> throw DataThrowable().data(JsonResponse(false, USE_ERROE))
         }
+        web.notification.RssSource.sendNotification()
         JsonResponse(true)
     }
 
@@ -77,17 +78,18 @@ class RssSourceController {
         if (id.isNullOrBlank()){
             throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         }
-        val rss= rssSourceService.getRssSource(id) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
-        val sources = rssSourceService.getallSourcelist()
+        val rss= rssSourceMapper.getRssSource(id) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+        val sources = rssSourceMapper.getallSourcelist()
         var order=1
         for( it in sources!!){
             if(it.sourceUrl == rss.sourceUrl){
-                rssSourceService.changeorder(it.sourceUrl, 0)
+                rssSourceMapper.changeorder(it.sourceUrl, 0)
             }else{
-                rssSourceService.changeorder(it.sourceUrl, order)
+                rssSourceMapper.changeorder(it.sourceUrl, order)
                 order++
             }
         }
+        web.notification.RssSource.sendNotification()
         JsonResponse(true)
     }
 
@@ -101,12 +103,12 @@ class RssSourceController {
                 //数组
                 val sources= book.model.RssSource.fromJsonArray(content)
                 sources.forEach {
-                    //if(it.bookSourceUrl.isNotBlank() && it.bookSourceType != 1){
-                    addorupdate(it).let {  (ins,ups)->
-                        insert += ins
-                        update += ups
-                    }
-                    //}
+                   runCatching {
+                       addorupdate(it).let {  (ins,ups)->
+                           insert += ins
+                           update += ups
+                       }
+                   }
                 }
             }else{
                 //单独一个
@@ -114,9 +116,6 @@ class RssSourceController {
                 if (source.sourceUrl.isBlank()){
                     throw DataThrowable().data(JsonResponse(false, SOURCE_URL_BANK))
                 }
-                // if(bookSource.bookSourceType == 1){
-                //    throw DataThrowable().data(JsonResponse(false, SOURCE_TYPE_ERROR))
-                // }
                 addorupdate(source).let {  (ins,ups)->
                     insert += ins
                     update += ups
@@ -128,7 +127,7 @@ class RssSourceController {
             e.printStackTrace()
             throw DataThrowable().data(JsonResponse(false, DO_ERROR))
         }
-
+        web.notification.RssSource.sendNotification()
         JsonResponse(true,"新增${insert}条书源，更新${update}条书源")
     }
 
@@ -136,21 +135,20 @@ class RssSourceController {
         var insert = 0
         var update = 0
         val source=RssSource().jsontomodel(rsssource)
-        rssSourceService.getRssSource(source.sourceUrl).let {
+        rssSourceMapper.getRssSource(source.sourceUrl).let {
             if (it != null){
                 source.enabled=it.enabled
                 if(it.createtime != null){
                     source.createtime=it.createtime
                 }
                 source.sourceorder=it.sourceorder
-                update += rssSourceService.rssSourceMapper.updateById(source)
+                update += rssSourceMapper.updateById(source)
             }else{
                 //source.enabled=true
                 source.sourceorder=9999
-                insert += rssSourceService.rssSourceMapper.insert(source)
+                insert += rssSourceMapper.insert(source)
             }
         }
-        rssSourceService.cleancache()
         Pair(insert, update)
     }
 }

@@ -14,10 +14,11 @@ import org.noear.solon.net.websocket.WebSocket
 import org.noear.solon.net.websocket.listener.SimpleWebSocketListener
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import web.service.UsersService
-import web.service.UsertockenService
+import web.mapper.UsersMapper
+import web.mapper.UsertockenMapper
 import web.util.ResponseManager
 import java.io.IOException
+import kotlin.concurrent.thread
 
 
 @Controller
@@ -26,7 +27,7 @@ class ApiWebSocket : SimpleWebSocketListener() {
 
     companion object{
         val logger: Logger = LoggerFactory.getLogger(ApiWebSocket::class.java)
-        private var ma:MutableMap<String,WebSocket> = mutableMapOf()
+        private var ma:MutableMap<String,WebSocketMap> = mutableMapOf()
         private val mutex = Mutex()
 
         suspend fun  WaitForResponse(correlationId :String,timeout: Long = 120000):String?= coroutineScope{
@@ -49,10 +50,10 @@ class ApiWebSocket : SimpleWebSocketListener() {
         }
 
 
-        suspend fun add(key:String, value:WebSocket){
+        suspend fun add(key:String, value:WebSocket,userid:String){
             mutex.withLock {
                 logger.info("WebSocket Adding $key")
-                ma[key]=value
+                ma[key]=WebSocketMap(value,userid)
             }
         }
         suspend fun remove(key:String){
@@ -61,15 +62,67 @@ class ApiWebSocket : SimpleWebSocketListener() {
             }
         }
         fun get(key:String):WebSocket?{
-            return ma[key]
+            return ma[key]?.ws
+        }
+
+        suspend fun getByuserids(userids: List<String>):List<WebSocket>{
+            val list = mutableListOf<WebSocket>()
+            mutex.withLock {
+                for (m in ma){
+                    if(userids.contains(m.value.userid)){
+                        list.add(m.value.ws)
+                    }
+                }
+            }
+            return list
+        }
+
+        suspend fun getByuserid(userid:String):List<WebSocket>{
+            val list = mutableListOf<WebSocket>()
+            mutex.withLock {
+                for (m in ma){
+                    if(m.value.userid == userid){
+                        list.add(m.value.ws)
+                    }
+                }
+            }
+            return list
+        }
+
+
+        suspend fun colseByuserid(userid:String){
+            mutex.withLock {
+                for (m in ma){
+                    if(m.value.userid == userid){
+                        thread {
+                            runCatching {
+                                m.value.ws.close()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+
+        suspend fun getByuserid(userid:String,tocken: String):List<WebSocket>{
+            val list = mutableListOf<WebSocket>()
+            mutex.withLock {
+                for (m in ma){
+                    if(m.key != tocken && m.value.userid == userid){
+                        list.add(m.value.ws)
+                    }
+                }
+            }
+            return list
         }
     }
 
     @Inject
-    lateinit var usersService: UsersService
+    lateinit var usersMapper: UsersMapper
 
     @Inject
-    lateinit var usertockenService: UsertockenService
+    lateinit var usertockenMapper: UsertockenMapper
 
 
     override fun onOpen(socket: WebSocket) {
@@ -80,7 +133,7 @@ class ApiWebSocket : SimpleWebSocketListener() {
             return
         }
 
-        val tocken=usertockenService.getUsertocken(accessToken)
+        val tocken=usertockenMapper.getUsertocken(accessToken)
         if (tocken == null) {
             logger.info("websocket tocken is null")
             socket.send(Gson().toJson(ToastMessage(msg = "logout", str="logout" )))
@@ -88,20 +141,56 @@ class ApiWebSocket : SimpleWebSocketListener() {
             return
         }
 
-        val user=usersService.getUser(tocken.userid)
+        val user= tocken.userid?.let { usersMapper.getUser(it) }
         if (user == null) {
             logger.info("websocket user is null")
             socket.send(Gson().toJson(ToastMessage(msg = "logout", str="logout" )))
             socket.close()
             return
         }
-        runBlocking {add(accessToken,socket)}
+        runBlocking {add(accessToken,socket,user.id!!)}
+        runCatching {
+            socket.send(Gson().toJson(Md5Message(
+                msg = "init",
+                md5 = "",
+            )))
+            socket.send(Gson().toJson(Md5Message(
+                msg = "source",
+                md5 = user.source.let { if(it == 2 || it == 1) "1" else "0" },
+            )))
+            //将md5发送至客户端
+            socket.send(Gson().toJson(Md5Message(
+                msg = "bookmd5",
+                md5 =user.bookmd5?:"",
+            )))
+            socket.send(Gson().toJson(Md5Message(
+                msg = "sourcemd5",
+                md5 =(user.sourcemd5?:"")+"${user.source}" ,
+            )))
+            socket.send(Gson().toJson(Md5Message(
+                msg = "rssmd5",
+                md5 =(user.rssmd5?:"")+"${user.source}" ,
+            )))
+            socket.send(Gson().toJson(Md5Message(
+                msg = "tssmd5",
+                md5 =user.tssmd5?:"",
+            )))
+            socket.send(Gson().toJson(Md5Message(
+                msg = "replacemd5",
+                md5 =user.replacemd5?:"",
+            )))
+            socket.send(Gson().toJson(Md5Message(
+                msg = "groundmd5",
+                md5 =user.groundmd5?:"",
+            )))
+        }
 
     }
 
     @Throws(IOException::class)
     override fun onMessage(socket: WebSocket, text: String) {
-        socket.send("我收到了：$text")
+        //logger.info("我收到了：$text")
+        //socket.send("我收到了：$text")
     }
 
     override  fun onClose(socket: WebSocket?){
@@ -111,3 +200,14 @@ class ApiWebSocket : SimpleWebSocketListener() {
         }
     }
 }
+
+class WebSocketMap(
+    var ws:WebSocket,
+    var userid:String,
+)
+
+class Md5Message(
+    var msg: String,
+    var md5: String,
+    var bookurl: String? = null
+)

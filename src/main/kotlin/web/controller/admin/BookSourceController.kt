@@ -9,9 +9,10 @@ import org.noear.solon.annotation.Mapping
 import org.noear.solon.annotation.Param
 import org.noear.solon.core.handle.UploadedFile
 import org.noear.solon.core.util.DataThrowable
+import web.mapper.BookSourceMapper
 import web.model.BookSource
+import web.notification.Source
 import web.response.*
-import web.service.BookSourceService
 import web.util.page.PageByAjax
 import java.io.EOFException
 import java.util.*
@@ -23,7 +24,7 @@ import book.model.BookSource as Booksource
 class BookSourceController {
 
     @Inject
-    lateinit var bookSourceService: BookSourceService
+    lateinit var bookSourceMapper: BookSourceMapper
 
     @Get
     @Mapping("/seachbookSource")
@@ -32,7 +33,7 @@ class BookSourceController {
         if(!where.isNullOrBlank()){
             queryWrapper.like("book_source_url",where).or().like("book_source_name",where).or().like("book_source_group",where)
         }
-        PageByAjax(bookSourceService.booksSourceMapper,queryWrapper,page,limit,order)
+        PageByAjax(bookSourceMapper,queryWrapper,page,limit,order)
     }
 
     @Mapping("/uploadSource")
@@ -45,12 +46,12 @@ class BookSourceController {
                 //数组
                 val bookSourcelist= Booksource.fromJsonArray(content).getOrNull()
                 bookSourcelist?.forEach {
-                   //if(it.bookSourceUrl.isNotBlank() && it.bookSourceType != 1){
+                    runCatching {
                         addorupdate(it).let {  (ins,ups)->
                             insert += ins
                             update += ups
                         }
-                    //}
+                    }
                 }
             }else{
                 //单独一个
@@ -58,9 +59,6 @@ class BookSourceController {
                 if (bookSource.bookSourceUrl.isBlank()){
                     throw DataThrowable().data(JsonResponse(false, SOURCE_URL_BANK))
                 }
-               // if(bookSource.bookSourceType == 1){
-                //    throw DataThrowable().data(JsonResponse(false, SOURCE_TYPE_ERROR))
-               // }
                 addorupdate(bookSource).let {  (ins,ups)->
                     insert += ins
                     update += ups
@@ -72,7 +70,7 @@ class BookSourceController {
             e.printStackTrace()
             throw DataThrowable().data(JsonResponse(false, DO_ERROR))
         }
-
+        Source.sendNotification()
         JsonResponse(true,"新增${insert}条书源，更新${update}条书源")
     }
 
@@ -81,9 +79,9 @@ class BookSourceController {
         if (id.isNullOrBlank()){
             throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         }
-        bookSourceService.getBookSource(id) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
-        bookSourceService.booksSourceMapper.deleteById(id)
-        bookSourceService.cleancache()
+        bookSourceMapper.getBookSource(id) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+        bookSourceMapper.deleteById(id)
+        Source.sendNotification()
         JsonResponse(true)
     }
 
@@ -91,10 +89,10 @@ class BookSourceController {
     fun delbookSources(@Body ids: List<String>?) = run{
         ids?.forEach {id->
             if (id.isNotBlank()){
-                bookSourceService.booksSourceMapper.deleteById(id)
+                bookSourceMapper.deleteById(id)
             }
         }
-        bookSourceService.cleancache()
+        Source.sendNotification()
         JsonResponse(true)
     }
 
@@ -103,16 +101,17 @@ class BookSourceController {
         if (id.isNullOrBlank()){
             throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         }
-        bookSourceService.getBookSource(id) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+        bookSourceMapper.getBookSource(id) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
         when(st){
             "0"->{
-                bookSourceService.changeEnabled(id,false)
+                bookSourceMapper.changeEnabled(id,false)
             }
             "1"->{
-                bookSourceService.changeEnabled(id,true)
+                bookSourceMapper.changeEnabled(id,true)
             }
             else -> throw DataThrowable().data(JsonResponse(false, USE_ERROE))
         }
+        Source.sendNotification()
         JsonResponse(true)
     }
 
@@ -121,16 +120,17 @@ class BookSourceController {
         if (id.isNullOrBlank()){
             throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         }
-         bookSourceService.getBookSource(id) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+        bookSourceMapper.getBookSource(id) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
         when(st){
             "0"->{
-                bookSourceService.changeenabledExplore(id,false)
+                bookSourceMapper.changeenabledExplore(id,false)
             }
             "1"->{
-                bookSourceService.changeenabledExplore(id,true)
+                bookSourceMapper.changeenabledExplore(id,true)
             }
             else -> throw DataThrowable().data(JsonResponse(false, USE_ERROE))
         }
+        Source.sendNotification()
         JsonResponse(true)
     }
 
@@ -139,17 +139,18 @@ class BookSourceController {
         if (id.isNullOrBlank()){
             throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         }
-        val bookSource= bookSourceService.getBookSource(id) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
-        val sources = bookSourceService.getallBookSourcelist()
+        val bookSource= bookSourceMapper.getBookSource(id) ?: throw DataThrowable().data(JsonResponse(false, NOT_IS))
+        val sources = bookSourceMapper.getallBookSourcelist()
         var order=1
         for( it in sources!!){
             if(it.bookSourceUrl == bookSource.bookSourceUrl){
-                bookSourceService.changeorder(it.bookSourceUrl?:"", 0)
+                bookSourceMapper.changeorder(it.bookSourceUrl?:"", 0)
             }else{
-                bookSourceService.changeorder(it.bookSourceUrl?:"", order)
+                bookSourceMapper.changeorder(it.bookSourceUrl?:"", order)
                 order++
             }
         }
+        Source.sendNotification()
         JsonResponse(true)
     }
 
@@ -160,7 +161,7 @@ class BookSourceController {
         var insert = 0
         var update = 0
         val source=BookSource().jsontomodel(bookSource)
-        bookSourceService.getBookSource(bookSource.bookSourceUrl).let {
+        bookSourceMapper.getBookSource(bookSource.bookSourceUrl).let {
             if (it != null){
                 source.enabled=it.enabled
                 if(it.createtime != null){
@@ -168,14 +169,13 @@ class BookSourceController {
                 }
                 source.sourceorder=it.sourceorder
                 bookSource.lastUpdateTime= Date().time
-                update += bookSourceService.booksSourceMapper.updateById(source)
+                update += bookSourceMapper.updateById(source)
             }else{
                 source.enabled=true
                 source.sourceorder=9999
-                insert += bookSourceService.booksSourceMapper.insert(source)
+                insert += bookSourceMapper.insert(source)
             }
         }
-        bookSourceService.cleancache()
         Pair(insert, update)
     }
 

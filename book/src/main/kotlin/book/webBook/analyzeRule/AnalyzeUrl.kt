@@ -89,6 +89,9 @@ class AnalyzeUrl(
 
     init {
         if(source != null) {
+            if(headerMapF != null){
+                headerMap.putAll(headerMapF)
+            }
             runCatching {
                 headerMap.putAll(source!!.getHeaderMap(hasLoginHeader))
             }
@@ -96,7 +99,11 @@ class AnalyzeUrl(
                 proxy = headerMap["proxy"]
                 headerMap.remove("proxy")
             }
-
+            if(mUrl.isNotBlank() && baseUrl.isBlank()){
+                if(!mUrl.startsWith("http://") && !mUrl.startsWith("https://")){
+                    baseUrl = source.getKey()
+                }
+            }
         }
         initUrl()
         domain = NetworkUtils.getSubDomain(source?.getKey() ?: url)
@@ -125,6 +132,7 @@ class AnalyzeUrl(
         if(needanalyzeUrl) analyzeUrl()
 
         logger.info("ruleUrl $ruleUrl")
+        logger.info("baseUrl $baseUrl")
         //debugLog?.log(source?. getKey(), ruleUrl)
     }
 

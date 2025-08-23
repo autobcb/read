@@ -7,7 +7,7 @@ solon.dataSources:
 admin:
   username: "admin"
   password: "adminadmin"
-  #code: "接口的code参数" //如果需要使用获取邀请码参数请修改这个参数，重启生效
+  code: "36a1dbc92f15ba14d34a4f12855aeca6"
 user:
   allowuptxt: true  #是否允许上传txt 允许 true 不允许 false
   allowcache: true  #是否允许添加缓存 允许 true 不允许 false

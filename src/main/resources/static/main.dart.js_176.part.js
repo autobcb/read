@@ -1,56 +1,73 @@
-((a,b,c)=>{a[b]=a[b]||{}
-a[b][c]=a[b][c]||[]
-a[b][c].push({p:"main.dart.js_176",e:"beginPart"})})(self,"$__dart_deferred_initializers__","eventLog")
-$__dart_deferred_initializers__.current=function(a,b,c,$){var J,A,D,B={
-a5W(d,e){return B.chl(d,e)},
-chl(d,e){var x=0,w=A.i(y.e),v,u=2,t=[],s=[],r,q,p,o,n,m,l,k,j,i
-var $async$a5W=A.d(function(f,g){if(f===1){t.push(g)
-x=u}while(true)switch(x){case 0:m=!1
-l=0
-k=y.g
-j=A.R(["html",d,"id",e],k,k)
-case 3:if(!!0){x=4
-break}if(!(!m&&l<5)){x=4
-break}u=6
-k=$.br
-p=k==null?null:k.cV(0,"accessToken")
-if(p==null)A.a6(A.az("accessToken\u4e0d\u5b58\u5728"))
-o=C.kH()
-if(o==null)A.a6(A.az("baseUrl\u4e0d\u5b58\u5728"))
-x=9
-return A.c(C.ch(o+"/api/5/savehtml?accessToken="+p,j),$async$a5W)
-case 9:k=g
-r=D.m.N(0,new A.B6(!1).AQ(k,0,null,!0))
-if(J.C(r,"isSuccess"))m=!0
-s.push(8)
-x=7
+((a,b)=>{a[b]=a[b]||{}})(self,"$__dart_deferred_initializers__")
+$__dart_deferred_initializers__.current=function(a,b,c,$){var J,A,C,B={
+c4I(d){var x=J.M(d),w=x.h(d,"title")
+w=w==null?null:J.T(w)
+if(w==null)w=""
+x=x.h(d,"url")
+x=x==null?null:J.T(x)
+return new B.ny(w,x==null?"":x)},
+c4H(d){var x,w,v=J.M(d),u=v.h(d,"found")
+u=u==null?null:J.T(u)
+if(u==null)u=""
+x=v.h(d,"loginUrl")
+x=x==null?null:J.T(x)
+if(x==null)x=""
+w=v.h(d,"loginUi")
+w=w==null?null:J.T(w)
+if(w==null)w=""
+v=v.h(d,"checkKeyWord")
+if(v!=null)J.T(v)
+return new B.ab_(u,x,w)},
+ny:function ny(d,e){this.a=d
+this.b=e},
+ab_:function ab_(d,e,f){this.a=d
+this.c=e
+this.d=f},
+Hs(d,e){var x=0,w=A.i(y.h),v,u,t,s,r,q,p
+var $async$Hs=A.d(function(f,g){if(f===1)return A.e(g,w)
+while(true)switch(x){case 0:q="ExploreUrl"+d+A.m(E.fu())
+x=e!=="1"?3:4
 break
-case 6:u=5
-i=t.pop()
-q=A.E(i)
-A.mm().$1(A.m(q))
-s.push(8)
-x=7
+case 3:x=5
+return A.c(D.hH(q),$async$Hs)
+case 5:u=g
+if(u!=null&&u.length!==0){v=B.c4H(J.z(C.m.M(0,u),"data"))
+x=1
+break}case 4:t=y.g
+s=A.N(["bookSourceUrl",d,"need",e],t,t)
+p=C.r
+x=6
+return A.c(F.c4(I.bb("/getBookSourcesExploreUrl"),s),$async$Hs)
+case 6:u=p.M(0,g)
+r=C.m.M(0,u)
+t=J.M(r)
+x=t.h(r,"isSuccess")?7:9
 break
-case 5:s=[2]
-case 7:u=2;++l
-x=s.pop()
-break
-case 8:x=3
-break
-case 4:if(!m)throw A.k(A.az("\u56de\u4f20\u4fe1\u606f\u5931\u8d25"))
-v=m
+case 7:x=10
+return A.c(G.hR(q,u),$async$Hs)
+case 10:v=B.c4H(t.h(r,"data"))
 x=1
 break
-case 1:return A.f(v,w)
-case 2:return A.e(t.at(-1),w)}})
-return A.h($async$a5W,w)}},C
+x=8
+break
+case 9:throw A.k(A.ay(H.bk(t.h(r,"errorMsg"))))
+case 8:case 1:return A.f(v,w)}})
+return A.h($async$Hs,w)}},D,E,F,G,H,I
 J=c[1]
 A=c[0]
-D=c[2]
-B=a.updateHolder(c[21],B)
-C=c[90]
-var z=a.updateTypes([])
-var y={g:A.G("j"),e:A.G("y")}};
-((a,b)=>{a[b]=a.current
-a.eventLog.push({p:"main.dart.js_176",e:"endPart",h:b})})($__dart_deferred_initializers__,"dnsE2BouBS5NB3jELKLMFU9855U=");
+C=c[2]
+B=a.updateHolder(c[30],B)
+D=c[71]
+E=c[98]
+F=c[95]
+G=c[86]
+H=c[89]
+I=c[85]
+B.ny.prototype={
+cj(){return A.N(["title",this.a,"url",this.b],y.g,y.b)}}
+B.ab_.prototype={}
+var z=a.updateTypes(["am<j,@>()"]);(function installTearOffs(){var x=a._instance_0u
+x(B.ny.prototype,"gfB","cj",0)})();(function inheritance(){var x=a.inheritMany
+x(A.w,[B.ny,B.ab_])})()
+var y={h:A.D("ab_"),g:A.D("j"),b:A.D("@")}};
+(a=>{a["DS6UfGfdPKirdjj8mexe8iIkdoY="]=a.current})($__dart_deferred_initializers__);
