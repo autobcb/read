@@ -87,6 +87,11 @@ open class HomeController {
                     if(it == null) throw DataThrowable().data(JsonResponse(isSuccess = false, errorMsg = CODE_ERROR))
                 }
             }
+        }else{
+            val c=cacheService.get("code_$email",String::class.java)
+            if(c != code){
+                throw DataThrowable().data(JsonResponse(false, CODE_CHECK_ERROR))
+            }
         }
 
         if(usersMapper.getUserByusername(user.username?:"") != null) {

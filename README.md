@@ -90,9 +90,9 @@ F11 无边框 F12恢复边框(仅windows支持)
 将后端文件（下载web*.zip）上传到root目录，确保root/read/read.jar存在，确保root/read/conf.yml存在（conf.yml中可修改后台管理的账号密码），然后安装docker,
 网上有一键安装脚本可自行百度，docker一键部署命令如下，如需用mysql数据库请自行修改配置文件。
 ````
-docker run -tid  -e TZ=Asia/Shanghai --name read  -v /root/read:/app -p 8080:8080 --restart=always docker-0.unsee.tech/bitnami/java java -jar /app/read.jar
+docker run -tid  -e TZ=Asia/Shanghai --name read  -v /root/read:/app --net=host --restart=always docker-0.unsee.tech/bitnami/java java -jar /app/read.jar
 ````
-如需使用其他端口可修改第一个8080为想要的端口。当然/root/read可以换成其他路径，只要确保这个路径下有read.jar和conf.yml。
+如需使用其他端口可修改启动命令为 java  -Dserver.port=端口  -jar /app/read.jar 。当然/root/read可以换成其他路径，只要确保这个路径下有read.jar和conf.yml。
 需要需要使用代理可将启动命令修改为
 ````
  java  -Dhttp.proxyHost=127.0.0.1 -Dhttp.proxyPort=1080 -Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=1080 -jar /app/read.jar
@@ -230,6 +230,23 @@ Android TTS 本身不支持暂停功能，因此我们实施了一种解决方�
 
 # mysql数据库
 后端支持修改为mysql数据库，部署好数据库后参考mysqlconf.yml文件来修改conf.yml，默认的sqlite文件数据库性能弱不适合高强度使用。
+
+# 常见问题
+# 首页有红色感叹号，点击后提示未成功连接到服务器，怎么办？
+这个一般都是由于 websocket的问题，如果你使用了反向代理，需要配置 nginx 让其支持 websocket。如果还不行请检查是否开启了 ssl，部分 ssl 证书 ws 会出错（原因未知）。再看看 docker 是否为 host 模式，旧版本 docker 用端口转发 ws 会出问题。
+
+# httptts 读完一段有停顿，怎么办？
+请检查是否开启了在线播放，关闭在线播放后会自动缓存下一段。
+
+# 为啥我的 app 没有输入后端地址的地方？
+请勿修改 app 包名，修改包名后默认为自定义包名模式，需要再 app 后台添加站点并绑定包名。
+
+# 目前新增了 app 管理，我是否需要去 app 管理注册并添加站点？
+app 管理仅提供主域名和备用域名，并可以使用别名当做后端。而且如果在后台登记了包名，你修改包名后就不会显示后端地址了，当你需要使用到这些功能时或者需要用到 api 时才需要去这里注册，不然正常填写后端正常使用即可。
+
+# 为啥我将后端穿透出来后就无法使用了？
+如果要使用穿透必须选择 tcp 穿透，http 穿透不一定会支持 ws。
+
 
 ## 感谢
 
