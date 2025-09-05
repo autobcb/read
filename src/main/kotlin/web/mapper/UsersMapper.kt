@@ -18,6 +18,9 @@ interface  UsersMapper : BaseMapper<Users> {
     @Select("SELECT * FROM users WHERE username = #{username} LIMIT 1" )
     fun getUserByusername(@Param("username") username: String): Users?
 
+    @Select("SELECT * FROM users WHERE username = #{username} or email = #{username} " )
+    fun getUserByusernameoremail(@Param("username") username: String): List<Users>
+
     @Select("SELECT * FROM users WHERE email = #{email}" )
     fun getUserByemail(@Param("email") email: String): List<Users>
 

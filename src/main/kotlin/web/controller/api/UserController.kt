@@ -28,7 +28,8 @@ open class UserController:BaseController() {
         if (username.isNullOrBlank() || password.isNullOrBlank() )  {
             throw DataThrowable().data(JsonResponse(false,NOT_BANK))
         }
-        val user: Users?=usersMapper.getUserByusername(username)
+        val users=usersMapper.getUserByusernameoremail(username)
+        val user:Users? = if (users.isNotEmpty()) users[0] else null
         if (user == null || !user.password.equals(passsign( password))) {
             throw DataThrowable().data(JsonResponse(false,PASS_ERROR))
         }

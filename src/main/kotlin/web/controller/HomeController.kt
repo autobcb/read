@@ -132,25 +132,16 @@ open class HomeController {
     }
 
     @Mapping("/sendResetCode")
-    fun sendResetCode( username:String? ,email: String?)=run {
+    fun sendResetCode( email: String?)=run {
         if (email.isNullOrBlank()   )  {
             throw DataThrowable().data(JsonResponse(isSuccess = false, errorMsg = EMAIL_ERROR))
         }
-        var ct=0
+        var ct=1
         runCatching {
             ct=cacheService.get("codetime_$email",Int::class.java)
         }
         if(ct > 3){
             throw DataThrowable().data(JsonResponse(isSuccess = false, errorMsg = EMAIL_CONT_ERROR))
-        }
-        if(needcode){
-            if (username.isNullOrBlank() )  {
-                throw DataThrowable().data(JsonResponse(isSuccess = false, errorMsg = EMAIL_ERROR))
-            }
-            val user=usersMapper.getUserByusername(username)?:throw DataThrowable().data(JsonResponse(false,USER_NOT))
-            if(user.email != email){
-                throw DataThrowable().data(JsonResponse(false,EMAIL_CHECK_ERROR))
-            }
         }
 
         val c= getMailCode()
@@ -166,14 +157,18 @@ open class HomeController {
     }
 
     @Mapping("/resetPassword")
-    fun  resetPassword(username:String? , password:String? , code:String? ,email:String?)=run {
-        if(username.isNullOrBlank() || password.isNullOrBlank() || email.isNullOrBlank() || code.isNullOrBlank()){
+    fun  resetPassword( password:String? , code:String? ,email:String?)=run {
+        if( password.isNullOrBlank() || email.isNullOrBlank() || code.isNullOrBlank()){
             throw DataThrowable().data(JsonResponse(false,NOT_BANK))
         }
         if(password.length <6 || password.length > 15 ){
             throw DataThrowable().data(JsonResponse(false,PASS_VAIL_ERROR))
         }
-        val user=usersMapper.getUserByusername(username)?:throw DataThrowable().data(JsonResponse(false,USER_NOT))
+        val users=usersMapper.getUserByemail(email)
+        if(users.size > 1){
+            throw DataThrowable().data(JsonResponse(false,EMAIL_BIND_MAX))
+        }
+        val user=(if(users.isNotEmpty()) users[0] else null )?:throw DataThrowable().data(JsonResponse(false,USER_NOT))
         if(user.email != email){
             throw DataThrowable().data(JsonResponse(false,EMAIL_CHECK_ERROR))
         }

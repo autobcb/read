@@ -36,6 +36,7 @@ import web.util.read.updatebook
 import java.io.File
 import java.net.SocketException
 import java.net.SocketTimeoutException
+import java.net.URLEncoder
 import kotlin.concurrent.thread
 
 @Controller
@@ -59,6 +60,9 @@ open class BookController:BaseController() {
 
     @Inject(value = "\${user.timeout:0}", autoRefreshed=true)
     var timeout: Int= 0
+
+    @Inject(value = "\${user.proxypng:false}", autoRefreshed=true)
+    var proxypng:Boolean=false
 
 
 
@@ -135,6 +139,11 @@ open class BookController:BaseController() {
             }
         }
         val mybook=booklistMapper.getbook(user.id!!,book.bookUrl) ?: throw DataThrowable().data(JsonResponse(false,NO_BOOK))
+        if(proxypng){
+            if (!book.coverUrl.isNullOrEmpty() && !book.coverUrl!!.contains("baseurl/proxypng?url=")){
+                book.coverUrl = "baseurl/proxypng?url=${URLEncoder.encode(book.coverUrl,"UTF-8")}"
+            }
+        }
         booklistMapper.upbookinfo(mybook.id?:"",book.name,book.author,book.coverUrl?:"",book.intro?:"")
         web.notification.Book.sendNotification(user)
         JsonResponse(true,SUCCESS)
@@ -156,7 +165,7 @@ open class BookController:BaseController() {
                 z=true
                 runCatching{
                     val book= BookInfo.getbookinfo(accessToken,user,it,url)
-                    web.notification.Book.sendNotification(user)
+                    //web.notification.Book.sendNotification(user)
                     return@runBlocking  JsonResponse(true).Data(book)
                 }.onFailure {
                     msg=it.message?:""
@@ -168,7 +177,7 @@ open class BookController:BaseController() {
                         z=true
                         runCatching{
                             val book= BookInfo.getbookinfo(accessToken,user,it,url)
-                            web.notification.Book.sendNotification(user)
+                            //web.notification.Book.sendNotification(user)
                             return@runBlocking  JsonResponse(true).Data(book)
                         }.onFailure {
                             msg=it.message?:""
@@ -212,6 +221,11 @@ open class BookController:BaseController() {
             this.useReplaceRule=(useReplaceRule == 1)
             val s= BookSource.fromJson(source.json).getOrNull()
             this.needimageDecode(s)
+            if(proxypng){
+                if (!this.coverUrl.isNullOrEmpty() && !this.coverUrl!!.contains("baseurl/proxypng?url=")){
+                    this.coverUrl = "baseurl/proxypng?url=${URLEncoder.encode(this.coverUrl,"UTF-8")}"
+                }
+            }
         })
         web.notification.Book.sendNotification(user)
         thread {
@@ -258,7 +272,13 @@ open class BookController:BaseController() {
                     continue
                 }
                 val booktolist=Booklist.tobooklist(book,user.id!!)
-                num+=booklistMapper.insert(booktolist.bookto(book, canchangeindex = true))
+                num+=booklistMapper.insert(booktolist.bookto(book, canchangeindex = true).apply {
+                    if(proxypng){
+                        if (!this.coverUrl.isNullOrEmpty() && !this.coverUrl!!.contains("baseurl/proxypng?url=")){
+                            this.coverUrl = "baseurl/proxypng?url=${URLEncoder.encode(this.coverUrl,"UTF-8")}"
+                        }
+                    }
+                })
             }
         }
         web.notification.Book.sendNotification(user)
@@ -296,6 +316,14 @@ open class BookController:BaseController() {
             s?.usertocken=accessToken
             s?.userid=user.id
             book.needimageDecode(s)
+            if(proxypng){
+                if (!book.coverUrl.isNullOrEmpty() && !book.coverUrl!!.contains("baseurl/proxypng?url=")){
+                    book.coverUrl = "baseurl/proxypng?url=${URLEncoder.encode(book.coverUrl,"UTF-8")}"
+                }
+                if (!book.customCoverUrl.isNullOrEmpty() && !book.customCoverUrl!!.contains("baseurl/proxypng?url=")){
+                    book.customCoverUrl = "baseurl/proxypng?url=${URLEncoder.encode(book.customCoverUrl,"UTF-8")}"
+                }
+            }
             booklistMapper.updateById(book)
             web.notification.Book.sendNotification(user)
             JsonResponse(true,SUCCESS).Data(book)

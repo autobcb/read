@@ -15,6 +15,7 @@ user:
   source: 0  #0为不允许修改书源，1为允许修改后台书源，2独立书源
   maxsource: 0  # 最大书源数量 0为不限制
   timeout: 0 #10分钟内除发多少次timeout禁用书源 0 为不限制
+  proxypng: false  #是否代理封面
 smtp:
   host:  #smtp邮箱host
   protocols: TLSv1.2 #通讯协议

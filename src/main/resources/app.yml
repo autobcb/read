@@ -32,3 +32,8 @@ server.request:
   maxFileSize: 50mb
 server.http:
   coreThreads: x5
+solon.mime:
+  vue: "text/html"
+  map: "application/json"
+  log: "text/plain"
+  wasm: "application/wasm"

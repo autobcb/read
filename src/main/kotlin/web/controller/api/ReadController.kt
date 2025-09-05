@@ -1,6 +1,7 @@
 package web.controller.api
 
 import book.app.App
+import book.appCtx
 import book.model.Book
 import book.model.BookChapter
 import book.model.BookSource
@@ -11,6 +12,7 @@ import book.webBook.analyzeRule.AnalyzeUrl
 import book.webBook.exception.RegexTimeoutException
 import book.webBook.localBook.LocalBook
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.runBlocking
 import org.noear.solon.annotation.*
 import org.noear.solon.core.handle.Context
@@ -30,12 +32,15 @@ import web.notification.Read
 import web.response.*
 import web.util.BigDataHelp
 import web.util.SslUtils
+import web.util.hash.md5
 import web.util.read.BookContent
 import web.util.read.BookInfo
 import web.util.read.getlist
 import web.util.svg.svg2PNG
+import java.io.ByteArrayOutputStream
 import java.net.HttpURLConnection
 import java.net.URI
+import java.net.URL
 import kotlin.coroutines.cancellation.CancellationException
 
 
@@ -474,14 +479,14 @@ open class ReadController : BaseController() {
 
    // @Cache(key = "getBookshelf:\${accessToken}", tags = "getBookshelf", seconds = 20)
     @Mapping("/getBookshelf")
-    open fun getBookshelf(accessToken: String?,version:String?,@Path v:Int) = run {
+    open fun getBookshelf(accessToken: String?,version:String?,name:String?,@Path v:Int) = run {
        if(v < apiversion){
            throw DataThrowable().data(JsonResponse(false,NEED_LOGIN))
        }else  if(v > apiversion){
            throw DataThrowable().data(JsonResponse(false,NEED_LOGIN))
        }
         val user = getuserbytocken(accessToken)
-        val book = booklistMapper.getbooklistbyuserid(user.id!!)
+        val book = if (!name.isNullOrBlank()) booklistMapper.getbooklistbyuseridandname(user.id!!,name) else booklistMapper.getbooklistbyuserid(user.id!!)
         book?.forEach {
             if (it.customCoverUrl != null && it.customCoverUrl!!.isNotBlank()) {
                 it.coverUrl = it.customCoverUrl
@@ -799,5 +804,78 @@ open class ReadController : BaseController() {
         web.notification.Book.sendNotification(user)
         JsonResponse(true)
     }
+
+    private val pngDir = FileUtils.createFolderIfNotExist(appCtx.externalFiles, "assets","proxy")
+
+    @Mapping("/proxypng")
+    open fun proxypng(ctx: Context, url: String?) = run {
+        //if (accessToken == null) throw DataThrowable().data(JsonResponse(false, NEED_LOGIN))
+        if (url.isNullOrBlank()) throw DataThrowable().data(JsonResponse(false, NOT_BANK))
+        logger.info("proxypng $url")
+        val sign = url.md5()
+        val valueFile = FileUtils.getFile(pngDir,sign)
+        if(valueFile.exists()) {
+            valueFile.inputStream().use { i ->
+                val b = ByteArray(4096)
+                var len: Int
+                while ((i.read(b).also { len = it }) != -1) {
+                    ctx.outputStream().write(b, 0, len)
+                }
+            }
+            ctx.flush()
+        }else{
+            val (nurl , headers)=geturlandheader(url)
+            val url = URL(nurl)
+            SslUtils.ignoreSsl();
+            val connection = url.openConnection() as HttpURLConnection
+            connection.setRequestMethod("GET")
+            headers.forEach{(k,v)->
+                connection.setRequestProperty(k,"$v");
+            }
+            val responseCode = connection.getResponseCode();
+            //  读取响应
+            if (responseCode == HttpURLConnection.HTTP_OK) { // 200表示请求成功
+                val bos = ByteArrayOutputStream() //创建输出流对象
+                connection.getInputStream().use {  i ->
+                    val b = ByteArray(4096)
+                    var len: Int
+                    while ((i.read(b).also { len = it }) != -1) {
+                        bos.write(b, 0, len)
+                        ctx.outputStream().write(b, 0, len)
+                    }
+                }
+                valueFile.writeBytes(bos.toByteArray())
+                //ctx.contentType(connection.getHeaderField("Content-Type"))
+                //ctx.output(bos.toByteArray())
+                ctx.flush()
+            } else {
+                logger.info("GET请求失败");
+                JsonResponse(isSuccess = false,errorMsg ="GET请求失败")
+            }
+        }
+
+    }
+
+
+    fun  geturlandheader(url: String): Pair<String, Map<String, Any>> = run {
+        if (!url.contains(',') || !url.contains('{')  || !url.contains('}')) {
+            return Pair(url,mapOf())
+        }
+        runCatching {
+            val firstCommaIndex = url.indexOf(',')
+            val nurl = url.substring(0, firstCommaIndex)
+            val headersStr = url.substring(firstCommaIndex + 1)
+            //println(nurl)
+           // println(headersStr)
+            var  headers:Map<String, Any> = mapOf()
+            runCatching {
+                headers =GSON.fromJson(headersStr, object : TypeToken<Map<String, Any>>() {
+                }.getType())
+            }.onFailure { it.printStackTrace() }
+            return Pair(nurl,headers)
+        }
+        return Pair(url,mapOf())
+    }
+
 
 }

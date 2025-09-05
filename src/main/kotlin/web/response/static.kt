@@ -6,6 +6,8 @@ val NOT_BANK = "NOT_BANK"
 
 val PASS_ERROR = "用户名或密码错误"
 
+val EMAIL_BIND_MAX="当前邮箱绑定的账号超过1个"
+
 val EMAIL_CHECK_ERROR = "邮箱填写错误"
 
 val EMAIL_IS = "邮箱已存在"

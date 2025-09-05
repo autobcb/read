@@ -91,7 +91,7 @@ class SourceCheckDebug: BaseDebug() {
             ma[checkid] = socket
         }
         val ids:List<String> = GSON.fromJsonArray<String>(text).getOrNull()?: listOf()
-        val semaphore = Semaphore(5)
+        val semaphore = Semaphore(10)
         val jobs = mutableListOf<Job>()
         var num=0
         for (id in ids){

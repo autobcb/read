@@ -14,6 +14,9 @@ interface BooklistMapper : BaseMapper<Booklist> {
     @Select("SELECT * FROM booklist WHERE userid = #{id}  ")
     fun getbooklistbyuserid(@Param("id") id: String ): List<Booklist>?
 
+    @Select("SELECT * FROM booklist WHERE userid = #{id} and name = #{name}  ")
+    fun getbooklistbyuseridandname(@Param("id") id: String ,@Param("name") name: String ): List<Booklist>?
+
     @Select("SELECT * FROM booklist WHERE userid = #{id}  and name = #{name}  and author = #{author}  and type = #{type}")
     fun getbooklistbynametype(@Param("id") id: String ,@Param("name") name: String ,@Param("author") author: String ,@Param("type") type: Int): List<Booklist>
 
