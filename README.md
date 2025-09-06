@@ -124,7 +124,8 @@ services:
       # =========== admin 用户设置 ===========
       ADMIN_USERNAME: admin             #后台管理员账户
       ADMIN_PASSWORD: adminadmin        #后台管理员密码
-      #ADMIN_CODE: myadmincode          # 可选：如果需要 code 参数
+      #3.1.0更新配置信息
+      #ADMIN_CODE:                       # 需要填写app管理后台生成的密钥
 
       # =========== user 设置 ===========
       USER_ALLOWUPTXT: "false"          #是否允许上传txt 允许 true 不允许 false
@@ -134,6 +135,8 @@ services:
       USER_SOURCE: "0"                  # 0: 不允许修改书源, 1: 允许后台修改, 2: 独立书源
       USER_MAXSOURCE: "0"               # 最大书源数量，0 表示不限制
       USER_TIMEOUT: "0"                 #10分钟内除发多少次timeout禁用书源 0 为不限制
+      #3.2.0新增配置信息
+      USER_PROXYPNG: "false"             #是否代理封面
 
       #===========  SMTP 邮件设置 ===========
       #SMTP_HOST:                       #smtp邮箱host
