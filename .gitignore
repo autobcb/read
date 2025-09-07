@@ -8,7 +8,6 @@ logs/
 build/
 bookcache/
 libs/
-cache/
 local
 cookie/
 storage/
