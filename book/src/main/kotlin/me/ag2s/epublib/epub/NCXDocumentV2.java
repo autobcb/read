@@ -79,7 +79,7 @@ public class NCXDocumentV2 {
         Resource ncxResource = null;
         if (book.getSpine().getTocResource() == null) {
             // Log.e(TAG, "Book does not contain a table of contents file");
-            System.err.println(TAG + " Book does not contain a table of contents file");
+           // System.err.println(TAG + " Book does not contain a table of contents file");
             return null;
         }
         try {
@@ -88,7 +88,7 @@ public class NCXDocumentV2 {
                 return null;
             }
             // Log.d(TAG, ncxResource.getHref());
-            System.out.println(TAG + " ncxResource.getHref()" + ncxResource.getHref());
+            //System.out.println(TAG + " ncxResource.getHref()" + ncxResource.getHref());
             Document ncxDocument = ResourceUtil.getAsDocument(ncxResource);
             Element navMapElement = DOMUtil
                     .getFirstElementByTagNameNS(ncxDocument.getDocumentElement(),
@@ -150,9 +150,9 @@ public class NCXDocumentV2 {
             System.err.println(TAG + " Resource with href " + href + " in NCX document not found");
             // Log.e(TAG, "Resource with href " + href + " in NCX document not found");
         }
-        System.out.println(TAG + " label:" + label);
-        System.out.println(TAG + " href:" + href);
-        System.out.println(TAG + " fragmentId:" + fragmentId);
+        //System.out.println(TAG + " label:" + label);
+        //System.out.println(TAG + " href:" + href);
+        //System.out.println(TAG + " fragmentId:" + fragmentId);
         TOCReference result = new TOCReference(label, resource, fragmentId);
         List<TOCReference> childTOCReferences = readTOCReferences(
                 navpointElement.getChildNodes(), book);

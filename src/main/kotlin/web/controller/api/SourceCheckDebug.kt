@@ -94,6 +94,14 @@ class SourceCheckDebug: BaseDebug() {
         val semaphore = Semaphore(10)
         val jobs = mutableListOf<Job>()
         var num=0
+        mutex.withLock {
+            runCatching {
+                getsocket(checkid).send(Gson().toJson(ErrorMsg().apply {
+                    url="已检验完成:$num,还剩:${ids.size - num}"
+                    msg="msg"
+                }))
+            }
+        }
         for (id in ids){
             if(!isopen(checkid)) break
             launch{

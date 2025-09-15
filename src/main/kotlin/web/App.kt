@@ -1,11 +1,8 @@
 package web
 
 
-import book.appCtx
-import book.util.FileUtils
 import org.noear.solon.Solon
 import org.noear.solon.annotation.SolonMain
-import org.noear.solon.core.handle.Context
 import org.noear.solon.scheduling.annotation.EnableScheduling
 import org.noear.solon.web.cors.CrossFilter
 import org.noear.solon.web.staticfiles.StaticMappings

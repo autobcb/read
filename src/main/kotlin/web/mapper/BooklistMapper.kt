@@ -58,4 +58,7 @@ interface BooklistMapper : BaseMapper<Booklist> {
 
     @Update("UPDATE booklist set use_replace_rule = #{useReplaceRule} WHERE id = #{id} ")
     fun uprule(@Param("id") id: String,@Param("useReplaceRule") useReplaceRule: Boolean):Int
+
+    @Update("UPDATE booklist set origin =#{neworigin} WHERE origin = #{origin} and userid = #{id}")
+    fun updatebysource(@Param("id") id: String,@Param("origin") origin: String,@Param("neworigin") neworigin: String):Int
 }

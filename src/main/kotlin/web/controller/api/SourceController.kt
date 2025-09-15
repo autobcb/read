@@ -15,6 +15,7 @@ import org.noear.solon.data.annotation.CacheRemove
 import org.noear.solon.data.annotation.Tran
 import org.noear.solon.data.cache.CacheService
 import org.noear.solon.web.cors.annotation.CrossOrigin
+import web.mapper.BooklistMapper
 import web.model.BaseSource
 import web.model.Booklist
 import web.model.Users
@@ -33,6 +34,9 @@ open class SourceController:BaseController() {
 
     @Inject
     lateinit var cacheService: CacheService
+
+    @Inject
+    lateinit var booklistMapper: BooklistMapper
 
 
     @Mapping("/getBookSourcesPage")
@@ -474,6 +478,7 @@ open class SourceController:BaseController() {
             if(it == null ) throw DataThrowable().data(JsonResponse(false, SOURCE_JSON_ERROR))
         }!!
         if(source.bookSourceUrl.isEmpty()) throw DataThrowable().data(JsonResponse(false, SOURCE_URL_ERROR))
+        var isupdate=false
         if(user.source == 2){
             if(maxsource > 0){
                 val list= userBookSourceMapper.getallBookSourcelist(user.id!!)?:listOf()
@@ -490,6 +495,9 @@ open class SourceController:BaseController() {
                 bookSource.createtime=bs.createtime
                 bookSource.lastUpdateTime=Date().time
                 userBookSourceMapper.deleteById(bookSource.id)
+                if(content.id  != source.bookSourceUrl){
+                    isupdate=true
+                }
             }else{
                 val bs=userBookSourceMapper.getBookSource(source.bookSourceUrl,user.id!!)
                 if (bs != null){
@@ -508,6 +516,9 @@ open class SourceController:BaseController() {
                 bookSource.createtime=bs.createtime
                 bookSource.lastUpdateTime=Date().time
                 bookSourceMapper.deleteById(content.id)
+                if(content.id  != source.bookSourceUrl){
+                    isupdate=true
+                }
             }else{
                 val bs=bookSourceMapper.getBookSource(source.bookSourceUrl)
                 if (bs != null){
@@ -516,6 +527,10 @@ open class SourceController:BaseController() {
             }
             bookSource.enabled=source.enabled
             bookSourceMapper.insert(bookSource)
+        }
+        if(isupdate){
+            booklistMapper.updatebysource(user.id!!,content.id!!,source.bookSourceUrl)
+            web.notification.Book.sendNotification(user)
         }
         web.notification.Source.sendNotification(user.let { if (user.source == 2) it else null })
         JsonResponse(true)
