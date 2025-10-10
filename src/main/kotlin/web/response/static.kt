@@ -87,3 +87,5 @@ val MARK_IS="书签已存在"
 val TOO_MANY_GROUPS="已超出最大分组数量"
 
 val EMAIL_CONT_ERROR="您的邮箱已超出当日最大发送次数，请24小时后再试"
+
+val GROUP_NOT_EDIT="当前分组不允许编辑"

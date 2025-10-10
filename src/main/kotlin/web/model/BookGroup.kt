@@ -19,6 +19,8 @@ class BookGroup {
 
     var bookgroup : String? = null
 
+    var grouporder: Int? = null
+
     @ONodeAttr(format = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     @TableField(fill = FieldFill.INSERT,value = "createtime")
     var createtime: LocalDateTime? = null

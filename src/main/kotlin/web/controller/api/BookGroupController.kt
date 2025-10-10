@@ -1,5 +1,7 @@
 package web.controller.api
 
+import book.util.GSON
+import book.util.fromJsonArray
 import org.noear.solon.annotation.Controller
 import org.noear.solon.annotation.Inject
 import org.noear.solon.annotation.Mapping
@@ -11,6 +13,7 @@ import web.mapper.BooklistMapper
 import web.model.BookGroup
 import web.notification.Book
 import web.response.GROUPIS
+import web.response.GROUP_NOT_EDIT
 import web.response.JsonResponse
 import web.response.NOT_BANK
 import web.response.NOT_IS
@@ -25,6 +28,11 @@ open class BookGroupController:BaseController() {
 
     @Inject
     lateinit var booklistMapper: BooklistMapper
+
+    companion object{
+        val ygroup=listOf<String>("未分组","有声书","漫画")
+    }
+
 
     @Mapping("/getgroup")
     open fun getgroup( accessToken:String?)=run{
@@ -48,11 +56,16 @@ open class BookGroupController:BaseController() {
         if(name == "全部"  || bookGroupMapper.getGroupbyName(user.id!!,name) != null) {
             throw DataThrowable().data(JsonResponse(isSuccess = false, errorMsg = GROUPIS))
         }
-        if(name == "未分组"){
-            bookGroupMapper.insert(BookGroup().create(user.id!!,""))
-        }else{
-            bookGroupMapper.insert(BookGroup().create(user.id!!,name))
+        val groups=bookGroupMapper.getGroupbyuserid(user.id!!)
+        var max=0
+        groups.forEach {
+            if (it.grouporder != null && it.grouporder!! > max){
+                max=it.grouporder!!
+            }
         }
+        bookGroupMapper.insert(BookGroup().create(user.id!!,name).also {
+            it.grouporder=max+1
+        })
         Book.sendNotification(user)
         JsonResponse(true)
     }
@@ -82,6 +95,9 @@ open class BookGroupController:BaseController() {
         if(oldname == null || newname == null){
             throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         }
+        if (ygroup.contains(oldname)) {
+            throw DataThrowable().data(JsonResponse(false, GROUP_NOT_EDIT))
+        }
         val group=bookGroupMapper.getGroupbyName(user.id!!,oldname).also {
             if(it == null){
                 throw DataThrowable().data(JsonResponse(false, NOT_IS))
@@ -101,6 +117,9 @@ open class BookGroupController:BaseController() {
         if(url == null){
             throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         }
+        if (ygroup.contains(name)) {
+            throw DataThrowable().data(JsonResponse(false, GROUP_NOT_EDIT))
+        }
         if(name != null && name != "全部"){
             bookGroupMapper.getGroupbyName(user.id!!,name).also {
                 if(it == null){
@@ -114,6 +133,27 @@ open class BookGroupController:BaseController() {
             }
         }!!
         booklistMapper.changebookgroup(book.id!!,name?:"")
+        Book.sendNotification(user)
+        JsonResponse(true)
+    }
+
+    @Mapping("/ordergroup")
+    open fun ordergroup( accessToken:String?,groups:String)=run{
+        val user=getuserbytocken(accessToken)
+        val mgroups=bookGroupMapper.getGroupbyuserid(user.id!!)
+        var o=0;
+        GSON.fromJsonArray<String>(groups).getOrNull()?.forEach {
+            if(it != "全部"){
+                for(  g in mgroups){
+                    if(g.bookgroup == it){
+                        g.grouporder=o
+                        bookGroupMapper.updateById(g)
+                        break;
+                    }
+                }
+                o++
+            }
+        }
         Book.sendNotification(user)
         JsonResponse(true)
     }

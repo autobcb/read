@@ -1,8 +1,11 @@
 package web.controller.api
 
+import book.model.SearchBook
+import kotlinx.coroutines.runBlocking
 import org.noear.solon.annotation.Controller
 import org.noear.solon.annotation.Inject
 import org.noear.solon.annotation.Mapping
+import org.noear.solon.core.util.DataThrowable
 import org.noear.solon.data.annotation.Cache
 import org.noear.solon.data.cache.CacheService
 import org.noear.solon.web.cors.annotation.CrossOrigin
@@ -11,6 +14,7 @@ import web.mapper.BooklistMapper
 import web.model.Booklist
 import web.response.JsonResponse
 import web.response.NEED_LOGIN
+import web.response.NOT_BANK
 import web.util.hash.Md5
 import web.util.mapper.mapper
 
@@ -52,6 +56,7 @@ open class BookshelfController:BaseController() {
             if (it.durChapterPos == null) {
                 it.durChapterPos = 0.0
             }
+            it.readchapter=""
             if (it.durChapterPos!! > 2 || it.durChapterPos!! < 0) {
                 it.durChapterPos = 0.0
             }
@@ -81,6 +86,26 @@ open class BookshelfController:BaseController() {
     @Mapping("/getgroupNew")
     open fun getgroupNew(accessToken: String?,md5: String?) = run {
         JsonResponse(false)
+    }
+
+    @Mapping("/addreadchapter")
+    open fun addreadchapter( accessToken:String?,readchapter: String?,url: String?) = runBlocking{
+        val user = getuserbytocken(accessToken)
+        val book = booklistMapper.getbook(user.id!!, url?:throw DataThrowable().data(JsonResponse(false, NOT_BANK)))?:
+        throw DataThrowable().data(JsonResponse(true))
+        val so = (book.readchapter ?: "").split(",").toMutableSet()
+        if (!readchapter.isNullOrBlank()){
+            val sn = readchapter.replace("[","").replace("]","").split(",").toMutableSet()
+            sn.forEach {
+                if (it.isNotBlank()){
+                    so.add(it)
+                }
+            }
+            booklistMapper.updatereadchapter(
+                book.id!!,so.joinToString(",")
+            )
+        }
+        JsonResponse(true)
     }
 
 }

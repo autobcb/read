@@ -125,7 +125,7 @@ open class BookController:BaseController() {
     @Mapping("/searchBook")
     open fun searchBook(accessToken:String?, bookSourceUrl:String?, page:Int?, key:String? )= search(accessToken,bookSourceUrl,page, key,1)
 
-    @Cache(key = "exploreBook:\${accessToken},\${bookSourceUrl},\${page},\${ruleFindUrl}", tags = "search\${accessToken}", seconds = 60)
+    //@Cache(key = "exploreBook:\${accessToken},\${bookSourceUrl},\${page},\${ruleFindUrl}", tags = "search\${accessToken}", seconds = 60)
     @Mapping("/exploreBook")
     open fun exploreBook( accessToken:String?,bookSourceUrl:String?, page:Int?, ruleFindUrl:String? ) = search(accessToken,bookSourceUrl,page, ruleFindUrl,2)
 
@@ -215,7 +215,11 @@ open class BookController:BaseController() {
         }
         new!!.type=book.type
 
+
         booklistMapper.insert(booktolist.bookto(new,false).apply {
+            if(!book.downloadUrls.isNullOrEmpty()){
+                this.downloadUrls = book.downloadUrls
+            }
             this.origin=source.bookSourceUrl
             this.originName=source.bookSourceName
             this.useReplaceRule=(useReplaceRule == 1)

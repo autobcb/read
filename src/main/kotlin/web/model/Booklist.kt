@@ -4,9 +4,11 @@ import book.model.Book
 import book.model.BookSource
 import book.model.SearchBook
 import com.baomidou.mybatisplus.annotation.TableId
+import com.google.gson.Gson
 import org.dromara.autotable.annotation.*
 import java.util.*
 import web.util.hash.Md5
+import kotlin.math.PI
 
 @AutoTable(value = "booklist")
 class Booklist {
@@ -64,6 +66,7 @@ class Booklist {
     var readchapter: String? = null
     var useReplaceRule: Boolean? = null         // 正文使用净化替换规则
     var imageDecode: Boolean = false
+    var downloadUrls: String? = null
 
     fun create():Booklist{
         this.id = UUID.randomUUID().toString()
@@ -95,6 +98,9 @@ class Booklist {
         if(canchangeindex) this.durChapterIndex = book.durChapterIndex
         if(canchangeindex) this.durChapterTime = book.durChapterTime
         if(canchangeindex) this.durChapterTitle = book.durChapterTitle
+        if(!book.downloadUrls.isNullOrEmpty()) {
+            this.downloadUrls = Gson().toJson(book.downloadUrls)
+        }
         return this
     }
 
@@ -107,7 +113,7 @@ class Booklist {
     }
    companion object{
        fun tobooklist(book: SearchBook, id:String):Booklist{
-           var bookList = Booklist().create()
+           val bookList = Booklist().create()
            bookList.bookUrl = book.bookUrl
            bookList.origin = book.origin
            bookList.originName = book.originName
@@ -123,13 +129,14 @@ class Booklist {
            bookList.tocUrl = book.tocUrl
            bookList.id= Md5(id+book.bookUrl)
            bookList.userid=id
+           if(!book.downloadUrls.isNullOrEmpty()) bookList.downloadUrls = book.downloadUrls
            return bookList
        }
 
 
 
        fun tobooklist(book: Book, id:String):Booklist{
-           var bookList = Booklist().create()
+           val bookList = Booklist().create()
            bookList.bookUrl = book.bookUrl
            bookList.origin = book.origin
            bookList.originName = book.originName
@@ -145,6 +152,9 @@ class Booklist {
            bookList.tocUrl = book.tocUrl
            bookList.id= Md5(id+book.bookUrl)
            bookList.userid=id
+           if(!book.downloadUrls.isNullOrEmpty()) {
+               bookList.downloadUrls = Gson().toJson(book.downloadUrls)
+           }
            return bookList
        }
    }

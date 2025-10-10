@@ -414,7 +414,7 @@ open class ReadController : BaseController() {
         }
        // Companion.logger.info("read push")
         Read.sendNotification(user,accessToken!!,url)
-        JsonResponse(true)
+        JsonResponse(true).Data(read)
     }
 
 

@@ -37,7 +37,7 @@ data class SearchBook(
         return s
     }
 
-
+    var downloadUrls: String? = null
 
     @Expose(serialize = false, deserialize = false)
     override var infoHtml: String? = null

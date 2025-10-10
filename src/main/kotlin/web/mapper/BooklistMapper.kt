@@ -38,6 +38,9 @@ interface BooklistMapper : BaseMapper<Booklist> {
                        ,@Param("dur_chapter_index") dur_chapter_index: Int
                        ,@Param("dur_chapter_pos") dur_chapter_pos: Double,@Param("dur_chapter_time") dur_chapter_time:Long,@Param("readchapter") readchapter:String):Int
 
+    @Update("UPDATE booklist set  readchapter = #{readchapter}  WHERE id = #{id}")
+    fun updatereadchapter(@Param("id") id: String,@Param("readchapter") readchapter:String): Int
+
     @Update("UPDATE booklist set type =#{type} WHERE id = #{id}")
     fun changetype(@Param("id") id: String,@Param("type") type: Int):Int
 

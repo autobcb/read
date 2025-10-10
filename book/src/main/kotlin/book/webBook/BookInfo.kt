@@ -1,5 +1,6 @@
 package book.webBook
 
+import android.text.TextUtils
 import book.model.Book
 import book.model.BookSource
 import book.util.help.BookHelp
@@ -122,5 +123,18 @@ object BookInfo {
             book.tocHtml = body
         }
         debugLog?.log(bookSource.bookSourceUrl, "└${book.tocUrl}")
+
+        if(book.type == 128){
+            debugLog?.log(bookSource.bookSourceUrl, "┌获取文件下载链接")
+            book.downloadUrls = analyzeRule.getStringList(infoRule.downloadUrls, isUrl = true)
+            if (book.downloadUrls.isNullOrEmpty()) {
+                debugLog?.log(bookSource.bookSourceUrl, "└")
+            } else {
+                debugLog?.log(
+                    bookSource.bookSourceUrl,
+                    "└" + TextUtils.join("，\n", book.downloadUrls!!)
+                )
+            }
+        }
     }
 }

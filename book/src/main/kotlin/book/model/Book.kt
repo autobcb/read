@@ -50,7 +50,7 @@ data class Book(
 ): BaseBook  {
 
 
-
+    var downloadUrls: List<String>? = null
     override fun toString(): String {
         val hashCode = this.hashCode()
         val hexHash = Integer.toHexString(hashCode)

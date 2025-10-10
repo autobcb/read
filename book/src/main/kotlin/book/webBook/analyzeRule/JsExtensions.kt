@@ -57,6 +57,10 @@ interface JsExtensions: JsEncodeUtils  {
         bindings["Base64"] = Base64
     }
 
+    fun  qread():String {
+        return "1"
+    }
+
     /**
      * 访问网络,返回String
      */

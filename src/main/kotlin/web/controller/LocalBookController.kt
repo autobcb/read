@@ -3,15 +3,18 @@ package web.controller
 import book.model.Book
 import book.webBook.localBook.LocalBook
 import org.noear.solon.annotation.Controller
+import org.noear.solon.annotation.Inject
 import org.noear.solon.annotation.Mapping
 import org.noear.solon.core.handle.Context
 import org.noear.solon.core.util.DataThrowable
+import org.noear.solon.data.annotation.Cache
+import org.noear.solon.data.cache.CacheService
 import web.response.JsonResponse
 import web.response.NOT_TXT
 import java.io.File
 
 @Controller
-class LocalBookController {
+open class LocalBookController {
 
     @Mapping("/searchlocalbook")
     fun search(ctx: Context, path: String?,key:String?): JsonResponse = run{
@@ -41,6 +44,62 @@ class LocalBookController {
              }
         }
         JsonResponse(true).Data(books)
+    }
+
+    @Inject
+    lateinit var cacheService: CacheService
+
+    val cachetime=60
+
+    @Cache(key = "searchlocalbook2:\${path}\${key}\${page}",  seconds = 60)
+    @Mapping("/searchlocalbook2")
+    fun search2(ctx: Context, path: String?,key:String?,page: Int?): JsonResponse = run{
+        if(ctx.realIp() != "127.0.0.1"){
+            throw DataThrowable().data(JsonResponse(false, "非发请求"))
+        }
+        if(key.isNullOrBlank()){
+            throw DataThrowable().data(JsonResponse(false, "关键字不能为空"))
+        }
+        if(path.isNullOrBlank()){
+            throw DataThrowable().data(JsonResponse(false, "路径不能为空"))
+        }
+        val file= File(path)
+        if(!file.exists()){
+            throw DataThrowable().data(JsonResponse(false, "文件夹不存在"))
+        }
+        if(!file.isDirectory){
+            throw DataThrowable().data(JsonResponse(false, "路径不是文件夹"))
+        }
+        val p=if (page ==null) 1 else page
+        val books = mutableListOf<Book>()
+        if(p == 1){
+            getname(file).forEach { k,v->
+                if(k.contains(key)){
+                    val book = Book.initLocalBook(v, v, "")
+                    books.add(book)
+                }
+            }
+            var books2 = mutableListOf<Book>()
+            if(books.size < 10){
+                books2=books;
+            }else{
+                books2=books.subList(0,10)
+                for (i in 2..10){
+                    if (i * 10 > books.size){
+                        val b=books.subList(i * 10-10,books.size)
+                        cacheService.store("searchlocalbook2:${path}${key}${i}",JsonResponse(true).Data(b),cachetime)
+                        break;
+                    }else{
+                        val b=books.subList(i * 10-10,i * 10)
+                        cacheService.store("searchlocalbook2:${path}${key}${i}",JsonResponse(true).Data(b),cachetime)
+                    }
+
+                }
+            }
+            JsonResponse(true).Data(books2)
+        }else{
+            JsonResponse(true).Data(books)
+        }
     }
 
     @Mapping("/getlocalbookinfo")

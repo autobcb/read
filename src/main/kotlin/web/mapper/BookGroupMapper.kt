@@ -9,7 +9,7 @@ import web.model.BookGroup
 interface BookGroupMapper : BaseMapper<BookGroup> {
 
 
-    @Select("SELECT * FROM book_group WHERE userid = #{id} ")
+    @Select("SELECT * FROM book_group WHERE userid = #{id} order by grouporder   asc ")
     fun getGroupbyuserid(@Param("id") id: String ): List<BookGroup>
 
     @Select("SELECT * FROM book_group WHERE bookgroup = #{bookgroup} and userid = #{id} LIMIT 1" )

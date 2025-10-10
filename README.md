@@ -58,6 +58,7 @@ macos代码是支持修改资源文件assets/images/package.txt从而修改包�
 
 # 独有函数
 ````
+java.qread() //永久返回1 ，用来判断是否为轻阅读
 java.getWebViewUANEW()   //获取机型真正的ua用以判断型号为了兼容性getWebViewUA函数值返回安卓ua。  
 java.getusePhone(urlStr: String, headers: Map<String, String>) //用法和java.get一致，但此函数会使用代理功能    
 java.headusePhone(urlStr: String, headers: Map<String, String>) //用法和java.head一致，但此函数会使用代理功能       
