@@ -33,3 +33,8 @@ default:
 server.http:
   coreThreads: x5 #默认线程
   maxThreads: x10  #最大线程
+# 如果不想日志输出到文件请把下面配置去除注解
+#solon.logging:
+#  appender:
+#    file:
+#      enable: false
