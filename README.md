@@ -159,6 +159,9 @@ services:
       # =========== HTTP 线程设置 ===========
       SERVER_HTTP_CORETHREADS: x5       #默认线程
       SERVER_HTTP_MAXTHREADS: x10       #最大线程
+      # =========== 日志输出 ===========
+      #如果不想日志输出到文件请把下面配置去除注解(3.3.0新增配置信息)
+      #DISABLE_LOG_TO_FILE: true
       # =========== 启动命令（必填：二选一）===========
       JAVA_CMD: java -jar /app/read.jar  #不使用代理启动
       #JAVA_CMD:  java  -Dhttp.proxyHost=127.0.0.1 -Dhttp.proxyPort=1080 -Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=1080 -jar /app/read.jar       #使用代理启动
