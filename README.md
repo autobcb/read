@@ -21,6 +21,12 @@ http://ip:8080/(web阅读)
 
 web端不支持cookie的保存，不支持webview，漫画或者图片或者听书链接回因资源服务器禁止跨域而无法显示，app版才支持cookie的保存
 
+# 演示后端
+https://qread.zeabur.app/     
+https://qread.zeabur.app/admin
+
+管理后台账号: admin 密码:adminadmin    
+演示后端随时可能停用或者还原 仅供演示请勿储存数据
 
 # 注意
 所以后端都为用户自行搭建，开发者不提供任何后端。如果需要开通权限请联系后端管理员！
