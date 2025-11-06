@@ -1,5 +1,6 @@
 package web.controller
 
+import kotlinx.coroutines.runBlocking
 import org.noear.solon.annotation.Controller
 import org.noear.solon.annotation.Inject
 import org.noear.solon.annotation.Mapping
@@ -8,6 +9,7 @@ import org.noear.solon.core.handle.ModelAndView
 import org.noear.solon.core.util.DataThrowable
 import org.noear.solon.data.cache.CacheService
 import org.noear.solon.web.cors.annotation.CrossOrigin
+import web.controller.api.ApiWebSocket
 import web.mapper.CodeMapper
 import web.mapper.UsersMapper
 import web.mapper.UsertockenMapper
@@ -116,7 +118,7 @@ class QApiController {
     }
 
     @Mapping("/changeSourcePermission")
-    fun changeSourcePermission(key: String?,username: String,permission: Int)=run {
+    fun changeSourcePermission(key: String?, username: String, permission: Int)=runBlocking {
         checkkey(key)
         val user: Users?=usersMapper.getUserByusername(username)
         if (user == null){
@@ -145,12 +147,13 @@ class QApiController {
                 throw DataThrowable().data(QJsonResponse(false).Msg("permission错误或者后端版本太低"))
             }
         }
+        ApiWebSocket.colseByuserid(user.id!!)
         QJsonResponse(true)
     }
 
 
     @Mapping("/changePermission")
-    fun changePermission(key: String?,username: String,permission: Int,allow: Boolean)=run {
+    fun changePermission(key: String?,username: String,permission: Int,allow: Boolean)=runBlocking {
         checkkey(key)
         val user: Users?=usersMapper.getUserByusername(username)
         if (user == null){
@@ -173,6 +176,7 @@ class QApiController {
                 throw DataThrowable().data(QJsonResponse(false).Msg("permission错误或者后端版本太低"))
             }
         }
+        ApiWebSocket.colseByuserid(user.id!!)
         QJsonResponse(true)
     }
 

@@ -1,9 +1,37 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
-  <meta char后台set="UTF-8">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>管理</title>
-
+  <style>
+    /* 移动端适配样式 */
+    @media screen and (max-width: 768px) {
+      .layui-nav {
+        padding: 0 5px;
+      }
+      
+      .layui-nav-item {
+        margin: 0;
+      }
+      
+      .layui-nav-item a {
+        padding: 0 10px !important;
+        font-size: 14px;
+        height: 50px;
+        line-height: 50px;
+      }
+      
+      .layui-nav-item:last-child {
+        margin-left: auto;
+      }
+      
+      /* 菜单紧凑显示 */
+      .layui-nav li {
+        margin: 0;
+      }
+    }
+  </style>
 </head>
 <link rel="stylesheet" href="/static/layui/css/layui.css">
 

@@ -2,7 +2,42 @@
 
 <#include "header.html">
 
-<div style="margin-left: 8%;margin-right: 8%; margin-top: 40px">
+<div style="margin-left: 2%;margin-right: 2%; margin-top: 20px">
+  <style>
+    /* 移动端适配样式 */
+    @media screen and (max-width: 768px) {
+      /* 调整搜索区域 */
+      .layui-input-block {
+        width: 100% !important;
+      }
+      
+      /* 按钮垂直排列 */
+      .layui-form-item .layui-inline {
+        display: block;
+        margin-bottom: 10px;
+        margin-left: 0 !important;
+      }
+      
+      /* 优化按钮尺寸和间距 */
+      .layui-form-item button {
+        width: 100%;
+        margin-left: 0 !important;
+        margin-bottom: 5px;
+      }
+      
+      /* 表格滚动容器 */
+      .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      
+      /* 按钮文本优化 */
+      .layui-btn-xs {
+        padding: 0 8px;
+        font-size: 12px;
+      }
+    }
+  </style>
   <div style="margin-left: 0px">
     <form class="layui-form" action="">
       <div class="layui-form-item">
@@ -24,8 +59,7 @@
 
   </div>
   <div>
-    <div>
-
+    <div class="table-responsive">
       <table lay-filter="InZDSeach" id="InZDSeach">
         <thead>
         <tr>
@@ -192,9 +226,12 @@
       if (obj.event === 'edit') {
         layer.open({
           type: 2,
-          title: false,
-          area: ['830px', '700px'],
-          content: ['/admin/adduser?id='+data.id,"no"] //这里content是一个URL，如果你不想让iframe出现滚动条，你还可以content: ['http://sentsin.com', 'no']
+          title: '新增用户',
+          area: ['200px', '200px'],
+          content: ['/admin/adduser?id='+data.id,"no"],
+          success: function(layero, index){
+            layer.full(index); // 最大化
+          }
         });
       }else  if (obj.event === 'del') {
         layer.confirm('真的删除 ['+ data.username +'] 么', function(index){
@@ -218,9 +255,12 @@
     $("#add").click(function () {
       layer.open({
         type: 2,
-        title: false,
-        area: ['830px', '700px'],
-        content: ['/admin/adduser',"no"] //这里content是一个URL，如果你不想让iframe出现滚动条，你还可以content: ['http://sentsin.com', 'no']
+        title: '新增用户',
+        area: ['200px', '200px'],
+        content: ['/admin/adduser',"no"] ,
+        success: function(layero, index){
+          layer.full(index); // 最大化
+        }
       });
 
     })

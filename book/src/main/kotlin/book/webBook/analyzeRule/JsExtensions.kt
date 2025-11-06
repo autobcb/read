@@ -276,7 +276,6 @@ interface JsExtensions: JsEncodeUtils  {
         return cookie?:""
     }
 
-
     fun startBrowserAwait(url: String,title: String, refetchAfterSuccess: Boolean): StrResponse = runBlocking {
         logger.info("跳转URL：$url")
 
@@ -316,6 +315,38 @@ interface JsExtensions: JsEncodeUtils  {
             ).getStrResponseAwait(useWebView = false)
         }
         re
+    }
+
+
+    fun startBrowserDp(url: String,title: String) = runBlocking {
+        logger.info("跳转URL：$url")
+
+        val headerMap : HashMap<String, String> = hashMapOf()
+        val headerMapF: HashMap<String, String> = hashMapOf()
+
+
+        val analyzeUrl = AnalyzeUrl(
+            url, source = getSource(),
+            debugLog = debugLog
+        )
+        val baseUrl = analyzeUrl.url
+        headerMap.putAll(analyzeUrl.headerMap)
+        headerMapF.putAll(analyzeUrl.headerMap)
+
+
+        runCatching {
+            val store=getSource()?.getCookieManger()
+            val cookie = (store?.getCookie(baseUrl))?:""
+            if (cookie.isNotEmpty()) {
+                store?.mergeCookies(cookie, headerMap["Cookie"])?.let {
+                    headerMap.put("Cookie", it)
+                }
+            }
+        }
+
+        val header= GSON.toJson(headerMap)
+        logger.info("header:$header")
+        App.startBrowserdp(baseUrl,title,getSource()?.usertocken?:"",header)
     }
 
     fun startBrowser(url: String, title: String) {
