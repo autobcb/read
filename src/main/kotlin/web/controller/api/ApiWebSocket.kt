@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory
 import web.mapper.UsersMapper
 import web.mapper.UsertockenMapper
 import web.util.ResponseManager
+import web.util.hash.Md5
 import java.io.IOException
 import kotlin.concurrent.thread
 
@@ -147,6 +148,12 @@ class ApiWebSocket : SimpleWebSocketListener() {
             socket.send(Gson().toJson(ToastMessage(msg = "logout", str="logout" )))
             socket.close()
             return
+        }
+        if((user.sourcemd5?:"").isEmpty() && user.source != 2){
+            user.sourcemd5=Md5(System.currentTimeMillis().toString())
+        }
+        if((user.rssmd5?:"").isEmpty() && user.source != 2){
+            user.rssmd5=Md5(System.currentTimeMillis().toString())
         }
         runBlocking {add(accessToken,socket,user.id!!)}
         runCatching {

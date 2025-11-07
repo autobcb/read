@@ -245,12 +245,15 @@ open class BookController:BaseController() {
         if(content.isEmpty()){
             throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         }
-        val books= GSON.fromJsonArray<Book>(content).getOrNull()?:listOf()
 
+        val books= GSON.fromJsonArray<Book>(content).getOrNull()?:listOf()
         var num=0
         runCatching {
             for (book in books){
                 if(book.origin == "loc_book"){
+                    continue
+                }
+                if(book.origin == "phone_book"){
                     continue
                 }
                 if (book.bookUrl.isBlank() || book.name.isBlank()){
@@ -284,6 +287,8 @@ open class BookController:BaseController() {
                     }
                 })
             }
+        }.onFailure {
+            it.printStackTrace()
         }
         web.notification.Book.sendNotification(user)
         JsonResponse(true, errorMsg = "共添加${num}本书")

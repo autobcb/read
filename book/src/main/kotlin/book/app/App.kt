@@ -7,6 +7,9 @@ object App  {
     var startBrowserAwait =fun  (urlStr: String,title: String,tocken:String,header:String): StrResponse {
         return StrResponse(urlStr,"")
     }
+    var startBrowserdp =fun  (urlStr: String,title: String,tocken:String,header:String) {
+
+    }
     var webview =fun  (html: String?, url: String?, js: String?,tocken:String,header:String,urlregex:String,overrideUrlRegex:String):StrResponse{
         return StrResponse(url?:"", "")
     }

@@ -48,6 +48,15 @@ class InitConfig {
             }
             return@runBlocking  StrResponse(urlStr,"")
         }
+        App.startBrowserdp=fun (urlStr: String, title: String, tocken:String, header:String) = runBlocking{
+            if(urlStr.isBlank())  return@runBlocking
+            val socket=ApiWebSocket.get(tocken)
+            if(socket!=null){
+                val id= UUID.randomUUID().toString()
+                logger.info("startBrowserdp ,url: $urlStr ,title: $title, tocken: $tocken ")
+                socket.send(Gson().toJson(WebMessage(msg = "startBrowserdp", url = urlStr,title=title,id=id, header = header )))
+            }
+        }
 
         App.webview=fun (html: String?, url: String?, js: String?, tocken:String, header:String,urlregex:String,overrideUrlRegex:String):StrResponse = runBlocking{
             if(url.isNullOrBlank() && html.isNullOrBlank())  return@runBlocking  StrResponse(url?:"","")

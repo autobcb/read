@@ -3,7 +3,46 @@
 <#include "header.html">
 
 
-<div style="margin-left: 8%;margin-right: 8%; margin-top: 40px">
+<div style="margin-left: 2%;margin-right: 2%; margin-top: 20px">
+  <style>
+    /* 移动端适配样式 */
+    @media screen and (max-width: 768px) {
+      /* 调整搜索区域 */
+      .layui-input-block {
+        width: 100% !important;
+        max-width: none !important;
+      }
+      
+      /* 按钮垂直排列 */
+      .layui-form-item .layui-inline {
+        display: block;
+        margin-bottom: 10px;
+        margin-left: 0 !important;
+      }
+      
+      /* 优化按钮尺寸和间距 */
+      .layui-form-item button {
+        width: 100%;
+        margin-left: 0 !important;
+        margin-bottom: 5px;
+      }
+      
+      /* 表格滚动容器 */
+      .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      
+      /* 按钮文本优化 */
+      .layui-btn-xs {
+        padding: 0 8px;
+        font-size: 12px;
+        margin-bottom: 3px;
+      }
+      
+
+    }
+  </style>
   <div style="margin-left: 0px">
     <form class="layui-form" action="">
       <div class="layui-form-item">
@@ -26,8 +65,7 @@
 
   </div>
   <div>
-    <div>
-
+    <div class="table-responsive">
       <table lay-filter="InZDSeach" id="InZDSeach">
         <thead>
         <tr>
