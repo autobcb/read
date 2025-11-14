@@ -26,6 +26,12 @@ import kotlin.concurrent.thread
 @ServerEndpoint("$routepath/ws")
 class ApiWebSocket : SimpleWebSocketListener() {
 
+    @Inject(value = "\${user.allowchange:false}", autoRefreshed=true)
+    var allowchange:Boolean=false
+
+    @Inject(value = "\${admin.gonggao:}", autoRefreshed=true)
+    var gonggao: String=""
+
     companion object{
         val logger: Logger = LoggerFactory.getLogger(ApiWebSocket::class.java)
         private var ma:MutableMap<String,WebSocketMap> = mutableMapOf()
@@ -190,6 +196,23 @@ class ApiWebSocket : SimpleWebSocketListener() {
                 msg = "groundmd5",
                 md5 =user.groundmd5?:"",
             )))
+            if(allowchange){
+                socket.send(Gson().toJson(Md5Message(
+                    msg = "allowchange",
+                    md5 = "${user.source}",
+                )))
+            }else{
+                socket.send(Gson().toJson(Md5Message(
+                    msg = "allowchange",
+                    md5 = "1",
+                )))
+            }
+            if(gonggao.isNotBlank()){
+                socket.send(Gson().toJson(Md5Message(
+                    msg = "gonggao",
+                    md5 = gonggao,
+                )))
+            }
         }
 
     }

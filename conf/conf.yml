@@ -5,10 +5,12 @@ solon.dataSources:
     jdbcUrl: jdbc:sqlite:read.db
     maxPoolSize: 1
 admin:
+  gonggao: ""  #填写公告后 app 每次开启时都会弹出
   username: "admin"
   password: "adminadmin"
   code: "" #需要填写app管理后台生成的密钥
 user:
+  allowchange: true  #是否允许自助修改权限 允许 true 不允许 false
   allowuptxt: false  #是否允许上传txt 允许 true 不允许 false
   allowimg: false  #是否使用图片解密 允许 true 不允许 false
   allowcheck: false  #是否允许检验书源 允许 true 不允许 false
