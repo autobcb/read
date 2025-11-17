@@ -136,12 +136,14 @@ services:
       DB_PASSWORD: 密码
 
       # =========== admin 用户设置 ===========
+      #ADMIN_GONGGAO: 这是一个公告        #填写公告后 app 每次开启时都会弹出
       ADMIN_USERNAME: admin             #后台管理员账户
       ADMIN_PASSWORD: adminadmin        #后台管理员密码
       #3.1.0更新配置信息
       #ADMIN_CODE:                       # 需要填写app管理后台生成的密钥
 
       # =========== user 设置 ===========
+      USER_ALLOWCHANGE: "true "         #是否允许自助修改权限 允许 true 不允许 false
       USER_ALLOWUPTXT: "false"          #是否允许上传txt 允许 true 不允许 false
       USER_ALLOWCACHE: "false"          #是否允许添加缓存 允许 true 不允许 false
       USER_ALLOWIMG: "false"            #是否使用图片解密 允许 true 不允许 false
