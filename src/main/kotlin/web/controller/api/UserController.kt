@@ -1,6 +1,8 @@
 package web.controller.api
 
+import kotlinx.coroutines.runBlocking
 import org.noear.solon.annotation.Controller
+import org.noear.solon.annotation.Inject
 import org.noear.solon.annotation.Mapping
 import org.noear.solon.annotation.Path
 import org.noear.solon.core.util.DataThrowable
@@ -21,7 +23,34 @@ open class UserController:BaseController() {
         appversion
     }
 
+    @Inject(value = "\${user.allowchange:false}", autoRefreshed=true)
+    var allowchange:Boolean=false
 
+    @Mapping("/changeSourcePermission")
+    open fun changeSourcePermission( accessToken:String?, permission: Int)= runBlocking{
+        val user=getuserbytocken(accessToken)
+        if(!allowchange || user.source == 1){
+            throw DataThrowable().data(QJsonResponse(false).Msg("不允许权限"))
+        }
+        when (permission) {
+            0->{
+                //不允许修改书源
+                usersMapper.updatesource(user.id!!,0)
+            }
+            1 ->{
+                throw DataThrowable().data(QJsonResponse(false).Msg("不允许修改到此权限"))
+            }
+            2->{
+                //独立书源
+                usersMapper.updatesource(user.id!!,2)
+            }
+            else -> {
+                throw DataThrowable().data(QJsonResponse(false).Msg("permission错误或者后端版本太低"))
+            }
+        }
+        ApiWebSocket.colseByuserid(user.id!!)
+        JsonResponse(true)
+    }
 
     @Mapping("/login")
     fun login(username:String? , password:String? , model:String?,@Path v:Int) = run {

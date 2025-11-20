@@ -12,6 +12,7 @@ user:
   allowuptxt: true  #是否允许上传txt 允许 true 不允许 false
   allowcache: true  #是否允许添加缓存 允许 true 不允许 false
 
+
 smtp:
   host:  #smtp邮箱host
   protocols: TLSv1.2 #通讯协议

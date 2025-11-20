@@ -112,7 +112,7 @@ open class SourceController:BaseController() {
 
         if(user.source == 2 && maxsource > 0){
             val list= userBookSourceMapper.getallBookSourcelist(user.id!!)?:listOf()
-            if(list.size > maxsource){
+            if(list.size +(bookSourcelist?:listOf<String>()).size> maxsource){
                 throw DataThrowable().data(JsonResponse(false, MAX_ERROR))
             }
         }
@@ -139,8 +139,8 @@ open class SourceController:BaseController() {
             list=GSON.fromJsonArray<String>(urls).getOrNull()?:listOf()
         }
         if(user.source == 2 && maxsource > 0){
-            val list= userBookSourceMapper.getallBookSourcelist(user.id!!)?:listOf()
-            if(list.size > maxsource){
+            val list2= userBookSourceMapper.getallBookSourcelist(user.id!!)?:listOf()
+            if(list2.size +list.size > maxsource){
                 throw DataThrowable().data(JsonResponse(false, MAX_ERROR))
             }
         }

@@ -169,6 +169,7 @@ open class ReadController : BaseController() {
                                 }else{
                                     booklistMapper.updatetimefail(book.id!!,lastCheckTime,lastCheckCount)
                                 }
+                                web.notification.Book.sendNotification(user)
                             }
                         }
                         chapters=it
