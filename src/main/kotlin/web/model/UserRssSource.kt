@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.annotation.TableId
 import com.google.gson.Gson
 import org.dromara.autotable.annotation.AutoTable
 import org.dromara.autotable.annotation.ColumnType
+import org.dromara.autotable.annotation.Index
 import org.dromara.autotable.annotation.PrimaryKey
 import org.noear.snack.annotation.ONodeAttr
 import web.util.hash.Md5
@@ -18,7 +19,7 @@ class UserRssSource {
     @TableId
     @PrimaryKey
     var id : String? =null
-
+    @Index
     var userid : String? =null
 
     @ColumnType(value = "LONGTEXT")

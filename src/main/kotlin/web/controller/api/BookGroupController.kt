@@ -2,6 +2,7 @@ package web.controller.api
 
 import book.util.GSON
 import book.util.fromJsonArray
+import org.noear.solon.annotation.Body
 import org.noear.solon.annotation.Controller
 import org.noear.solon.annotation.Inject
 import org.noear.solon.annotation.Mapping
@@ -133,6 +134,36 @@ open class BookGroupController:BaseController() {
             }
         }!!
         booklistMapper.changebookgroup(book.id!!,name?:"")
+        Book.sendNotification(user)
+        JsonResponse(true)
+    }
+
+
+    @Tran
+    @Mapping("/setgroups")
+    open fun setgroups( accessToken:String?,name:String?, @Body ids: List<String>?)=run{
+        val user=getuserbytocken(accessToken)
+        if (ids.isNullOrEmpty()){
+            throw DataThrowable().data(JsonResponse(false,NOT_BANK))
+        }
+        if (ygroup.contains(name)) {
+            throw DataThrowable().data(JsonResponse(false, GROUP_NOT_EDIT))
+        }
+        if(name != null && name != "全部"){
+            bookGroupMapper.getGroupbyName(user.id!!,name).also {
+                if(it == null){
+                    throw DataThrowable().data(JsonResponse(false, NOT_IS))
+                }
+            }!!
+        }
+        for (url in ids){
+            val book=booklistMapper.getbook(user.id!!,url)
+            if(book == null){
+                continue;
+            }
+            booklistMapper.changebookgroup(book.id!!,name?:"")
+        }
+
         Book.sendNotification(user)
         JsonResponse(true)
     }
