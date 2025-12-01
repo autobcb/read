@@ -4,6 +4,7 @@ import book.model.HttpTTS
 import com.baomidou.mybatisplus.annotation.TableId
 import org.dromara.autotable.annotation.AutoTable
 import org.dromara.autotable.annotation.ColumnType
+import org.dromara.autotable.annotation.Index
 import org.dromara.autotable.annotation.PrimaryKey
 import web.util.hash.Md5
 
@@ -12,6 +13,7 @@ class HttpTts {
     @TableId
     @PrimaryKey
     var id : String? =null
+    @Index
     var userid : String? =null
     var name: String  =""
     @ColumnType(value = "LONGTEXT")

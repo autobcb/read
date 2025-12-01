@@ -410,6 +410,30 @@ open class BookController:BaseController() {
        JsonResponse(true,SUCCESS)
     }
 
+
+    @Mapping("/deleteBooks")
+    open fun deleteBooks( accessToken:String?,@Body ids: List<String>?)= runBlocking{
+        val user=getuserbytocken(accessToken)
+        if (ids.isNullOrEmpty()){
+            throw DataThrowable().data(JsonResponse(false,NOT_BANK))
+        }
+        for ( id in ids){
+            val booktolist=booklistMapper.getbook(user.id!!,id)
+            if(booktolist == null){
+                continue;
+            }
+            if (booktolist.origin == "loc_book"){
+                val file= File(booktolist.bookUrl!!)
+                if (file.exists()){
+                    file.delete()
+                }
+            }
+            booklistMapper.deleteById(booktolist.id!!)
+        }
+        web.notification.Book.sendNotification(user)
+        JsonResponse(true,SUCCESS)
+    }
+
     @Mapping("/updateuseReplaceRule")
     fun  updateuseReplaceRule( accessToken:String?, url: String ,useReplaceRule:Int?){
         val user=getuserbytocken(accessToken)

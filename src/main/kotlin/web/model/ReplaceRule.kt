@@ -4,6 +4,7 @@ package web.model
 import com.baomidou.mybatisplus.annotation.TableId
 import org.dromara.autotable.annotation.AutoTable
 import org.dromara.autotable.annotation.ColumnType
+import org.dromara.autotable.annotation.Index
 import org.dromara.autotable.annotation.PrimaryKey
 import web.util.hash.Md5
 
@@ -14,6 +15,7 @@ class ReplaceRule {
     @PrimaryKey
     var id : String? =null
 
+    @Index
     var userid : String? =null
     //名称
     var name: String = ""

@@ -16,6 +16,7 @@ class Booklist {
     @TableId
     @PrimaryKey
     var id : String? = null
+    @Index
     var userid : String? = null                    //用户id
     @ColumnType(value = "MEDIUMTEXT")
     var bookUrl: String? = null                   // 详情页Url(本地书源存储完整文件路径)

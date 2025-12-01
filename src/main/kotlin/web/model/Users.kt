@@ -4,6 +4,7 @@ package web.model
 import com.baomidou.mybatisplus.annotation.TableId
 import org.dromara.autotable.annotation.AutoTable
 import org.dromara.autotable.annotation.ColumnNotNull
+import org.dromara.autotable.annotation.Index
 import org.dromara.autotable.annotation.PrimaryKey
 import org.dromara.autotable.annotation.TableIndex
 import org.dromara.autotable.annotation.enums.IndexTypeEnum
@@ -42,7 +43,7 @@ class Users {
                 field
             }
         }
-
+    @Index
     var email: String? = null
 
     var code: String? = null
