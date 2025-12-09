@@ -1,21 +1,44 @@
-#!/bin/bash
+#!/bin/sh
 set -euo pipefail
 
 CONFIG_FILE=/app/conf.yml
-mkdir -p /data
+APP_DIR=/app
+DATA_DIR=/data
+SOURCE_DIR=/app_default   # 镜像中保留的原始文件副本（在构建时复制进去）
+
+mkdir -p "$DATA_DIR"
+
+echo "[INFO] === 启动前清理与同步最新文件 ==="
+
+# ==========================================================
+# 自动清理宿主机旧文件并更新
+# ==========================================================
+if [[ -d "$APP_DIR/libs" || -f "$APP_DIR/read.jar" ]]; then
+    echo "[INFO] 删除宿主机旧的 libs/ 与 read.jar"
+    rm -rf "$APP_DIR/libs" "$APP_DIR/read.jar"
+fi
+
+# 从镜像内置文件复制最新版本
+if [[ -d "$SOURCE_DIR" ]]; then
+    echo "[INFO] 同步最新程序文件..."
+    cp -r "$SOURCE_DIR/libs" "$APP_DIR/" 2>/dev/null || true
+    cp "$SOURCE_DIR/read.jar" "$APP_DIR/" 2>/dev/null || true
+else
+    echo "[WARN] 未找到镜像内默认文件目录 $SOURCE_DIR，跳过更新"
+fi
 
 # ==========================================================
 # 下载 read.jar（若不存在）
 # ==========================================================
-if [[ ! -f /app/read.jar ]]; then
-    echo "[INFO] read.jar 不存在，下载中..."
+if [[ ! -f "$APP_DIR/read.jar" ]]; then
+    echo "[INFO] read.jar 不存在，尝试从 DOWNLOAD_URL 下载..."
     if [[ -z "${DOWNLOAD_URL:-}" ]]; then
-        echo "[ERROR] DOWNLOAD_URL 未设置"
+        echo "[ERROR] DOWNLOAD_URL 未设置，无法下载 read.jar"
         exit 1
     fi
     wget --no-check-certificate -O /tmp/web.zip "$DOWNLOAD_URL"
     unzip -q /tmp/web.zip -d /tmp/web_temp
-    cp -r /tmp/web_temp/* /app/
+    cp -r /tmp/web_temp/* "$APP_DIR/"
     rm -rf /tmp/web.zip /tmp/web_temp
 fi
 
@@ -24,7 +47,7 @@ fi
 # ------------------------------
 if [[ -f $CONFIG_FILE ]]; then
   echo "[INFO] 删除镜像内置的 $CONFIG_FILE"
-  rm -f $CONFIG_FILE
+  rm -f "$CONFIG_FILE"
 fi
 
 # ------------------------------
@@ -81,8 +104,9 @@ default:
   rule: "${DEFAULT_RULE:-}"
 
 server.http:
-  coreThreads: "${SERVER_HTTP_CORETHREADS:-x5}"
-  maxThreads: "${SERVER_HTTP_MAXTHREADS:-x10}"
+  coreThreads: "x${SERVER_HTTP_CORETHREADS:-5}"
+  maxThreads: "x${SERVER_HTTP_MAXTHREADS:-10}"
+
 EOF
     } > "$CONFIG_FILE"
 else
@@ -101,4 +125,5 @@ fi
 # ------------------------------
 # 启动应用
 # ------------------------------
-exec java -jar /app/read.jar
+echo "[INFO] 启动 read.jar..."
+exec java -jar "$APP_DIR/read.jar"
