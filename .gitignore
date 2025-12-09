@@ -53,3 +53,9 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+test/
+# 备份文件
+*.bak
+#docker文件
+Dockerfile
+conf.yml.template
