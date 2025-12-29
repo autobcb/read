@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  # MySQL 服务
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_for_migration
+    restart: always
+    environment:
+      # 重要：请将这里的密码和数据库名替换为您自己的
+      MYSQL_ROOT_PASSWORD: your_mysql_root_password
+      MYSQL_DATABASE: your_new_database_name
+    ports:
+      # 将容器的 3306 端口映射到主机的 3306 端口，方便外部工具连接
+      - "3306:3306"
+    volumes:
+      # 将 MySQL 数据持久化到本地，防止容器删除后数据丢失
+      - mysql_data:/var/lib/mysql
+    networks:
+      - migration-net
+
+  # 数据库迁移脚本服务
+  migration:
+    build: .
+    container_name: db_migration_script
+    volumes:
+      # 将当前目录挂载到容器中，这样修改 config.ini 无需重新构建镜像
+      - .:/app
+    depends_on:
+      # 确保 mysql 服务完全启动并准备好接受连接后，再启动本服务
+      mysql:
+        condition: service_healthy
+    networks:
+      - migration-net
+
+# 定义网络
+networks:
+  migration-net:
+    driver: bridge
+
+# 定义数据卷
+volumes:
+  mysql_data:
