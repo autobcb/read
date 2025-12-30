@@ -501,7 +501,7 @@ open class ReadController : BaseController() {
             if (it.durChapterPos == null) {
                 it.durChapterPos = 0.0
             }
-            if (it.durChapterPos!! < 0) {
+            if (it.durChapterPos!! > 2 || it.durChapterPos!! < 0) {
                 it.durChapterPos = 0.0
             }
         }
