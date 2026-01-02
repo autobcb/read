@@ -52,21 +52,27 @@ jobs:
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
         with:
+          # 如果是 tag 则使用 tag 名，如果是手动触发则使用 CI-分支名
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('CI-{0}', github.ref_name) }}
+          name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('CI-{0}', github.ref_name) }}
           files: read-server.zip
           body: |
             ## 轻阅读服务端自动构建产物
             
+            ### 构建信息：
+            - 构建类型: ${{ startsWith(github.ref, 'refs/tags/') && '正式发布 (Tag)' || '手动/CI 构建' }}
+            - 分支/标签: `${{ github.ref_name }}`
+            - 构建时间: ${{ github.event.head_commit.timestamp || 'N/A' }}
+            
             ### 包含内容：
             - `read.jar`: 服务端核心程序
-            - `libs/`: 外部依赖库（运行时必须保持同级）
-            - `conf.yml.example`: 配置模板
+            - `libs/`: 外部依赖库
             
             ### 运行方法：
             `java -jar read.jar`
           draft: false
-          prerelease: false
+          prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
