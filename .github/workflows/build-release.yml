@@ -24,16 +24,14 @@ jobs:
           cache: 'gradle'
 
       - name: Grant execute permission for gradlew
-        run: chmod +x read/gradlew
+        run: chmod +x gradlew
 
       - name: Build with Gradle
         run: |
-          cd read
           ./gradlew build -x test --no-daemon
 
       - name: Package Artifacts
         run: |
-          cd read
           mkdir -p release_dist
           # 拷贝主 Jar
           cp build/libs/solon-read-1.0-SNAPSHOT.jar release_dist/read.jar
@@ -49,7 +47,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: read/read-server.zip
+          files: read-server.zip
           body: |
             ## 轻阅读服务端自动构建产物
             
