@@ -43,6 +43,13 @@ jobs:
           cd release_dist
           zip -r ../read-server.zip .
 
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: read-server-build
+          path: read-server.zip
+          retention-days: 7
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
