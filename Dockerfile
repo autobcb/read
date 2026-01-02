@@ -35,4 +35,4 @@ COPY --from=build /build/libs/ ./libs/
 EXPOSE 8080
 
 # 启动命令
-ENTRYPOINT ["java", "-Dfile.encoding=UTF-8", "-jar", "read.jar"]
+ENTRYPOINT ["java", "-Dfile.encoding=UTF-8", "-jar", "/app/read.jar"]

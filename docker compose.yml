@@ -7,6 +7,7 @@ services:
     restart: unless-stopped
     ports:
       - "4321:8080"
+    command: java -Dfile.encoding=UTF-8 -jar /app/read.jar
     volumes:
       # 映射配置文件，方便直接修改
       - ./conf.yml:/app/conf.yml

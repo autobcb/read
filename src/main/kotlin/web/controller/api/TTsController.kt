@@ -177,9 +177,9 @@ open class TTsController : BaseController() {
     fun tts(ctx: Context, accessToken:String?, id: String?, speakText:String?, speechRate:Double?)= runBlocking{
         val user = getuserbytocken(accessToken)
         if(id.isNullOrBlank() || speakText.isNullOrBlank() ) throw Exception(NOT_BANK)
-        var rate=speechRate?:5.0
-        if (rate < 5) rate=5.0
-        if(rate > 50) rate=50.0
+        var rate=speechRate?:100.0
+        if (rate < 50) rate=50.0
+        if(rate > 300) rate=300.0
         val tts= (httpTTSMapper.selectById(id)?:throw Exception(NOT_BANK)).totts()
         tts.userid=user.id
         tts.usertocken=accessToken
