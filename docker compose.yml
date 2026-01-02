@@ -2,58 +2,27 @@ version: '3.8'
 
 services:
   read:
-    image: li79430/read:3.3.0
+    build: .
     container_name: read
     restart: unless-stopped
     ports:
       - "4321:8080"
     volumes:
-      - /home/jonney/docker_data/read:/app
+      # 映射配置文件，方便直接修改
+      - ./conf.yml:/app/conf.yml
+      # 映射图片资源目录
+      - ./png:/app/png
+      # 映射数据库文件（针对 SQLite 模式）
+      - ./read.db:/app/read.db
+      # 映射存储目录（如果是本地上传的书籍）
+      - ./storage:/app/storage
     environment:
       TZ: Asia/Shanghai
-
-      # =========== 数据库设置 ===========
-      DB_TYPE: mysql
-      DB_JDBCURL: jdbc:mysql://mysql:3306/read?characterEncoding=UTF-8&allowMultiQueries=true&serverTimezone=UTC
-      DB_USERNAME: read
-      DB_PASSWORD: 794300
-
-      # =========== admin 用户设置 ===========
-      ADMIN_USERNAME: li79430
-      ADMIN_PASSWORD: 794300
-      #ADMIN_CODE: myadmincode
-
-      # =========== user 设置 ===========
-      USER_ALLOWUPTXT: "true"
-      USER_ALLOWCACHE: "true"
-      USER_ALLOWIMG: "false"
-      USER_ALLOWCHECK: "false"
-      USER_SOURCE: "0"
-      USER_MAXSOURCE: "0"
-      USER_TIMEOUT: "0"
-
-      #===========  SMTP 邮件设置 ===========
-      #SMTP_HOST:
-      #SMTP_PROTOCOLS: TLSv1.2
-      #SMTP_PORT:
-      #SMTP_ACCOUNT:
-      #SMTP_PASSWORD:
-      #SMTP_PERSONAL:
-      #SMTP_CODESUBJECT: 验证码
-
-      # =========== 默认设置 ===========
-      #DEFAULT_TTS:
-      #DEFAULT_RULE:
-
-      # =========== HTTP 线程设置 ===========
-      #SERVER_HTTP_CORETHREADS: 5
-      #SERVER_HTTP_MAXTHREADS: 10
-
-      # =========== 启动命令 ===========
-      #JAVA_CMD: java -jar /app/read.jar
+      # 如果需要通过环境变量覆盖配置，可以在此添加
+      # 例如：DB_JDBCURL: jdbc:mysql://...
     networks:
       - read
 
 networks:
   read:
-    drive: bridge
+    driver: bridge

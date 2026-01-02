@@ -1,0 +1,13 @@
+.git
+.gradle
+build
+.idea
+conf
+png
+*.log
+Dockerfile
+docker compose.yml
+entrypoint.sh
+gradlew.bat
+*.jks
+*.p12

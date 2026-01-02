@@ -1,0 +1,32 @@
+# Stage 1: Build
+FROM eclipse-temurin:22-jdk-alpine AS build
+# 安装 git
+RUN apk add --no-cache git
+WORKDIR /build
+
+# 定义仓库地址和分支变量
+ARG REPO_URL=https://github.com/QQ-War/read.git
+ARG BRANCH=main
+
+# 1. 克隆源码并构建
+RUN git clone --depth 1 -b $BRANCH $REPO_URL . && \
+    chmod +x gradlew && \
+    ./gradlew build -x test --no-daemon
+
+# Stage 2: Runtime
+FROM eclipse-temurin:22-jre-alpine
+ENV TZ=Asia/Shanghai
+WORKDIR /app
+
+RUN apk add --no-cache tzdata fontconfig ttf-dejavu && \
+    ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && \
+    echo $TZ > /etc/timezone
+
+# 2. 拷贝构建产物
+COPY --from=build /build/build/libs/solon-read-1.0-SNAPSHOT.jar ./read.jar
+COPY --from=build /build/libs/ ./libs/
+
+EXPOSE 8080
+
+ENTRYPOINT ["java", "-Dfile.encoding=UTF-8", "-jar", "read.jar"]
+

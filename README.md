@@ -100,90 +100,190 @@ F11 无边框 F12恢复边框(仅windows支持)
 F10 最小话 F9 显示app(windows 和macos 支持)
 
 
-# 快速部署
-将后端文件（下载web*.zip）上传到root目录，确保root/read/read.jar存在，确保root/read/conf.yml存在（conf.yml中可修改后台管理的账号密码），然后安装docker,
-网上有一键安装脚本可自行百度，docker一键部署命令如下，如需用mysql数据库请自行修改配置文件。
-````
-docker run -tid  -e TZ=Asia/Shanghai --name read  -v /root/read:/app --net=host --restart=always docker.1ms.run/openjdk:22-rc-oracle java -jar /app/read.jar
-````
-如需使用其他端口可修改启动命令为 java  -Dserver.port=端口  -jar /app/read.jar 。当然/root/read可以换成其他路径，只要确保这个路径下有read.jar和conf.yml。
-需要需要使用代理可将启动命令修改为
-````
- java  -Dhttp.proxyHost=127.0.0.1 -Dhttp.proxyPort=1080 -Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=1080 -jar /app/read.jar
-````
-# Docker Compose 部署方式（感谢Lin-max1032制作的镜像）
-你也可以使用 docker-compose 更方便地管理和启动服务。请在你的服务器上新建一个 docker-compose.yml 文件，内容如下：
-````
+# Docker 部署与构建
+
+
+
+
+
+本项目提供了两种 Docker 构建方式，您可以根据需求选择：
+
+
+
+
+
+### 1. 自动构建并运行 (推荐)
+
+
+如果您已经拉取了本仓库源码，可以直接使用 `docker-compose` 一键编译并启动：
+
+
+```bash
+
+
+# 进入 read 目录
+
+
+docker compose up --build -d
+
+
+```
+
+
+该方式会自动完成 **源码编译 -> Jar 打包 -> 镜像构建 -> 容器启动**。
+
+
+
+
+
+### 2. 构建方式说明
+
+
+*   **本地构建 (Dockerfile)**: 适用于本地开发环境，直接将当前目录源码拷入容器编译。
+
+
+*   **远程 Git 构建 (Dockerfile.git)**: 适用于服务器环境，构建时自动从 GitHub 拉取最新代码。
+
+
+    ```bash
+
+
+    # 使用远程代码构建
+
+
+    docker build -f Dockerfile.git -t read-app:git .
+
+
+    ```
+
+
+
+
+
+# Docker Compose 部署配置
+
+
+建议使用以下 `docker-compose.yml` 结构，它支持本地编译并实现了配置与数据的持久化：
+
+
+
+
+
+````yaml
+
+
 version: '3.8'
+
+
+
+
 
 services:
 
-  qread:
-    image: linmax/read:latest
-    container_name: qread
+
+  read:
+
+
+    build: .
+
+
+    container_name: read
+
+
     restart: unless-stopped
+
+
     ports:
-      - "8080:8080"                     #根据需求设置
+
+
+      - "4321:8080"                     # 宿主机端口:容器端口
+
+
     volumes:
-      - ./appdata:/app
+
+
+      # 映射配置文件，方便直接在宿主机修改
+
+
+      - ./conf.yml:/app/conf.yml
+
+
+      # 映射图片资源目录
+
+
+      - ./png:/app/png
+
+
+      # 映射数据库文件（持久化阅读进度）
+
+
+      - ./read.db:/app/read.db
+
+
+      # 映射本地书籍存储目录
+
+
+      - ./storage:/app/storage
+
+
     environment:
-      TZ: Asia/Shanghai                 #设置时区为上海
 
-      # =========== 数据库设置 ===========
-      DB_TYPE: sqlite                   #设置为mysql时数据库设置生效，设置为sqlite时数据库设置不生效
-      DB_JDBCURL: jdbc:mysql://127.0.0.1:3306/数据库名?characterEncoding=UTF-8&allowMultiQueries=true&serverTimezone=UTC
-      DB_USERNAME: 用户名
-      DB_PASSWORD: 密码
 
-      # =========== admin 用户设置 ===========
-      #ADMIN_GONGGAO: 这是一个公告        #填写公告后 app 每次开启时都会弹出
-      ADMIN_USERNAME: admin             #后台管理员账户
-      ADMIN_PASSWORD: adminadmin        #后台管理员密码
-      #3.1.0更新配置信息
-      #ADMIN_CODE:                       # 需要填写app管理后台生成的密钥
+      TZ: Asia/Shanghai
 
-      # =========== user 设置 ===========
-      USER_ALLOWCHANGE: "true "         #是否允许自助修改权限 允许 true 不允许 false
-      USER_ALLOWUPTXT: "false"          #是否允许上传txt 允许 true 不允许 false
-      USER_ALLOWCACHE: "false"          #是否允许添加缓存 允许 true 不允许 false
-      USER_ALLOWIMG: "false"            #是否使用图片解密 允许 true 不允许 false
-      USER_ALLOWCHECK: "false"          #是否允许检验书源 允许 true 不允许 false
-      USER_SOURCE: "0"                  # 0: 不允许修改书源, 1: 允许后台修改, 2: 独立书源
-      USER_MAXSOURCE: "0"               # 最大书源数量，0 表示不限制
-      USER_TIMEOUT: "0"                 #10分钟内除发多少次timeout禁用书源 0 为不限制
-      #3.2.0新增配置信息
-      USER_PROXYPNG: "false"             #是否代理封面
 
-      #===========  SMTP 邮件设置 ===========
-      #SMTP_HOST:                       #smtp邮箱host
-      #SMTP_PROTOCOLS: TLSv1.2          #通讯协议
-      #SMTP_PORT:                       #端口
-      #SMTP_ACCOUNT:                    #邮箱账号
-      #SMTP_PASSWORD:                   #邮箱密码，部分邮箱是安全码
-      #SMTP_PERSONAL:                   #发送人的昵称
-      #SMTP_CODESUBJECT: 验证码          #验证码邮件的主题
-      # =========== 默认设置 ===========
-      #DEFAULT_TTS:                     #默认tts链接
-      #DEFAULT_RULE:                    #默认净化链接
-      # =========== HTTP 线程设置 ===========
-      SERVER_HTTP_CORETHREADS: x5       #默认线程
-      SERVER_HTTP_MAXTHREADS: x10       #最大线程
-      # =========== 日志输出 ===========
-      #如果不想日志输出到文件请把下面配置去除注解(3.3.0新增配置信息)
-      #DISABLE_LOG_TO_FILE: true
-      # =========== 启动命令（必填：二选一）===========
-      JAVA_CMD: java -jar /app/read.jar  #不使用代理启动
-      #JAVA_CMD:  java  -Dhttp.proxyHost=127.0.0.1 -Dhttp.proxyPort=1080 -Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=1080 -jar /app/read.jar       #使用代理启动
+    networks:
+
+
+      - read
+
+
+
+
+
+networks:
+
+
+  read:
+
+
+    driver: bridge
+
+
 ````
-使用步骤     
-安装 docker-compose（大多数新版本 Docker 已自带）。    
-将上面的内容保存为 docker-compose.yml。   
-在该目录下执行：   
-docker-compose up -d   
-查看日志：   
-docker-compose logs -f   
-停止服务：   
-docker-compose down
+
+
+
+
+
+### 部署步骤
+
+
+1.  确保目录下存在 `conf.yml`（可参考 `src/main/resources/conf.yml` 模板）。
+
+
+2.  执行 `docker compose up -d`。
+
+
+3.  如需更新代码，执行 `docker compose up --build -d`。
+
+
+
+
+
+# 快速部署 (旧方式)
+
+
+如果您希望直接运行预编译的镜像，可以使用：
+
+
+````
+
+
+docker run -tid  -e TZ=Asia/Shanghai --name read  -v /root/read:/app --net=host --restart=always docker.1ms.run/openjdk:22-rc-oracle java -jar /app/read.jar
+
+
+````
 
 # 反向代理
 如果需要使用nginx反向代理后端必须要注意websocket配置，目前websocket有四个：    
