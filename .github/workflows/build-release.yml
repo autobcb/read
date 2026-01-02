@@ -1,0 +1,67 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*' # 触发条件：推送 v 开头的标签，如 v3.3.5
+  workflow_dispatch: # 支持手动触发构建
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # 必须赋予写权限才能创建 Release
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 22
+        uses: actions/setup-java@v4
+        with:
+          java-version: '22'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x read/gradlew
+
+      - name: Build with Gradle
+        run: |
+          cd read
+          ./gradlew build -x test --no-daemon
+
+      - name: Package Artifacts
+        run: |
+          cd read
+          mkdir -p release_dist
+          # 拷贝主 Jar
+          cp build/libs/solon-read-1.0-SNAPSHOT.jar release_dist/read.jar
+          # 拷贝依赖库
+          cp -r libs release_dist/
+          # 拷贝配置模板
+          cp src/main/resources/conf.yml release_dist/conf.yml.example
+          # 打包
+          cd release_dist
+          zip -r ../read-server.zip .
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: read/read-server.zip
+          body: |
+            ## 轻阅读服务端自动构建产物
+            
+            ### 包含内容：
+            - `read.jar`: 服务端核心程序
+            - `libs/`: 外部依赖库（运行时必须保持同级）
+            - `conf.yml.example`: 配置模板
+            
+            ### 运行方法：
+            `java -jar read.jar`
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

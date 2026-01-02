@@ -57,9 +57,6 @@ open class BookshelfController:BaseController() {
                 it.durChapterPos = 0.0
             }
             it.readchapter=""
-            if (it.durChapterPos!! > 2 || it.durChapterPos!! < 0) {
-                it.durChapterPos = 0.0
-            }
             if(list.size < 50){
                 list.add(it)
             }else{

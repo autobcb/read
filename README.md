@@ -102,224 +102,78 @@ F10 最小话 F9 显示app(windows 和macos 支持)
 
 # Docker 部署与构建
 
-
-
-
-
 本项目提供了两种 Docker 构建方式，您可以根据需求选择：
-
-
-
-
 
 ### 1. 自动构建并运行 (推荐)
 
-
 如果您已经拉取了本仓库源码，可以直接使用 `docker-compose` 一键编译并启动：
 
-
 ```bash
-
-
 # 进入 read 目录
-
-
 docker compose up --build -d
-
-
 ```
-
 
 该方式会自动完成 **源码编译 -> Jar 打包 -> 镜像构建 -> 容器启动**。
 
-
-
-
-
 ### 2. 构建方式说明
 
-
-
-
-
 *   **本地构建 (Dockerfile)**: 适用于本地开发环境，直接将当前目录源码拷入容器编译。
-
-
-
-
-
 *   **远程 Git 构建 (Dockerfile.git)**: 适用于服务器环境，构建时自动从 GitHub 拉取最新代码。
 
-
-
-
-
     ```bash
-
-
-
-
-
     # 使用远程代码构建
-
-
-
-
-
     docker build -f Dockerfile.git -t read-app:git .
 
-
-
-
-
-    
-
-
-
-
-
     # 提示：如果 GitHub 代码有更新，但 Docker 走了缓存没有重新拉取，请使用以下命令强制刷新：
-
-
-
-
-
     docker build -f Dockerfile.git --build-arg CACHE_BUST=$(date +%s) -t read-app:git .
-
-
-
-
-
     ```
-
-
-
-
 
 # Docker Compose 部署配置
 
-
 建议使用以下 `docker-compose.yml` 结构，它支持本地编译并实现了配置与数据的持久化：
 
-
-
-
-
-````yaml
-
-
+```yaml
 version: '3.8'
 
-
-
-
-
 services:
-
-
   read:
-
-
     build: .
-
-
     container_name: read
-
-
     restart: unless-stopped
-
-
     ports:
-
-
       - "4321:8080"                     # 宿主机端口:容器端口
-
-
     volumes:
-
-
       # 映射配置文件，方便直接在宿主机修改
-
-
       - ./conf.yml:/app/conf.yml
-
-
       # 映射图片资源目录
-
-
       - ./png:/app/png
-
-
       # 映射数据库文件（持久化阅读进度）
-
-
       - ./read.db:/app/read.db
-
-
       # 映射本地书籍存储目录
-
-
       - ./storage:/app/storage
-
-
     environment:
-
-
       TZ: Asia/Shanghai
-
-
     networks:
-
-
       - read
 
-
-
-
-
 networks:
-
-
   read:
-
-
     driver: bridge
-
-
-````
-
-
-
-
+```
 
 ### 部署步骤
 
-
 1.  确保目录下存在 `conf.yml`（可参考 `src/main/resources/conf.yml` 模板）。
-
-
 2.  执行 `docker compose up -d`。
-
-
 3.  如需更新代码，执行 `docker compose up --build -d`。
-
-
-
-
 
 # 快速部署 (旧方式)
 
-
 如果您希望直接运行预编译的镜像，可以使用：
 
-
-````
-
-
+```
 docker run -tid  -e TZ=Asia/Shanghai --name read  -v /root/read:/app --net=host --restart=always docker.1ms.run/openjdk:22-rc-oracle java -jar /app/read.jar
-
-
-````
+```
 
 # 反向代理
 如果需要使用nginx反向代理后端必须要注意websocket配置，目前websocket有四个：    
