@@ -1,0 +1,27 @@
+FROM eclipse-temurin:22-jre-alpine
+ENV TZ=Asia/Shanghai
+WORKDIR /app
+
+# 默认指向 CI-main 的构建产物
+ARG DOWNLOAD_URL=https://github.com/QQ-War/read/releases/download/CI-main/read-server.zip
+ARG CACHE_BUST=1
+
+# 安装运行时依赖
+RUN apk add --no-cache tzdata fontconfig ttf-dejavu wget unzip && \
+    ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && \
+    echo $TZ > /etc/timezone && \
+    rm -rf /var/cache/apk/*
+
+# 下载并解压构建产物
+# 强制使用 CACHE_BUST 破坏层缓存，确保拿回的是最新构建
+RUN echo "Downloading from $DOWNLOAD_URL (Cache Bust: $CACHE_BUST)" && \
+    wget --no-check-certificate -O /tmp/read-server.zip "$DOWNLOAD_URL" && \
+    unzip /tmp/read-server.zip -d /app && \
+    rm /tmp/read-server.zip
+
+EXPOSE 8080
+
+# 启动应用
+# 注意：压缩包内部结构应包含 read.jar 和 libs/ 目录
+ENTRYPOINT ["java", "-Dfile.encoding=UTF-8", "-jar", "/app/read.jar"]
+
