@@ -2,7 +2,10 @@ version: '3.8'
 
 services:
   read:
-    build: .
+    build:
+      context: .
+      args:
+        - CACHE_BUST=${CACHE_BUST:-1}
     container_name: read
     restart: unless-stopped
     ports:
