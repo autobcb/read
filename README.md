@@ -139,19 +139,55 @@ docker compose up --build -d
 ### 2. 构建方式说明
 
 
+
+
+
 *   **本地构建 (Dockerfile)**: 适用于本地开发环境，直接将当前目录源码拷入容器编译。
+
+
+
 
 
 *   **远程 Git 构建 (Dockerfile.git)**: 适用于服务器环境，构建时自动从 GitHub 拉取最新代码。
 
 
+
+
+
     ```bash
+
+
+
 
 
     # 使用远程代码构建
 
 
+
+
+
     docker build -f Dockerfile.git -t read-app:git .
+
+
+
+
+
+    
+
+
+
+
+
+    # 提示：如果 GitHub 代码有更新，但 Docker 走了缓存没有重新拉取，请使用以下命令强制刷新：
+
+
+
+
+
+    docker build -f Dockerfile.git --build-arg CACHE_BUST=$(date +%s) -t read-app:git .
+
+
+
 
 
     ```

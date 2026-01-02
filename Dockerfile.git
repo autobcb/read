@@ -12,6 +12,7 @@ ENV GRADLE_OPTS="-Dorg.gradle.java.installations.auto-download=false"
 # 定义仓库地址和分支变量
 ARG REPO_URL=https://github.com/QQ-War/read.git
 ARG BRANCH=main
+ARG CACHE_BUST=1
 
 # 1. 克隆源码并构建
 RUN git clone --depth 1 -b $BRANCH $REPO_URL . && \
