@@ -2,6 +2,8 @@ name: Build and Release
 
 on:
   push:
+    branches:
+      - main # 触发条件：每次 push 到 main 分支
     tags:
       - 'v*' # 触发条件：推送 v 开头的标签，如 v3.3.5
   workflow_dispatch: # 支持手动触发构建
