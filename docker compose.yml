@@ -2,10 +2,15 @@ version: '3.8'
 
 services:
   read:
-    build:
-      context: .
-      args:
-        - CACHE_BUST=${CACHE_BUST:-1}
+    # 方式 A：从 GitHub Container Registry 拉取预编译镜像 (推荐，速度快)
+    image: ghcr.io/qq-war/read:latest
+    
+    # 方式 B：从本地源码构建 (适用于开发环境)
+    # build:
+    #   context: .
+    #   args:
+    #     - CACHE_BUST=${CACHE_BUST:-1}
+    
     container_name: read
     restart: unless-stopped
     ports:
