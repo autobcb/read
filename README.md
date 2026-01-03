@@ -128,7 +128,7 @@ docker compose up --build -d
     docker build -f Dockerfile.git --build-arg CACHE_BUST=$(date +%s) -t read-app:git .
     ```
 
-# Docker Compose 部署配置
+### 3. Docker Compose 部署配置
 
 建议使用以下 `docker-compose.yml` 结构，它支持本地编译并实现了配置与数据的持久化：
 
@@ -161,13 +161,13 @@ networks:
     driver: bridge
 ```
 
-### 部署步骤
+#### 部署步骤
 
 1.  确保目录下存在 `conf.yml`（可参考 `src/main/resources/conf.yml` 模板）。
 2.  执行 `docker compose up -d`。
 3.  如需更新代码，执行 `docker compose up --build -d`。
 
-# 快速部署 (旧方式)
+### 4. 快速部署 (旧方式)
 
 如果您希望直接运行预编译的镜像，可以使用：
 
@@ -280,4 +280,3 @@ app 管理仅提供主域名和备用域名，并可以使用别名当做后端�
 ![Image text](https://github.com/autobcb/read/blob/main/png/editsource.jpg?raw=true)
 ![Image text](https://github.com/autobcb/read/blob/main/png/source.jpg?raw=true)
 ![Image text](https://github.com/autobcb/read/blob/main/png/sourcelogin.jpg?raw=true)
-
