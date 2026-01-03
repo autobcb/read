@@ -8,6 +8,7 @@ ENV GRADLE_OPTS="-Dorg.gradle.java.installations.auto-download=false"
 # 1. 缓存 Gradle 依赖
 COPY gradle/ gradle/
 COPY gradlew build.gradle.kts settings.gradle.kts gradle.properties ./
+COPY book/build.gradle.kts book/
 RUN chmod +x gradlew && ./gradlew dependencies --no-daemon
 
 # 2. 拷贝本地源码并构建
