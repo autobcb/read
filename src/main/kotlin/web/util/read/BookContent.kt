@@ -7,6 +7,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeoutOrNull
 import org.slf4j.LoggerFactory
 import web.controller.api.ReadController.Companion.getChapterListbycache
 import web.controller.api.ReadController.Companion.setBookContentbycache
@@ -19,27 +20,25 @@ object  BookContent {
     private val mutex = Mutex()
     private val logger = LoggerFactory.getLogger(BookContent::class.java)
 
-    fun  getbookcontent(accessToken:String, user: Users, source: BaseSource, url:String, index:Int, type:Int):String= runBlocking{
-        val key="url:$url,index:$index,type:$type,${user.id}"
-        var deferred: Deferred<String>?
-        deferred=ma[key]
-        if(deferred == null) {
-            mutex.withLock {
-                deferred=ma[key] ?:async{ getBookContent(accessToken,user,source,url,index) }
-                ma[key]= deferred
-            }
+    fun getbookcontent(accessToken: String, user: Users, source: BaseSource, url: String, index: Int, type: Int): String = runBlocking {
+        val key = "url:$url,index:$index,type:$type,${user.id}"
+        // 获取或创建Deferred
+        val deferred = ma[key] ?: mutex.withLock {
+            ma[key] ?: async { getBookContent(accessToken, user, source, url, index) }.also { ma[key] = it }
         }
-        val str=runCatching {
-           deferred!!.await().also { if( type != 1) setBookContentbycache(url,it,index,user.id!!) }
+        // 执行并添加超时
+        runCatching {
+            // 在await()处添加90秒超时，与BookCatalog.kt保持一致
+            withTimeoutOrNull(120000) {
+                deferred.await().also { if (type != 1) setBookContentbycache(url, it, index, user.id!!) }
+            } ?: ""
         }.onSuccess {
-            logger.info(key+"完成")
+            logger.info(key + "完成")
         }.onFailure {
-            logger.error("正文获取失败:"+it.message)
-            App.log("正文获取失败:"+it.message,accessToken)
+            logger.error("正文获取失败:" + it.message)
+            App.log("正文获取失败:" + it.message, accessToken)
             it.printStackTrace()
-        }.getOrElse { "" }
-        remove(key)
-        str
+        }.getOrElse { "" }.also { remove(key) }
     }
 
     @Suppress("DeferredResultUnused")

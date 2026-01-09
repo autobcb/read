@@ -324,6 +324,18 @@ class AnalyzeUrl(
         return value
     }
 
+    fun get(key: String): String {
+        if(source != null){
+            val userid = source.userid?:""
+            chapter?.userid = userid
+            ruleData?.userid = userid
+        }
+        //println("get key: $key")
+        return ( chapter?.getVariable(key)?.takeIf { it.isNotEmpty() }
+            ?: ruleData?.getVariable(key)?.takeIf { it.isNotEmpty() }
+            ?: "")
+    }
+
     fun setCookie() {
         val store=source?.getCookieManger()
         val cookie = (store?.getCookie(urlNoQuery))?:""
@@ -532,6 +544,23 @@ class AnalyzeUrl(
             return ByteArrayInputStream(it)
         }
         return getResponseAwait().body!!.byteStream()
+    }
+
+    var toastc=0
+    /**
+     * 弹窗提示
+     */
+    override  fun toast(msg: Any?) {
+        logger.info("toast:$msg")
+        if(toastc > 10){
+            throw Exception("toast 调用次数超过10次")
+        }
+        toastc=toastc+1
+        App.toast("$msg",getSource()?.usertocken?:"")
+    }
+
+    override fun longToast(msg: Any?) {
+        toast(msg)
     }
 
     fun getInputStream(): InputStream {

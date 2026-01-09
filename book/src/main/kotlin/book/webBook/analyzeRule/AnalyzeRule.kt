@@ -1,5 +1,6 @@
 package book.webBook.analyzeRule
 
+import book.app.App
 import book.model.BaseBook
 import book.model.BaseSource
 import book.model.BookChapter
@@ -751,6 +752,24 @@ open class AnalyzeRule(
             ?:source?.get(key)?.takeIf { it.isNotEmpty() }
             ?: "")
     }
+
+    var toastc=0
+    /**
+     * 弹窗提示
+     */
+    override  fun toast(msg: Any?) {
+        logger.info("toast:$msg")
+        if(toastc > 10){
+            throw Exception("toast 调用次数超过10次")
+        }
+        toastc=toastc+1
+        App.toast("$msg",getSource()?.usertocken?:"")
+    }
+
+    override fun longToast(msg: Any?) {
+        toast(msg)
+    }
+
 
     /**
      * 执行JS
