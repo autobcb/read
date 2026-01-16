@@ -242,6 +242,14 @@ class AnalyzeUrl(
         headerMap[UA_NAME] ?: let {
             headerMap[UA_NAME] = AppConst.userAgent
         }
+        // 增加自动 Referer 逻辑，参考 onecomic
+        if (headerMap["Referer"].isNullOrEmpty() && headerMap["referer"].isNullOrEmpty()) {
+            if (url.startsWith("http")) {
+                val uri = java.net.URI(url)
+                val domain = "${uri.scheme}://${uri.host}"
+                headerMap["Referer"] = domain
+            }
+        }
         urlNoQuery = url
         when (method) {
             RequestMethod.GET -> {

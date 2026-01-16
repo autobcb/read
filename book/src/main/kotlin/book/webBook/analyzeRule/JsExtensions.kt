@@ -208,6 +208,18 @@ interface JsExtensions: JsEncodeUtils  {
         return App.getWebViewUA(getSource()?.usertocken?:"");
     }
 
+    fun getRandomUA(): String {
+        return UserAgentHelper.getRandomUserAgent()
+    }
+
+    fun getIOSUA(): String {
+        return UserAgentHelper.getIOSUserAgent()
+    }
+
+    fun getAndroidUA(): String {
+        return UserAgentHelper.getAndroidUserAgent()
+    }
+
 
     /**
      * 可从网络，本地文件(阅读私有缓存目录和书籍保存位置支持相对路径)导入JavaScript脚本
