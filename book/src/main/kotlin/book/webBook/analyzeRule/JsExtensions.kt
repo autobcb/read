@@ -67,7 +67,7 @@ interface JsExtensions: JsEncodeUtils  {
     fun ajax(urlStr: String): String? {
         logger.info("ajax url: $urlStr")
         return runBlocking {
-            kotlin.runCatching {
+            runCatching {
                 val analyzeUrl = AnalyzeUrl(urlStr, source = getSource(),debugLog = debugLog)
                 analyzeUrl.getStrResponse(urlStr).body
             }.onFailure {
@@ -104,7 +104,7 @@ interface JsExtensions: JsEncodeUtils  {
         logger.info("connect:$urlStr")
         return runBlocking {
             val analyzeUrl = AnalyzeUrl(urlStr, source = getSource(),debugLog = debugLog)
-            kotlin.runCatching {
+            runCatching {
                 analyzeUrl.getStrResponseAwait()
             }.onFailure {
                 it.printOnDebug()
@@ -119,7 +119,7 @@ interface JsExtensions: JsEncodeUtils  {
         return runBlocking {
             val headerMap = GSON.fromJsonObject<Map<String, String>>(header).getOrNull()
             val analyzeUrl = AnalyzeUrl(urlStr, headerMapF = headerMap, source = getSource(),debugLog = null)
-            kotlin.runCatching {
+            runCatching {
                 analyzeUrl.getStrResponseAwait()
             }.onFailure {
                 it.printOnDebug()
@@ -1004,6 +1004,7 @@ interface JsExtensions: JsEncodeUtils  {
     fun toURL(url: String, baseUrl: String? = null): JsURL {
         return JsURL(url, baseUrl)
     }
+
 
     /**
      * 弹窗提示

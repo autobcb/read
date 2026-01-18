@@ -10,7 +10,7 @@ import book.util.help.CacheManager
 import book.util.help.CookieStore
 import book.webBook.WBook
 import com.google.gson.Gson
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
 import org.noear.solon.annotation.*
 import org.noear.solon.core.util.DataThrowable
 import org.noear.solon.data.annotation.Cache
@@ -232,8 +232,8 @@ open class BookController:BaseController() {
             }
         })
         web.notification.Book.sendNotification(user)
-        thread {
-            updatebook(booktolist, source,user)
+        launch {
+            updatebook(booktolist, source, user)
             web.notification.Book.sendNotification(user)
         }
         JsonResponse(true,SUCCESS)

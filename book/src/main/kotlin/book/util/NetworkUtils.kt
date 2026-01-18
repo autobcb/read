@@ -83,7 +83,7 @@ object NetworkUtils {
         try {
             absoluteUrl = URL(baseURL.substringBefore(","))
         } catch (e: Exception) {
-            e.printOnDebug()
+            //e.printOnDebug()
         }
         return getAbsoluteURL(absoluteUrl, relativePath)
     }

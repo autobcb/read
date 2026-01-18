@@ -11,7 +11,7 @@ import web.model.Booklist
 import web.model.Users
 import web.util.mapper.mapper
 
-fun updatebook(book: Booklist, source: BaseSource,user: Users) = runBlocking{
+suspend fun updatebook(book: Booklist, source: BaseSource,user: Users) {
     val userid=user.id!!
     val list= getlist(book.bookUrl!! ,source,user,"")
     if (list.isNotEmpty()){
