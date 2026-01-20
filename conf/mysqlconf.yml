@@ -9,6 +9,7 @@ admin:
   gonggao: ""  #填写公告后 app 每次开启时都会弹出
   username: "admin"
   password: "adminadmin"
+  update: false #是否开启定时更新最新章节的任务，共享后端请勿开启
   code: "" #需要填写app管理后台生成的密钥
 user:
   allowchange: false  #是否允许自助修改权限 允许 true 不允许 false

@@ -10,6 +10,7 @@ import web.mapper.BookCacheMapper
 import web.mapper.BookSourceMapper
 import web.mapper.BooklistMapper
 import web.mapper.RssSourceMapper
+import web.mapper.SgreadMapper
 import web.mapper.UserBookSourceMapper
 import web.mapper.UserRssSourceMapper
 import web.mapper.UsersMapper
@@ -23,6 +24,9 @@ class mapper {
 
     @Inject
     lateinit var bookSourceMapper: BookSourceMapper
+
+    @Inject
+    lateinit var sgreadMapper: SgreadMapper
 
 
     @Inject

@@ -54,7 +54,34 @@ open class HomeController {
     @Inject(value = "\${user.source:0}", autoRefreshed=true)
     var source:Int =0
 
+    @Inject(value = "\${user.index:0}", autoRefreshed=true)
+    var index:Int =0
 
+
+    @Mapping("/")
+    fun home() = run {
+        if(index == 0){
+            ModelAndView("qread/index.html")
+        }else if(index == 1){
+            ModelAndView("qread/index2.html")
+        }else{
+            ModelAndView("errors/404.html")
+        }
+    }
+
+    @Mapping("/forget")
+    fun forget() = run {
+        ModelAndView("qread/forget.html")
+    }
+
+    @Mapping("/reg")
+    fun reg() = run {
+        if (needcode){
+            ModelAndView("qread/reg2.html")
+        }else{
+            ModelAndView("qread/reg.html")
+        }
+    }
 
     @Tran
     @Post

@@ -60,8 +60,22 @@ open class SourceController:BaseController() {
             var loginUi=s?.loginUi
             if(!loginUi.isNullOrEmpty()){
                 runCatching {
-                    val r=GSON.fromJsonArray<Any>(loginUi).getOrNull()
-                    loginUi= GSON.toJson(r)
+                    if ( loginUi!!.startsWith("@js:") ||  loginUi.startsWith("<js>")){
+                        val s1=cacheService.get("loginUi:${accessToken}${user.source}${s?.bookSourceUrl}", String::class.java)
+                        if(!s1.isNullOrBlank()){
+                            loginUi=s1
+                        }else{
+                            loginUi=s?.getloginUi()
+                            val r=GSON.fromJsonArray<Any>(loginUi).getOrNull()
+                            loginUi= GSON.toJson(r)
+                            cacheService.store("loginUi:${accessToken}${user.source}${s?.bookSourceUrl}",loginUi,60*5)
+                        }
+                    }else{
+                        val r=GSON.fromJsonArray<Any>(loginUi).getOrNull()
+                        loginUi= GSON.toJson(r)
+                    }
+                }.onFailure {
+                    it.printStackTrace()
                 }
             }
             if(list.size >= 50){

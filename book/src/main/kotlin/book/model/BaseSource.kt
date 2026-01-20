@@ -46,6 +46,16 @@ interface BaseSource : JsExtensions {
     }
 
 
+    fun getloginUi(): String? {
+        val loginJs = loginUi
+        return when {
+            loginJs == null -> null
+            loginJs.startsWith("@js:") -> evalJS(loginJs.substring(4)).toString()
+            loginJs.startsWith("<js>") ->  evalJS(loginJs.substring(4, loginJs.lastIndexOf("<"))).toString()
+            else -> loginJs
+        }
+    }
+
 
     fun getLoginJs(): String? {
         val loginJs = loginUrl

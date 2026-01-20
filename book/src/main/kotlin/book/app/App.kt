@@ -4,7 +4,7 @@ import book.util.http.JsonpResponse
 import book.util.http.StrResponse
 
 object App  {
-    var startBrowserAwait =fun  (urlStr: String,title: String,tocken:String,header:String): StrResponse {
+    var startBrowserAwait =fun  (urlStr: String,title: String,tocken:String,header:String,name: String): StrResponse {
         return StrResponse(urlStr,"")
     }
     var startBrowserdp =fun  (urlStr: String,title: String,tocken:String,header:String) {

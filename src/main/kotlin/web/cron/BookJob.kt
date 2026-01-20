@@ -18,6 +18,9 @@ class BookJob : Runnable {
     @Inject(value = "\${admin.cron:true}", autoRefreshed = true)
     var cron: Boolean = true
 
+    @Inject(value = "\${admin.update:false}", autoRefreshed = true)
+    var update: Boolean = false
+
     private val logger = LoggerFactory.getLogger(BookJob::class.java)
 
     companion object {
@@ -25,8 +28,11 @@ class BookJob : Runnable {
     }
 
     override fun run() = runBlocking {
-        return@runBlocking
-        if (!cron) {
+        runCatching {
+            val t=System.currentTimeMillis()-60*60*24*1000*30
+            mapper.get().sgreadMapper.deltimeout(t)
+        }
+        if (!cron || !update) {
             return@runBlocking
         }
         if (isupdatebookcron) {

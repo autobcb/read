@@ -25,8 +25,10 @@ import org.slf4j.LoggerFactory
 import web.mapper.BookCacheMapper
 import web.mapper.BooklistMapper
 import web.mapper.ReplaceRuleMapper
+import web.mapper.SgreadMapper
 import web.model.BaseSource
 import web.model.ReplaceRule
+import web.model.Sgread
 import web.model.Users
 import web.notification.Read
 import web.response.*
@@ -63,6 +65,9 @@ open class ReadController : BaseController() {
    
     @Inject
     lateinit var replaceRuleMapper: ReplaceRuleMapper
+
+    @Inject
+    lateinit var sgreadMapper: SgreadMapper
 
 
     companion object {
@@ -362,12 +367,16 @@ open class ReadController : BaseController() {
 
 
     @Mapping("/saveBookProgress")
-    open fun saveBookProgress(accessToken: String?, pos: Double?, url: String?, title: String?, index: Int?) = runBlocking {
+    open fun saveBookProgress(accessToken: String?, pos: Double?, url: String?, title: String?, index: Int?, isnew: String?) = runBlocking {
         val user = getuserbytocken(accessToken)
         val book = booklistMapper.getbook(user.id!!, url?:throw DataThrowable().data(JsonResponse(false, NOT_BANK))).also {
             if (it == null) {
                 //println("添加阅读进度到内存${url}")
                 cacheService.store("indexuerid:${user.id},bookurl:${url}",index,10*30)
+                if(isnew == "1"){
+                    val sgread= Sgread().create(user.id!!,url);
+                    sgreadMapper.insertOrUpdate(sgread)
+                }
                 throw DataThrowable().data(JsonResponse(true))
             }
         }!!
@@ -605,6 +614,69 @@ open class ReadController : BaseController() {
     }
 
 
+    @Mapping("/listen")
+    open fun listen(ctx: Context, accessToken: String?,url: String?, header: String?) = runBlocking {
+        getuserbytocken(accessToken)
+        if (url.isNullOrBlank()) throw DataThrowable().data(JsonResponse(false, NOT_BANK))
+        val geturl = URI(url).toURL()
+        SslUtils.ignoreSsl()
+        val connection = geturl.openConnection() as HttpURLConnection
+        connection.requestMethod = "GET"
+        runCatching {
+            val json= Gson().fromJson<Map<String, String>>(header, Map::class.java)
+            json.forEach{(k,v)->
+                connection.setRequestProperty(k,v)
+            }
+        }
+        connection.connectTimeout = 20*1000
+        connection.readTimeout = 20*1000
+        val responseCode = connection.responseCode
+        //  读取响应
+        if (responseCode == HttpURLConnection.HTTP_OK) {
+            connection.inputStream.use { i->
+                val b = ByteArray(4096)
+                var len: Int
+                while ((i.read(b).also { it -> len = it }) != -1) {
+                    ctx.outputStream().write(b, 0, len)
+                }
+                ctx.flush();
+                ctx.close();
+            }
+        }else {
+            logger.info("GET请求失败")
+            JsonResponse(isSuccess = false,errorMsg ="GET请求失败")
+        }
+    }
+
+    @Mapping("/getjson")
+    open fun getjson(ctx: Context, accessToken: String?,url: String?) = runBlocking {
+        getuserbytocken(accessToken)
+        if (url.isNullOrBlank()) throw DataThrowable().data(JsonResponse(false, NOT_BANK))
+        val geturl = URI(url).toURL()
+        SslUtils.ignoreSsl()
+        val connection = geturl.openConnection() as HttpURLConnection
+        connection.requestMethod = "GET"
+        connection.connectTimeout = 20*1000
+        connection.readTimeout = 20*1000
+        val responseCode = connection.responseCode
+        //  读取响应
+        if (responseCode == HttpURLConnection.HTTP_OK) {
+            connection.inputStream.use { i->
+                val b = ByteArray(4096)
+                var len: Int
+                while ((i.read(b).also { it -> len = it }) != -1) {
+                    ctx.outputStream().write(b, 0, len)
+                }
+                ctx.flush();
+                ctx.close();
+            }
+        }else {
+            logger.info("GET请求失败")
+            JsonResponse(isSuccess = false,errorMsg ="GET请求失败")
+        }
+    }
+
+
     @Mapping("/imageDecode")
     open fun imageDecode(ctx: Context, accessToken: String?, bookSourceUrl: String?, @Param("book")  ibook: String?, url: String?, header: String?) = runBlocking {
         logger.info("imageDecode:$url")
@@ -656,6 +728,8 @@ open class ReadController : BaseController() {
                             while ((i.read(b).also { it -> len = it }) != -1) {
                                 ctx.outputStream().write(b, 0, len)
                             }
+                            ctx.flush();
+                            ctx.close();
                         }
                     }.onFailure {
                         JsonResponse(isSuccess = false,errorMsg ="解密失败")
@@ -668,6 +742,8 @@ open class ReadController : BaseController() {
                     while ((i.read(b).also { len = it }) != -1) {
                         ctx.outputStream().write(b, 0, len)
                     }
+                    ctx.flush();
+                    ctx.close();
                 }
             }
 
@@ -745,12 +821,15 @@ open class ReadController : BaseController() {
 
     @CacheRemove(tags = "search\${accessToken}")
     @Mapping("/action")
-    open fun action(accessToken: String?, bookSourceUrl: String?, action: String?) = runBlocking {
+    open fun action(accessToken: String?, bookSourceUrl: String?, action: String?, info: String?) = runBlocking {
         val (user,source)=getsourceuser(accessToken,bookSourceUrl)
         if(action == null) throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         val bookSource = BookSource.fromJson(source.json).getOrNull()!!
         bookSource.userid = user.id
         bookSource.usertocken = accessToken
+        if(!info.isNullOrBlank()){
+            bookSource.putLoginInfo(info)
+        }
         runCatching {
             bookSource.runaction(action)
         }.onFailure { e ->
@@ -774,6 +853,34 @@ open class ReadController : BaseController() {
             throw DataThrowable().data(JsonResponse(false, NO_PAY))
         }
         val chapters=getChapterList(accessToken,book.origin,book.bookUrl!!,user)!!
+        val b= getBookbycache(url,user.id!!)?: BookInfo.getbookinfo(accessToken!!,user,source,url)!!
+        val analyzeRule = AnalyzeRule(
+            ruleData = b, source = bookSource,
+            debugLog = null
+        )
+        analyzeRule.setBaseUrl(chapters[index].url)
+        analyzeRule.chapter = chapters[index]
+        val re=analyzeRule.evalJS(payAction).toString()
+        if (re.isAbsUrl()) {
+            analyzeRule.startBrowser(re,"购买")
+        }
+        JsonResponse(true)
+    }
+
+
+    @Mapping("/payAction2")
+    open fun  payAction2(accessToken: String?, bookSourceUrl:String?, url: String?, index: Int) = runBlocking {
+        val user = getuserbytocken(accessToken)
+        if(bookSourceUrl.isNullOrBlank() || url.isNullOrBlank()) throw DataThrowable().data(JsonResponse(false, NOT_BANK))
+        val source=getsource(bookSourceUrl,user)?:throw DataThrowable().data(JsonResponse(false, NOT_SOURCE))
+        val bookSource = BookSource.fromJson(source.json).getOrNull()!!
+        bookSource.userid = user.id
+        bookSource.usertocken = accessToken
+        val payAction = bookSource.getContentRule().payAction
+        if (payAction.isNullOrBlank()) {
+            throw DataThrowable().data(JsonResponse(false, NO_PAY))
+        }
+        val chapters=getChapterList(accessToken,bookSourceUrl,url,user)!!
         val b= getBookbycache(url,user.id!!)?: BookInfo.getbookinfo(accessToken!!,user,source,url)!!
         val analyzeRule = AnalyzeRule(
             ruleData = b, source = bookSource,

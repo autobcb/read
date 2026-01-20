@@ -74,8 +74,11 @@ class CleanBookCache : Runnable {
             runCatching {
                 val book=mapper.get().booklistMapper.getbook(userid,bookUrlFile.readText())
                 if(book == null) {
-                    logger.info("bookcache: Book not found: ${bookUrlFile.readText()} clean")
-                    FileUtils.delete(file, true)
+                    val book=mapper.get().sgreadMapper.getbook(userid,bookUrlFile.readText())
+                    if (book == null) {
+                        logger.info("bookcache: Book not found: ${bookUrlFile.readText()} clean")
+                        FileUtils.delete(file, true)
+                    }
                 }
             }
         }else{

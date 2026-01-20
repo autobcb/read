@@ -304,7 +304,7 @@ interface JsExtensions: JsEncodeUtils  {
 
         val header= GSON.toJson(headerMap)
         logger.info("header:$header")
-        var re=App.startBrowserAwait(baseUrl,title,getSource()?.usertocken?:"",header)
+        var re=App.startBrowserAwait(baseUrl,title,getSource()?.usertocken?:"",header,getSource()?.getTag()?:"")
         if(refetchAfterSuccess){
             logger.info("重新加载网页:$url")
             re = AnalyzeUrl(

@@ -8,6 +8,7 @@ admin:
   gonggao: ""  #填写公告后 app 每次开启时都会弹出
   username: "admin"
   password: "adminadmin"
+  update: false #是否开启定时更新最新章节的任务，共享后端请勿开启
   code: "" #需要填写app管理后台生成的密钥
 user:
   allowchange: false  #是否允许自助修改权限 允许 true 不允许 false
@@ -18,6 +19,7 @@ user:
   maxsource: 0  # 最大书源数量 0为不限制
   timeout: 0 #10分钟内除发多少次timeout禁用书源 0 为不限制
   proxypng: false  #是否代理封面
+  index: 0  # 0 提供 web 界面，1 web 只允许注册找回密码 2 关闭 web 界面
 smtp:
   host:  #smtp邮箱host
   protocols: TLSv1.2 #通讯协议
