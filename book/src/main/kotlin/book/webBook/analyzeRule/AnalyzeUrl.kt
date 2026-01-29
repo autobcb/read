@@ -109,6 +109,36 @@ class AnalyzeUrl(
         domain = NetworkUtils.getSubDomain(source?.getKey() ?: url)
     }
 
+    @JvmOverloads
+    fun showBrowser(url: String, html: String = "", preloadJs: String = "", config: String? = null) {
+        val headerMap : java.util.HashMap<String, String> = hashMapOf()
+        val headerMapF: java.util.HashMap<String, String> = hashMapOf()
+
+
+        val analyzeUrl = AnalyzeUrl(
+            url, source = getSource(),
+            debugLog = debugLog
+        )
+        val baseUrl = analyzeUrl.url
+        headerMap.putAll(analyzeUrl.headerMap)
+        headerMapF.putAll(analyzeUrl.headerMap)
+
+
+        runCatching {
+            val store=getSource()?.getCookieManger()
+            val cookie = (store?.getCookie(baseUrl))?:""
+            if (cookie.isNotEmpty()) {
+                store?.mergeCookies(cookie, headerMap["Cookie"])?.let {
+                    headerMap.put("Cookie", it)
+                }
+            }
+        }
+
+        val header= GSON.toJson(headerMap)
+        logger.info("header:$header")
+        App.showBrowser(url,html,preloadJs,header,getSource()?.usertocken?:"")
+    }
+
 
     fun initUrl() {
 
@@ -231,7 +261,7 @@ class AnalyzeUrl(
                     useWebView = option.useWebView()
                     usePhone = option.usePhone()
                     webJs = option.getWebJs()
-                    option.getJs()?.let { jsStr ->
+                    (option.getJs()?:option.getClick())?.let { jsStr ->
                         //println(jsStr)
                         evalJS(jsStr, url)?.toString()?.let {
                             url = it
@@ -309,7 +339,7 @@ class AnalyzeUrl(
             scope.prototype = it
         }
 
-        return RhinoScriptEngine.eval(getjs(jsStr), scope, coroutineContext)
+        return RhinoScriptEngine.eval(getjs(jsStr), scope, coroutineContext).also { toastc =0 }
     }
 
     fun put(key: String, value: String): String {
@@ -552,7 +582,7 @@ class AnalyzeUrl(
      */
     override  fun toast(msg: Any?) {
         logger.info("toast:$msg")
-        if(toastc > 10){
+        if(toastc > 50){
             throw Exception("toast 调用次数超过10次")
         }
         toastc=toastc+1
@@ -614,6 +644,7 @@ class AnalyzeUrl(
         private var webView: Any? = null,
         private var webJs: String? = null,
         private var js: String? = null,
+        private var click: String? = null,
         private var usePhone: Any? = null,
     ) {
         fun setMethod(value: String?) {
@@ -622,6 +653,14 @@ class AnalyzeUrl(
 
         fun getMethod(): String? {
             return method
+        }
+
+        fun getClick(): String? {
+            return click
+        }
+
+        fun setClick(value: String?) {
+            click = if (value.isNullOrBlank()) null else value
         }
 
         fun setCharset(value: String?) {

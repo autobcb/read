@@ -48,6 +48,22 @@ class InitConfig {
             }
             return@runBlocking  StrResponse(urlStr,"")
         }
+        App.showBrowser = fun (urlStr: String,html: String,preloadJs:String,header:String, tocken:String) = runBlocking{
+            if(urlStr.isBlank())  return@runBlocking
+            val socket=ApiWebSocket.get(tocken)
+            if(socket!=null){
+                val id= UUID.randomUUID().toString()
+                socket.send(Gson().toJson(WebMessage(
+                    msg = "showBrowser",
+                    url = urlStr,
+                    html = html,
+                    title=preloadJs,
+                    id=id,
+                    header = header
+                )))
+            }
+        }
+
         App.startBrowserdp=fun (urlStr: String, title: String, tocken:String, header:String) = runBlocking{
             if(urlStr.isBlank())  return@runBlocking
             val socket=ApiWebSocket.get(tocken)

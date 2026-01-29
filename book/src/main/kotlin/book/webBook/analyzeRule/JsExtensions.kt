@@ -50,7 +50,7 @@ interface JsExtensions: JsEncodeUtils  {
     fun getSource(): BaseSource?
 
     fun androidId(): String {
-        return getSource()?.userid?:""
+        return md5Encode(getSource()?.userid?:"")
     }
 
     fun binding(bindings: ScriptBindings){
@@ -275,6 +275,11 @@ interface JsExtensions: JsEncodeUtils  {
         val cookie = store?.getCookie(key)
         return cookie?:""
     }
+
+
+
+
+
 
     fun startBrowserAwait(url: String,title: String, refetchAfterSuccess: Boolean): StrResponse = runBlocking {
         logger.info("跳转URL：$url")

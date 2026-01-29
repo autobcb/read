@@ -7,6 +7,9 @@ object App  {
     var startBrowserAwait =fun  (urlStr: String,title: String,tocken:String,header:String,name: String): StrResponse {
         return StrResponse(urlStr,"")
     }
+    var showBrowser =fun  (urlStr: String,html: String,preloadJs:String,header:String, tocken:String) {
+
+    }
     var startBrowserdp =fun  (urlStr: String,title: String,tocken:String,header:String) {
 
     }

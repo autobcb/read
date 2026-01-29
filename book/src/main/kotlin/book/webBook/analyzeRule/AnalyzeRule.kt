@@ -759,8 +759,8 @@ open class AnalyzeRule(
      */
     override  fun toast(msg: Any?) {
         logger.info("toast:$msg")
-        if(toastc > 10){
-            throw Exception("toast 调用次数超过10次")
+        if(toastc > 50){
+            throw Exception("toast 调用次数超过50次")
         }
         toastc=toastc+1
         App.toast("$msg",getSource()?.usertocken?:"")
@@ -801,7 +801,7 @@ open class AnalyzeRule(
         source?.getShareScope()?.let {
             scope.prototype = it
         }
-        return RhinoScriptEngine.eval(getjs(jsStr), scope, coroutineContext)
+        return RhinoScriptEngine.eval(getjs(jsStr), scope, coroutineContext).also { toastc =0 }
     }
 
     override fun getSource(): BaseSource? {
