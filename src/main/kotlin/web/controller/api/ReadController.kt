@@ -531,8 +531,15 @@ open class ReadController : BaseController() {
         var loginUi=s?.loginUi
         if(!loginUi.isNullOrEmpty()){
             runCatching {
-                val r=GSON.fromJsonArray<Any>(loginUi).getOrNull()
-                loginUi= GSON.toJson(r)
+                if ( loginUi!!.startsWith("@js:") ||  loginUi.startsWith("<js>")){
+                    loginUi=s?.getloginUi()
+                    val r=GSON.fromJsonArray<Any>(loginUi).getOrNull()
+                    loginUi= GSON.toJson(r)
+                    cacheService.store("loginUi:${accessToken}${user.source}${s?.bookSourceUrl}",loginUi,60*5)
+                }else{
+                    val r=GSON.fromJsonArray<Any>(loginUi).getOrNull()
+                    loginUi= GSON.toJson(r)
+                }
             }
         }
         JsonResponse(true).Data(loginUi)

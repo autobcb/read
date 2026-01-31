@@ -110,7 +110,7 @@ class AnalyzeUrl(
     }
 
     @JvmOverloads
-    fun showBrowser(url: String, html: String = "", preloadJs: String = "", config: String? = null) {
+    fun showBrowser(url: String, html: String? = null, preloadJs: String? = null, config: String? = null) {
         val headerMap : java.util.HashMap<String, String> = hashMapOf()
         val headerMapF: java.util.HashMap<String, String> = hashMapOf()
 
@@ -136,7 +136,7 @@ class AnalyzeUrl(
 
         val header= GSON.toJson(headerMap)
         logger.info("header:$header")
-        App.showBrowser(url,html,preloadJs,header,getSource()?.usertocken?:"")
+        App.showBrowser(url,html?:"",preloadJs?:"",header,getSource()?.usertocken?:"")
     }
 
 

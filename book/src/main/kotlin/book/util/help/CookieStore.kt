@@ -5,6 +5,7 @@ package book.util.help
 import book.util.GSON
 import book.util.NetworkUtils
 import book.util.TextUtils
+import book.util.has
 import okhttp3.*
 import org.jsoup.Connection
 import org.slf4j.Logger
@@ -12,6 +13,7 @@ import org.slf4j.LoggerFactory
 import java.io.File
 import java.net.IDN
 import java.net.URI
+import java.util.WeakHashMap
 
 
 // TODO 处理cookie
@@ -24,6 +26,7 @@ class CookieStore(val userid:String) : CookieManager {
     private val mainpath="storage"
     private val cookiepath="$mainpath/cookies"
     private val mycookiepath="$cookiepath/$userid"
+    private val Cookiecaches = WeakHashMap<String, String>()
 
     init {
         checkfile(mainpath)
@@ -125,6 +128,7 @@ class CookieStore(val userid:String) : CookieManager {
     override fun setCookie(url: String, cookie: String?) {
         logger.info("setCookie url:$url，cookie:$cookie")
         val key=getkey(url)
+        Cookiecaches.set("$userid$key",cookie);
         File("$mycookiepath/$key").writeText(cookie?:"")
     }
 
@@ -181,6 +185,9 @@ class CookieStore(val userid:String) : CookieManager {
 
     private fun getcookie(url: String):String {
         val key=getkey(url)
+        if(Cookiecaches.has("$userid$key")){
+            return  Cookiecaches.get("$userid$key")?:""
+        }
         logger.info("cookie url:$key")
         var ck=""
         runCatching {
@@ -216,6 +223,7 @@ class CookieStore(val userid:String) : CookieManager {
     override fun removeCookie(url: String) {
         logger.info("removeCookie :$url")
         val key=getkey(url)
+        Cookiecaches.remove("$userid$key")
         val file =  File("$mycookiepath/$key")
         if (file.exists()) {
             file.delete()
