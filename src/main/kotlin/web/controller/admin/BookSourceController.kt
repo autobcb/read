@@ -51,6 +51,8 @@ class BookSourceController {
                             insert += ins
                             update += ups
                         }
+                    }.onFailure {
+                        it.printStackTrace()
                     }
                 }
             }else{

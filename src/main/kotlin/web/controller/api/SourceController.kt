@@ -144,7 +144,7 @@ open class SourceController:BaseController() {
     }
 
     @Mapping("/saveBookSourcesv2")
-    fun saveBookSourcesv2(accessToken:String?, source:String, urls:String)=run{
+    fun saveBookSourcesv2(accessToken:String?,group:String?, source:String, urls:String)=run{
         val user=getsourceuser(accessToken)
         var insert = 0
         var update = 0
@@ -160,6 +160,20 @@ open class SourceController:BaseController() {
         }
         val bookSourcelist= BookSource.fromJsonArray(source).getOrNull()
         bookSourcelist?.forEach {
+            if(!group.isNullOrBlank()){
+                val sp=it.bookSourceGroup?.split(",")
+                val groups=mutableListOf<String>()
+                groups.add(group)
+                sp?.forEach{
+                    if(it != group){
+                        groups.add(it)
+                    }
+                }
+                it.bookSourceGroup=groups.joinToString(",")
+                if(it.bookSourceGroup!!.endsWith(",")){
+                    it.bookSourceGroup=it.bookSourceGroup!!.substring(0, it.bookSourceGroup!!.length - 1)
+                }
+            }
            runCatching {
                if(list.isNotEmpty()){
                    if(list.contains(it.bookSourceUrl)){
