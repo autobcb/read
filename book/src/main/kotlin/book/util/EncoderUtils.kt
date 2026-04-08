@@ -25,8 +25,11 @@ object EncoderUtils {
 
     @JvmOverloads
     fun base64Decode(str: String, flags: Int = Base64.DEFAULT): String {
-        val bytes = Base64.decode(str, flags)
-        return String(bytes)
+       runCatching {
+           val bytes = Base64.decode(str, flags)
+           return String(bytes)
+       }
+        return  "";
     }
 
     @JvmOverloads

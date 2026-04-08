@@ -767,7 +767,12 @@ open class AnalyzeRule(
     }
 
     override fun longToast(msg: Any?) {
-        toast(msg)
+        logger.info("longToast:$msg")
+        if(toastc > 50){
+            throw Exception("toast 调用次数超过50次")
+        }
+        toastc=toastc+1
+        App.longToast("$msg",getSource()?.usertocken?:"")
     }
 
 

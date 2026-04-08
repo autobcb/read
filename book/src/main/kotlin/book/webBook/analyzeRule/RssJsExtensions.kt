@@ -35,4 +35,11 @@ open class RssJsExtensions( private val source: BaseSource? = null,): JsExtensio
     }
 
 
+    @JvmOverloads
+    fun open(name: String, url: String? = null, title: String? = null, origin: String? = null) {
+        println("open $name $url $title, $origin")
+        App.toast("暂不支持open函数",getSource()?.usertocken?:"")
+    }
+
+
 }

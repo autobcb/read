@@ -111,6 +111,7 @@ class AnalyzeUrl(
 
     @JvmOverloads
     fun showBrowser(url: String, html: String? = null, preloadJs: String? = null, config: String? = null) {
+        println("showBrowser $url,$html,$preloadJs,$config")
         val headerMap : java.util.HashMap<String, String> = hashMapOf()
         val headerMapF: java.util.HashMap<String, String> = hashMapOf()
 
@@ -261,7 +262,7 @@ class AnalyzeUrl(
                     useWebView = option.useWebView()
                     usePhone = option.usePhone()
                     webJs = option.getWebJs()
-                    (option.getJs()?:option.getClick())?.let { jsStr ->
+                    (option.getClick()?:option.getJs())?.let { jsStr ->
                         //println(jsStr)
                         evalJS(jsStr, url)?.toString()?.let {
                             url = it
@@ -583,14 +584,19 @@ class AnalyzeUrl(
     override  fun toast(msg: Any?) {
         logger.info("toast:$msg")
         if(toastc > 50){
-            throw Exception("toast 调用次数超过10次")
+            throw Exception("toast 调用次数超过50次")
         }
         toastc=toastc+1
         App.toast("$msg",getSource()?.usertocken?:"")
     }
 
     override fun longToast(msg: Any?) {
-        toast(msg)
+        logger.info("longToast:$msg")
+        if(toastc > 50){
+            throw Exception("toast 调用次数超过50次")
+        }
+        toastc=toastc+1
+        App.longToast("$msg",getSource()?.usertocken?:"")
     }
 
     fun getInputStream(): InputStream {

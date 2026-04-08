@@ -134,7 +134,7 @@ class BookSource(
         runCatching {
             val jsMatcher = JS_PATTERN.matcher(ruleStr)
             if (jsMatcher.find()) {
-                val jsEval =evalJS(jsMatcher.group(2) ?: jsMatcher.group(1))
+                val jsEval =findevalJS(jsMatcher.group(2) ?: jsMatcher.group(1))
                 ruleStr=jsEval.toString().trim()
             }
 

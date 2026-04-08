@@ -61,6 +61,14 @@ interface JsExtensions: JsEncodeUtils  {
         return "1"
     }
 
+    fun getReadBookConfigMap(): Map<String, Any> {
+        return mapOf()
+    }
+
+    fun getThemeConfigMap(): Map<String, Any> {
+        return mapOf()
+    }
+
     /**
      * 访问网络,返回String
      */
@@ -1023,7 +1031,8 @@ interface JsExtensions: JsEncodeUtils  {
      * 弹窗提示 停留时间较长
      */
     fun longToast(msg: Any?) {
-        toast(msg)
+        logger.info("longToast:$msg")
+        App.longToast("$msg",getSource()?.usertocken?:"")
     }
 
     /**

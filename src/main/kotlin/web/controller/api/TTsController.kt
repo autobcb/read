@@ -232,7 +232,7 @@ open class TTsController : BaseController() {
         tts.userid = user.id
         tts.usertocken = accessToken
         kotlin.runCatching {
-            tts.runaction(action)
+            tts.runaction(action,false)
         }.onFailure { e ->
             logger.info("$action JavaScript error", e)
         }

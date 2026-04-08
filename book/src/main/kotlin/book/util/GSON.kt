@@ -20,6 +20,7 @@ val GSON: Gson by lazy {
             object : TypeToken<Map<String?, Any?>?>() {}.type,
             MapDeserializerDoubleAsIntFix()
         )
+        .setObjectToNumberStrategy(ToNumberPolicy.LONG_OR_DOUBLE)
         //.registerTypeAdapter(Lazy::class.java, LazyAdapter<Any>())
         .registerTypeAdapter(Int::class.java, IntJsonDeserializer())
         .disableHtmlEscaping()

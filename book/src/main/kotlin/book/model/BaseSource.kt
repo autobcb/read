@@ -6,8 +6,10 @@ import book.util.help.CacheManager
 import book.util.help.CookieStore
 import book.util.help.RuleBigDataHelp
 import book.webBook.DebugLog
+import book.webBook.analyzeRule.InfoMap
 import book.webBook.analyzeRule.JsExtensions
 import book.webBook.analyzeRule.RssJsExtensions
+import book.webBook.analyzeRule.SourceLoginJsExtensions
 import com.script.ScriptBindings
 import com.script.buildScriptBindings
 import com.script.rhino.RhinoScriptEngine
@@ -46,12 +48,12 @@ interface BaseSource : JsExtensions {
     }
 
 
-    fun getloginUi(): String? {
+    fun getloginUi(chapter: Boolean,book: Book? = null): String? {
         val loginJs = loginUi
         return when {
             loginJs == null -> null
-            loginJs.startsWith("@js:") -> evalJS(loginJs.substring(4)).toString()
-            loginJs.startsWith("<js>") ->  evalJS(loginJs.substring(4, loginJs.lastIndexOf("<"))).toString()
+            loginJs.startsWith("@js:") -> loginevalJS(loginJs.substring(4),chapter,book).toString()
+            loginJs.startsWith("<js>") ->  loginevalJS(loginJs.substring(4, loginJs.lastIndexOf("<")),chapter,book).toString()
             else -> loginJs
         }
     }
@@ -188,9 +190,9 @@ interface BaseSource : JsExtensions {
        return RuleBigDataHelp.getSourceVariable(getKey(),userid?:"","sourceVariable")?:""
     }
 
-    suspend fun runaction(action:String){
+    suspend fun runaction(action:String,chapter: Boolean,book: Book? = null){
         val js =getLoginJs() + "\n$action"
-        evalJS(js) {
+        loginevalJS(js,chapter,book) {
             put("result", getLoginInfoMap()?: mapOf<String,String>())
         }
     }
@@ -222,6 +224,65 @@ interface BaseSource : JsExtensions {
             bindings["baseUrl"] = getKey()
             bindings["cookie"] =  getCookieManger()
             bindings["cache"] = getCacheManger()
+            binding(bindings)
+        }
+        val scope = RhinoScriptEngine.getRuntimeScope(bindings)
+        getShareScope()?.let {
+            scope.prototype = it
+        }
+        return RhinoScriptEngine.eval(getjs(jsStr), scope)
+    }
+
+    @Throws(Exception::class)
+    fun loginevalJS(jsStr: String,chapter: Boolean,book: Book? = null, bindingsConfig: ScriptBindings.() -> Unit = {}): Any? {
+        val bindings = buildScriptBindings { bindings ->
+            bindings.apply(bindingsConfig)
+            bindings["java"] = SourceLoginJsExtensions(source = getSource())
+            bindings["chapter"] = chapter
+            bindings["book"] = book
+            bindings["source"] = this
+            bindings["baseUrl"] = getKey()
+            bindings["cookie"] =  getCookieManger()
+            bindings["cache"] = getCacheManger()
+            binding(bindings)
+        }
+        val scope = RhinoScriptEngine.getRuntimeScope(bindings)
+        getShareScope()?.let {
+            scope.prototype = it
+        }
+        return RhinoScriptEngine.eval(getjs(jsStr), scope)
+    }
+
+    fun  setinfoMap(key: String, value: String?) {
+        val infoMap=App.exploreInfoMapList[getKey()+userid] ?:  InfoMap(getKey(),userid?:"").also {
+            App. exploreInfoMapList.put(getKey()+userid, it)
+        }
+        if( value == null){
+            infoMap.remove(key)
+        }else{
+            infoMap[key]=value
+        }
+    }
+
+    suspend fun runfindaction(action:String){
+        val js =getLoginJs() + "\n$action"
+        findevalJS(js)
+    }
+
+
+    @Throws(Exception::class)
+    fun findevalJS(jsStr: String, bindingsConfig: ScriptBindings.() -> Unit = {}): Any? {
+        val infoMap=App.exploreInfoMapList[getKey()+userid] ?:  InfoMap(getKey(),userid?:"").also {
+            App. exploreInfoMapList.put(getKey()+userid, it)
+        }
+        val bindings = buildScriptBindings { bindings ->
+            bindings.apply(bindingsConfig)
+            bindings["java"] = SourceLoginJsExtensions(source = getSource())
+            bindings["source"] = this
+            bindings["baseUrl"] = getKey()
+            bindings["cookie"] =  getCookieManger()
+            bindings["cache"] = getCacheManger()
+            bindings["infoMap"]= infoMap
             binding(bindings)
         }
         val scope = RhinoScriptEngine.getRuntimeScope(bindings)

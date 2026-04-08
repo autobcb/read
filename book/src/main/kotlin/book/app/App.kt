@@ -2,8 +2,13 @@ package book.app
 
 import book.util.http.JsonpResponse
 import book.util.http.StrResponse
+import book.webBook.analyzeRule.InfoMap
+import java.util.WeakHashMap
 
 object App  {
+    val exploreInfoMapList = WeakHashMap<String, InfoMap>()
+
+
     var startBrowserAwait =fun  (urlStr: String,title: String,tocken:String,header:String,name: String): StrResponse {
         return StrResponse(urlStr,"")
     }
@@ -22,6 +27,11 @@ object App  {
     var toast =fun  (str: String,tocken:String){
 
     }
+
+    var longToast=fun  (str: String,tocken:String){
+
+    }
+
     var getVerificationCode =fun  (imgurl:String,tocken:String):String{
         return ""
     }
@@ -73,6 +83,34 @@ object App  {
     }
 
     var addBook= fun (bookurl:String?,tocken:String){
+
+    }
+
+    var reLoginView= fun (deltaUp: Boolean ,tocken:String){
+
+    }
+
+    var upLoginData= fun (data: Map<String, Any?>? ,tocken:String){
+
+    }
+
+    var copyText= fun (text :String, tocken:String){
+
+    }
+
+    var refreshBookInfo= fun (bookSourceUrl :String, tocken:String){
+
+    }
+
+    var refreshBookToc= fun (bookSourceUrl :String, tocken:String){
+
+    }
+
+    var refreshContent= fun (bookSourceUrl :String, tocken:String){
+
+    }
+
+    var refreshExplore= fun (bookSourceUrl :String, tocken:String){
 
     }
 }

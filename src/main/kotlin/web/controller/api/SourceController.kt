@@ -40,7 +40,7 @@ open class SourceController:BaseController() {
 
 
     @Mapping("/getBookSourcesPage")
-    open fun getBookSources(accessToken: String?) = run {
+    open fun getBookSources(accessToken: String?,st: String?) = run {
         val user = getuserbytocken(accessToken)
         if (user.sourcemd5.isNullOrBlank()){
             user.sourcemd5=Md5(System.currentTimeMillis().toString())
@@ -58,14 +58,14 @@ open class SourceController:BaseController() {
             s?.usertocken=accessToken
             s?.userid=user.id
             var loginUi=s?.loginUi
-            if(!loginUi.isNullOrEmpty()){
+            if(!loginUi.isNullOrEmpty() && st == null){
                 runCatching {
                     if ( loginUi!!.startsWith("@js:") ||  loginUi.startsWith("<js>")){
                         val s1=cacheService.get("loginUi:${accessToken}${user.source}${s?.bookSourceUrl}", String::class.java)
                         if(!s1.isNullOrBlank()){
                             loginUi=s1
                         }else{
-                            loginUi=s?.getloginUi()
+                            loginUi=s?.getloginUi(false)
                             val r=GSON.fromJsonArray<Any>(loginUi).getOrNull()
                             loginUi= GSON.toJson(r)
                             cacheService.store("loginUi:${accessToken}${user.source}${s?.bookSourceUrl}",loginUi,60*5)

@@ -94,6 +94,27 @@ data class Book(
         return originName.endsWith(".epub", true)
     }
 
+    fun setImageStyle(imageStyle: String?) {
+
+    }
+
+    fun setReverseToc(reverseToc: Boolean) {
+        val z=if(reverseToc) "1" else "0"
+        RuleBigDataHelp.putBookVariable(bookUrl,userid, "reverseToc", "$z")
+    }
+
+    fun getReverseToc(): Boolean {
+        runCatching {
+            val z= RuleBigDataHelp.getBookVariable(bookUrl,userid, "reverseToc")
+            if(z == "1"){
+                return true
+            }
+        }
+        return false
+    }
+
+
+
     fun isCbz(): Boolean {
         return originName.endsWith(".cbz", true)
     }

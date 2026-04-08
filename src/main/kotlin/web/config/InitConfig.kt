@@ -8,6 +8,7 @@ import book.util.GSON
 import book.util.http.MyResponse
 import book.util.http.StrResponse
 import com.google.gson.Gson
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.noear.solon.annotation.Bean
 import org.noear.solon.annotation.Configuration
@@ -125,6 +126,17 @@ class InitConfig {
             if(socket!=null){
                 logger.info("toast:$str")
                 socket.send(Gson().toJson(ToastMessage(msg = "toast", str=str )))
+            }
+        }
+        App.longToast = fun (str : String, tocken:String)  = runBlocking {
+            val socket=ApiWebSocket.getall(tocken)
+            if(socket!=null){
+                logger.info("toast:$str")
+                if(socket.sg){
+                    socket.ws.send(Gson().toJson(ToastMessage(msg = "longToast", str=str )))
+                }else{
+                    socket.ws.send(Gson().toJson(ToastMessage(msg = "toast", str=str )))
+                }
             }
         }
         App.log = fun (str : String, tocken:String)   {
@@ -259,8 +271,85 @@ class InitConfig {
            }
        }
 
+        App.reLoginView=fun (bool:Boolean,tocken:String)= runBlocking {
+            val socket=ApiWebSocket.get(tocken)
+            if(socket!=null ){
+                socket.send(Gson().toJson(WebMessage(
+                    msg = "reLoginView", url = "", title = "$bool" ,
+                    id = ""
+                )))
+                delay(1000);
+            }
+        }
+
+        App.upLoginData=fun (data: Map<String, Any?>?,tocken:String){
+            val socket=ApiWebSocket.get(tocken)
+            if(socket!=null ){
+                var d="{}"
+                if(data!=null){
+                    d = Gson().toJson(data)
+                }
+                socket.send(Gson().toJson(WebMessage(
+                    msg = "upLoginData", url = "", title = d ,
+                    id = ""
+                )))
+            }
+        }
+
+        App.copyText=fun (text: String, tocken:String){
+            val socket=ApiWebSocket.get(tocken)
+            if(socket!=null ){
+                socket.send(Gson().toJson(WebMessage(
+                    msg = "copyText", url = "", title = text ,
+                    id = ""
+                )))
+            }
+        }
+
+        App.refreshBookInfo=fun (url:String,tocken:String){
+            val socket=ApiWebSocket.get(tocken)
+            if(socket!=null ){
+                socket.send(Gson().toJson(WebMessage(
+                    msg = "refreshBookInfo", url = "", title = url ,
+                    id = ""
+                )))
+            }
+        }
+
+        App.refreshBookToc=fun (url:String,tocken:String){
+            val socket=ApiWebSocket.get(tocken)
+            if(socket!=null ){
+                socket.send(Gson().toJson(WebMessage(
+                    msg = "refreshBookToc", url = "", title = url ,
+                    id = ""
+                )))
+            }
+        }
+
+        App.refreshContent=fun (url:String,tocken:String){
+            val socket=ApiWebSocket.get(tocken)
+            if(socket!=null ){
+                socket.send(Gson().toJson(WebMessage(
+                    msg = "refreshContent", url = "", title = url ,
+                    id = ""
+                )))
+            }
+        }
+
+        App.refreshExplore=fun (url:String,tocken:String){
+            val socket=ApiWebSocket.get(tocken)
+            if(socket!=null ){
+                socket.send(Gson().toJson(WebMessage(
+                    msg = "refreshExplore", url = "", title = url ,
+                    id = ""
+                )))
+            }
+        }
+
+
 
     }
+
 
 
 }

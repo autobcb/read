@@ -938,7 +938,7 @@ open class RssController :BaseController() {
         rssSource.userid = user.id
         rssSource.usertocken = accessToken
         kotlin.runCatching {
-            rssSource.runaction(action)
+            rssSource.runaction(action,false)
         }.onFailure { e ->
             logger.info("$action JavaScript error", e)
             App.log("$action JavaScript error:$e",accessToken?:"")

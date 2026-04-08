@@ -57,10 +57,10 @@ class ApiWebSocket : SimpleWebSocketListener() {
         }
 
 
-        suspend fun add(key:String, value:WebSocket,userid:String){
+        suspend fun add(key:String, value:WebSocket,userid:String,sg: Boolean){
             mutex.withLock {
                 logger.info("WebSocket Adding $key")
-                ma[key]=WebSocketMap(value,userid)
+                ma[key]=WebSocketMap(value,userid,sg)
             }
         }
         suspend fun remove(key:String){
@@ -70,6 +70,9 @@ class ApiWebSocket : SimpleWebSocketListener() {
         }
         fun get(key:String):WebSocket?{
             return ma[key]?.ws
+        }
+        fun getall(key:String):WebSocketMap?{
+            return ma[key]
         }
 
         suspend fun getByuserids(userids: List<String>):List<WebSocket>{
@@ -161,7 +164,8 @@ class ApiWebSocket : SimpleWebSocketListener() {
         if((user.rssmd5?:"").isEmpty() && user.source != 2){
             user.rssmd5=Md5(System.currentTimeMillis().toString())
         }
-        runBlocking {add(accessToken,socket,user.id!!)}
+        val sg: String? = socket.param("sg")
+        runBlocking {add(accessToken,socket,user.id!!,!sg.isNullOrBlank())}
         runCatching {
             socket.send(Gson().toJson(Md5Message(
                 msg = "init",
@@ -234,6 +238,7 @@ class ApiWebSocket : SimpleWebSocketListener() {
 class WebSocketMap(
     var ws:WebSocket,
     var userid:String,
+    var sg: Boolean,
 )
 
 class Md5Message(

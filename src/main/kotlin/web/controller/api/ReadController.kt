@@ -13,6 +13,7 @@ import book.webBook.exception.RegexTimeoutException
 import book.webBook.localBook.LocalBook
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.noear.solon.annotation.*
 import org.noear.solon.core.handle.Context
@@ -518,7 +519,7 @@ open class ReadController : BaseController() {
     }
 
     @Mapping("/getSourcesloginui")
-    fun  getSourcesloginui(accessToken: String?, url: String) = run {
+    fun  getSourcesloginui(accessToken: String?, url: String, bookurl: String?,chapter: Boolean) = run {
         val user = getuserbytocken(accessToken)
         val source :BaseSource =if(user.source == 2){
             user.id?.let {  userBookSourceMapper.getBookSource(url,it) }?.toBaseSource()
@@ -532,7 +533,17 @@ open class ReadController : BaseController() {
         if(!loginUi.isNullOrEmpty()){
             runCatching {
                 if ( loginUi!!.startsWith("@js:") ||  loginUi.startsWith("<js>")){
-                    loginUi=s?.getloginUi()
+                    var book: Book? =null;
+                    if (!bookurl.isNullOrEmpty()){
+                        book = (getBookbycache(bookurl,user.id!!)?: BookInfo.getbookinfo(accessToken!!,user,source,bookurl))?: throw Exception("书本获取失败")
+                    }
+                    loginUi=s?.getloginUi(chapter.let {
+                        if(it == null){
+                            false
+                        }else{
+                            it
+                        }
+                    },book)
                     val r=GSON.fromJsonArray<Any>(loginUi).getOrNull()
                     loginUi= GSON.toJson(r)
                     cacheService.store("loginUi:${accessToken}${user.source}${s?.bookSourceUrl}",loginUi,60*5)
@@ -540,6 +551,8 @@ open class ReadController : BaseController() {
                     val r=GSON.fromJsonArray<Any>(loginUi).getOrNull()
                     loginUi= GSON.toJson(r)
                 }
+            }.onFailure {
+                it.printStackTrace()
             }
         }
         JsonResponse(true).Data(loginUi)
@@ -600,13 +613,17 @@ open class ReadController : BaseController() {
     }
 
     @Mapping("/getopenurl")
-    fun  getopenurl(accessToken: String?, bookSourceUrl: String?, url: String?) = run{
+    fun  getopenurl(accessToken: String?, bookSourceUrl: String?, url: String?,bookurl: String?) = run{
         val (user,source)=getsourceuser(accessToken,bookSourceUrl)
         val s= BookSource.fromJson(source.json).getOrNull()!!
         s.usertocken=accessToken
         s.userid=user.id
+        var book: Book? =null;
+        if (!bookurl.isNullOrEmpty()){
+            book = (getBookbycache(bookurl,user.id!!)?: BookInfo.getbookinfo(accessToken!!,user,source,bookurl))?: throw Exception("书本获取失败")
+        }
         val analyzeUrl = AnalyzeUrl(
-            url?:"", source = s,
+            url?:"", source = s, ruleData = book,
             debugLog = null
         )
         JsonResponse(true).Data(analyzeUrl.url)
@@ -828,7 +845,7 @@ open class ReadController : BaseController() {
 
     @CacheRemove(tags = "search\${accessToken}")
     @Mapping("/action")
-    open fun action(accessToken: String?, bookSourceUrl: String?, action: String?, info: String?) = runBlocking {
+    open fun action(accessToken: String?, bookSourceUrl: String?, action: String?, info: String?,chapter: Boolean?,bookurl: String?) = runBlocking {
         val (user,source)=getsourceuser(accessToken,bookSourceUrl)
         if(action == null) throw DataThrowable().data(JsonResponse(false, NOT_BANK))
         val bookSource = BookSource.fromJson(source.json).getOrNull()!!
@@ -838,9 +855,36 @@ open class ReadController : BaseController() {
             bookSource.putLoginInfo(info)
         }
         runCatching {
-            bookSource.runaction(action)
+            var book: Book? =null;
+            if (!bookurl.isNullOrEmpty()){
+                book = (getBookbycache(bookurl,user.id!!)?: BookInfo.getbookinfo(accessToken!!,user,source,bookurl))?: throw Exception("书本获取失败")
+            }
+            bookSource.runaction(action,chapter.let {
+                if(it == null){
+                    false
+                }else{
+                    it
+                }
+            },book)
         }.onFailure { e ->
            logger.info("$action JavaScript error", e)
+        }
+        JsonResponse(true)
+    }
+
+
+    @Mapping("/findaction")
+    open fun findaction(accessToken: String?, bookSourceUrl: String?, action: String?, key: String?,value: String?) = runBlocking {
+        val (user,source)=getsourceuser(accessToken,bookSourceUrl)
+        val bookSource = BookSource.fromJson(source.json).getOrNull()!!
+        bookSource.userid = user.id
+        bookSource.usertocken = accessToken
+        if(!key.isNullOrBlank()){
+            Companion.logger.info("findaction $key $value")
+            bookSource.setinfoMap(key,value)
+        }
+        if(!action.isNullOrBlank()){
+            bookSource.runfindaction(action)
         }
         JsonResponse(true)
     }
